@@ -84,18 +84,26 @@ for (const scheme of ["dark", "light"]) {
   await page.waitForTimeout(800);
   await page.screenshot({ path: `${OUT}/exercises-${scheme}-triceps-expanded.png` });
 
+  // Core filter (Phase 3.10 — now has real images) + expand for the large image.
+  await page.getByRole("button", { name: "ליבה", exact: true }).click();
+  await page.waitForTimeout(600);
+  const coreCards = await page.locator('img[src*="core%2F"]').count();
+  console.log(`[${scheme}] core filter: ${coreCards} core images visible`);
+  await page.locator('button[aria-expanded="false"]').first().click();
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: `${OUT}/exercises-${scheme}-core-expanded.png` });
+
   await page.context().close();
 }
 
-// Fallback check: an exercise without imagePath (plank) must render the
-// placeholder. Core ("ליבה") has no wired images yet.
+// Fullscreen viewer check on a core image (Phase 3.10).
 const page = await makePage("dark");
 await page.goto(`${BASE}/exercises`, { waitUntil: "networkidle" });
 await page.getByRole("button", { name: "ליבה", exact: true }).click();
 await page.waitForTimeout(400);
-const coreImgs = await page.locator('img[src*="exercises%2F"]').count();
-console.log(`core filter (no images wired): ${coreImgs} real images (expect 0, placeholder used)`);
-await page.screenshot({ path: `${OUT}/exercises-fallback-core.png` });
+const coreImgs = await page.locator('img[src*="core%2F"]').count();
+console.log(`core filter: ${coreImgs} real images (expect >0, plank now wired)`);
+await page.screenshot({ path: `${OUT}/exercises-core.png` });
 await page.context().close();
 
 await browser.close();

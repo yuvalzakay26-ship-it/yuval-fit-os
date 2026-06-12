@@ -22,6 +22,14 @@ const CATEGORIES = {
   "Shoulder exercises": "shoulders",
   "Bicep training": "biceps",
   "Triceps training": "triceps",
+  "Abs training": "core",
+};
+
+// Raw base names (extension stripped) that slugify() can't handle because they
+// are non-English (Hebrew) or punctuation-only. Mapped explicitly to a stable
+// English slug so the image still lands on the right exercise.
+const RAW_BASENAME_SLUGS = {
+  "— כפיפות בטן בכבל": "cable-crunch", // "ab crunch on cable" -> Cable Crunch
 };
 
 // File-name slug overrides so images land on existing seed-exercise imageKeys.
@@ -88,7 +96,11 @@ for (const [srcDir, defaultGroup] of Object.entries(CATEGORIES)) {
       skipped.push({ file: path.join(srcDir, file), reason: `unsupported format ${ext}` });
       continue;
     }
-    const rawSlug = slugify(base);
+    const rawSlug = RAW_BASENAME_SLUGS[base] ?? slugify(base);
+    if (!rawSlug) {
+      skipped.push({ file: path.join(srcDir, file), reason: "non-English/unmappable filename (no stable slug)" });
+      continue;
+    }
     if (UNCLEAR_NAME.test(rawSlug)) {
       skipped.push({ file: path.join(srcDir, file), reason: "unclear/unlabeled generative export (no exercise name)" });
       continue;

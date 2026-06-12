@@ -390,3 +390,108 @@ imported cleanly.
 the placeholder-only group used for fallback assertions moved from triceps
 (`יד אחורית`) to core (`ליבה`), since triceps now has real images, and
 `qa-exercises.mjs` gained a triceps coverage + expand check.
+
+# Phase 3.10 — abs / core import
+
+Phase 3.10 imported the abs/core folder through the same one-shot pipeline and
+wired the images into the exercise library. This phase also retires the **last**
+seeded fallback exercise: `plank` now has a real image, so every exercise in
+`lib/seed-exercises.ts` carries an `imagePath`.
+
+## Source folder inspected
+
+- Path: `public/training exercises/Abs training/`
+- Folder name on disk: `Abs training`
+- Images found: **15**, all `.png` (no jpg/jpeg/webp, no unsupported formats).
+- File sizes 1.2–1.6 MB each — none oversized.
+- **No `ChatGPT Image …` / generic / timestamp exports** — every file carries a
+  clear exercise name.
+- 14 files have clear English names; **1 file is Hebrew-named**
+  (`— כפיפות בטן בכבל.png` = "ab crunch on cable" = Cable Crunch). It is
+  cleanly mappable, so it was imported (see mapping) rather than skipped.
+- No duplicate or suspicious names within the folder.
+- The raw source folder is gitignored (`/public/training exercises/` in
+  `.gitignore`) and was left completely untouched.
+
+## Destination folder
+
+- Used existing key `core` (matching `MuscleGroup` and
+  `MUSCLE_GROUP_LABELS.core = "ליבה"`); created `public/exercises/core/`. No new
+  muscle-group key was introduced — abs maps to the existing `core` group.
+- All 15 PNGs converted to WebP q80 via the sharp pipeline in
+  `scripts/import-exercise-images.mjs` (extended with an `"Abs training":
+  "core"` category). Output sizes 87–120 KB each.
+
+## Imported images
+
+Core (15): bicycle-crunch, cable-crunch (from the Hebrew `— כפיפות בטן בכבל.png`,
+see mapping), captain-chair-knee-raise, crunch, decline-bench-crunch,
+hanging-leg-raise, knee-raise, leg-raise, machine-ab-crunch, mountain-climbers,
+plank, reverse-crunch, russian-twist, side-plank, sit-up.
+
+Total imported this phase: 15 images (0 unsupported, 0 conversion errors, 0
+skipped within the Abs folder). All prior chest / back / legs / glutes /
+shoulders / biceps / triceps files logged `already imported` and were untouched
+(`SKIP_EXISTING`).
+
+## Skipped files and why
+
+None from the Abs folder — all 15 images mapped cleanly to a known exercise.
+
+## Special mapping decisions
+
+- `— כפיפות בטן בכבל.png` → `cable-crunch.webp`. The base name is Hebrew, so
+  `slugify()` produces an empty string. A new `RAW_BASENAME_SLUGS` map in the
+  importer maps this exact base name to the stable English slug `cable-crunch`
+  ("ab crunch on cable" = Cable Crunch). The importer now also safely skips any
+  file whose slug resolves to empty (logged as
+  `non-English/unmappable filename`) instead of writing a `.webp`.
+- `Plank.png` → wired to the existing seed exercise `plank` (no new exercise
+  created). The remaining 14 files became new core exercises.
+- Knee/leg-raise family kept as distinct entries because each clearly-named
+  source image exists: `knee-raise` (hanging knee raise, bodyweight),
+  `captain-chair-knee-raise` (machine station), `leg-raise` (lying),
+  `hanging-leg-raise` (advanced, straight-leg). No identities were invented.
+- Equipment inferred only when obvious from the name: `machine` for
+  `machine-ab-crunch` and `captain-chair-knee-raise`, `cable` for `cable-crunch`;
+  everything else is `bodyweight`. Difficulty kept conservative.
+- `mountain-climbers` carries `secondaryMuscles: ["shoulders", "legs"]` and
+  `side-plank` / `plank` carry `["shoulders"]`; the rest leave `secondaryMuscles`
+  empty.
+
+## Wiring result
+
+- 1 existing exercise received `imagePath`: `plank`
+  (`/exercises/core/plank.webp`).
+- 14 new core exercises were added to `lib/seed-exercises.ts`, each with a
+  Hebrew name, inferred equipment/difficulty, short conservative form
+  instructions, a note where helpful, and `imagePath`: side-plank, crunch,
+  reverse-crunch, bicycle-crunch, sit-up, leg-raise, hanging-leg-raise,
+  knee-raise, captain-chair-knee-raise, mountain-climbers, russian-twist,
+  decline-bench-crunch, machine-ab-crunch, cable-crunch.
+- **No seeded exercise uses the gradient placeholder anymore** — all 133
+  exercises in `lib/seed-exercises.ts` now have a real `imagePath`. The
+  placeholder fallback path in the UI is retained as defensive behavior for any
+  future image-less exercise, but no seed data triggers it.
+
+## Validation
+
+`npm run lint` clean; `npm run build` succeeds (17 static pages). QA on a
+`next start -p 3199` prod server with the access flag pre-seeded:
+
+- `qa-exercises.mjs`: 0 horizontal overflow (dark + light); core filter shows
+  **15** real images; core expand renders the large image. A `core-expanded`
+  check replaced the old "core has no images" fallback assertion.
+- `qa-image-viewer.mjs`: all viewer checks pass; the old "no viewer on
+  placeholder exercises" assertion (which relied on core being image-less)
+  became a positive "core exercises offer the viewer" check, since no seeded
+  placeholder exercise remains.
+- `qa/access-check.mjs`: all pass — gate accepts `yuvalzakay123`, rejects the
+  retired `yuval`, persists/locks correctly.
+- `qa/food-library-check.mjs`: passes (0 issues) — food library untouched.
+- Workout builder: core exercises (e.g. `plank`, `cable-crunch`,
+  `russian-twist`) appear in the picker, a workout builds + saves to history, 0
+  overflow, no console errors.
+
+No backend / auth / AI / native / video / chart / theme / food-library /
+access-code changes were made.

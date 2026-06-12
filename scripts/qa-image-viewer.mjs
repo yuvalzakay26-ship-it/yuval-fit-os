@@ -78,12 +78,12 @@ for (const scheme of ["dark", "light"]) {
   const bodyOverflow = await page.evaluate(() => document.body.style.overflow);
   check(`[${scheme}] body scroll restored`, bodyOverflow !== "hidden");
 
-  // Fallback: placeholder-only exercises must not offer a viewer. Core
-  // ("ליבה") has no wired images yet (triceps/biceps/legs/shoulders now do).
+  // Core ("ליבה") images are wired as of Phase 3.10 — every seeded exercise
+  // now has an image, so expanding a core card must offer the viewer too.
   await page.getByRole("button", { name: "ליבה", exact: true }).click();
   await page.locator('button[aria-expanded="false"]').first().click();
-  const fallbackBtns = await page.getByRole("button", { name: "פתח תמונה גדולה" }).count();
-  check(`[${scheme}] no viewer affordance on placeholder exercises`, fallbackBtns === 0);
+  const coreViewerBtns = await page.getByRole("button", { name: "פתח תמונה גדולה" }).count();
+  check(`[${scheme}] core exercises offer the viewer`, coreViewerBtns > 0);
 
   await ctx.close();
 }
