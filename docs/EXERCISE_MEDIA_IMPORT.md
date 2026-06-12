@@ -213,3 +213,92 @@ biceps (`יד קדמית`) — not legs — as the placeholder-only group, since
 has real images. Both passed in dark and light: 78 real `<img>` tags on "all",
 16 legs / 19 shoulders / 20 chest per filter, 0 horizontal overflow, 0 console
 errors, viewer open/close + fallback all green.
+
+# Phase 3.8 — biceps import
+
+## Source folder inspected
+
+- Path: `public/training exercises/Bicep training/`
+- Folder name on disk: `Bicep training`
+- Images found: **45**, all `.png` (no jpg/jpeg/webp, no unsupported formats).
+- The raw source folder is gitignored (`/public/training exercises/` in
+  `.gitignore`) and was left completely untouched.
+
+Of the 45 PNGs:
+
+- **20** have clear, English exercise-name file names (e.g. `Hammer Curl.png`,
+  `Preacher Curl.png`).
+- **25** are unlabeled generative exports named
+  `ChatGPT Image Jun 12, 2026, HH_MM_SS PM (n).png`. By MD5 hash, **5** of these
+  are byte-for-byte duplicates of named files (`Cable Curl`, `Cable Rope Hammer
+  Curl`, `Machine Preacher Curl`, `High Cable Curl`, `Single Arm Cable Curl`);
+  the other **20** are unique images with no identifiable exercise label.
+
+No oversized files (all 1.3–2.3 MB PNGs), no Hebrew names, no other suspicious
+names beyond the generative exports above.
+
+## Destination folder
+
+- Created: `public/exercises/biceps/` (muscle-group key `biceps`, matching
+  `MuscleGroup` and `MUSCLE_GROUP_LABELS.biceps = "יד קדמית"`).
+- 20 named PNGs converted to WebP q80 via the existing sharp pipeline in
+  `scripts/import-exercise-images.mjs` (extended with a `"Bicep training":
+  "biceps"` category). Output sizes 89–121 KB each.
+
+## Imported images
+
+Biceps (20): alternating-dumbbell-curl, barbell-curl, bayesian-cable-curl,
+cable-curl, cable-rope-hammer-curl, chin-up-biceps-focus, concentration-curl,
+cross-body-hammer-curl, biceps-curl (from `Dumbbell Curl.png`, see mapping),
+ez-bar-curl, hammer-curl, high-cable-curl, incline-dumbbell-curl,
+machine-preacher-curl, preacher-curl, reverse-curl, seated-dumbbell-curl,
+single-arm-cable-curl, spider-curl, zottman-curl.
+
+Total imported this phase: 20 images (0 unsupported, 0 conversion errors).
+
+## Skipped files and why
+
+- All **25** `ChatGPT Image …(n).png` files were skipped: 5 are exact
+  duplicates of named images and 20 are unlabeled with no clear exercise name,
+  so importing them would mean inventing exercise identities. Handled by the
+  `UNCLEAR_NAME` (`/^chatgpt-image/`) guard in
+  `scripts/import-exercise-images.mjs`.
+- The importer also added a `SKIP_EXISTING` guard so re-running to import a new
+  muscle group never rewrites previously-committed images — every chest / back /
+  legs / glutes / shoulders file logged `already imported` and was untouched.
+
+## Special mapping decisions
+
+- `Dumbbell Curl.png` → `biceps-curl.webp` via `SLUG_OVERRIDES`
+  (`"dumbbell-curl": "biceps-curl"`). The existing fallback seed exercise
+  `biceps-curl` is a dumbbell biceps curl (`nameEn: "Biceps Curl"`, equipment
+  `dumbbell`), so the dumbbell-curl image is the exact correct asset for it. No
+  separate `dumbbell-curl` exercise was created — it would duplicate
+  `biceps-curl`.
+- Hammer/reverse/zottman curls also train the forearm/brachialis, but the app
+  has no `forearms` muscle group, so `secondaryMuscles` is left empty for those
+  rather than mislabeling.
+- `chin-up-biceps-focus` is the only new entry with a secondary muscle
+  (`["back"]`), since the chin-up is a compound pull.
+
+## Wiring result
+
+- 1 existing exercise received `imagePath`: `biceps-curl`
+  (`/exercises/biceps/biceps-curl.webp`).
+- 19 new biceps exercises were added to `lib/seed-exercises.ts`, each with a
+  Hebrew name, inferred equipment/difficulty, short conservative form
+  instructions, a note, and `imagePath`.
+- Exercises still using the gradient placeholder (no image): `triceps-pushdown`
+  (triceps), `plank` (core). Biceps is now fully covered.
+
+## Validation
+
+`npm run lint` clean; `npm run build` succeeds. The QA harnesses were updated:
+the placeholder-only group used for fallback assertions moved from biceps
+(`יד קדמית`) to triceps (`יד אחורית`), since biceps now has real images, and
+`qa-exercises.mjs` gained a biceps coverage + expand check. Both passed in dark
+and light: 98 real `<img>` tags on "all", 20 chest / 16 legs / 19 shoulders /
+**20 biceps** per filter, triceps fallback = 0 real images (placeholder), 0
+horizontal overflow, 0 console errors; image-viewer harness all-green
+(object-contain, open/close via X/backdrop/Escape, body scroll restored, no
+viewer affordance on placeholder-only exercises).

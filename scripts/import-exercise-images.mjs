@@ -20,6 +20,7 @@ const CATEGORIES = {
   "back exercises": "back",
   "leg exercises": "legs",
   "Shoulder exercises": "shoulders",
+  "Bicep training": "biceps",
 };
 
 // File-name slug overrides so images land on existing seed-exercise imageKeys.
@@ -28,6 +29,7 @@ const SLUG_OVERRIDES = {
   "barbell-row": "bent-over-row", // existing exercise id "bent-over-row"
   "barbell-squat": "squat", // existing exercise id "squat"
   "seated-dumbbell-shoulder-press": "shoulder-press", // existing exercise id "shoulder-press"
+  "dumbbell-curl": "biceps-curl", // existing exercise id "biceps-curl" (a dumbbell biceps curl)
 };
 
 // Per-slug destination overrides (exercise's primary muscleGroup wins over
@@ -48,6 +50,15 @@ const SKIP = new Set([
 ]);
 
 const SUPPORTED = new Set([".png", ".jpg", ".jpeg", ".webp"]);
+
+// Skip raw generative-tool exports that have no clear exercise label (e.g.
+// "ChatGPT Image Jun 12, 2026, 07_45_59 PM (1).png"). These are unidentifiable
+// or duplicate the clearly-named source images, so they are not imported.
+const UNCLEAR_NAME = /^chatgpt-image/;
+
+// Idempotency: skip writing if the destination already exists, so re-running to
+// import a new muscle group never rewrites previously-committed images.
+const SKIP_EXISTING = true;
 
 function slugify(name) {
   return name
@@ -73,6 +84,10 @@ for (const [srcDir, defaultGroup] of Object.entries(CATEGORIES)) {
       continue;
     }
     const rawSlug = slugify(base);
+    if (UNCLEAR_NAME.test(rawSlug)) {
+      skipped.push({ file: path.join(srcDir, file), reason: "unclear/unlabeled generative export (no exercise name)" });
+      continue;
+    }
     if (SKIP.has(`${defaultGroup}/${rawSlug}`)) {
       skipped.push({ file: path.join(srcDir, file), reason: "duplicate of an image already imported from another folder" });
       continue;
@@ -83,6 +98,11 @@ for (const [srcDir, defaultGroup] of Object.entries(CATEGORIES)) {
     fs.mkdirSync(destDir, { recursive: true });
 
     const src = path.join(dir, file);
+    const finalDest = path.join(destDir, `${slug}.webp`);
+    if (SKIP_EXISTING && fs.existsSync(finalDest)) {
+      skipped.push({ file: path.join(srcDir, file), reason: `already imported -> ${group}/${slug}.webp` });
+      continue;
+    }
     if (ext === ".webp") {
       const dest = path.join(destDir, `${slug}.webp`);
       fs.copyFileSync(src, dest);
