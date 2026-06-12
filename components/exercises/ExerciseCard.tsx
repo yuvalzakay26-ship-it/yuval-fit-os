@@ -12,7 +12,7 @@ import { formatHebrewDate } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ChevronIcon, TrophyIcon } from "@/components/ui/icons";
-import { ExercisePlaceholder } from "./ExercisePlaceholder";
+import { ExerciseImage } from "./ExerciseImage";
 
 export function ExerciseCard({
   exercise,
@@ -30,10 +30,12 @@ export function ExerciseCard({
         className="tap flex w-full items-center gap-3.5 p-3 text-right"
         aria-expanded={open}
       >
-        <ExercisePlaceholder
+        <ExerciseImage
+          imagePath={exercise.imagePath}
+          alt={exercise.nameHe}
           muscleGroup={exercise.muscleGroup}
           imageKey={exercise.imageKey}
-          equipment={exercise.equipment}
+          sizes="72px"
           className="h-[72px] w-[72px] shrink-0"
         />
         <div className="min-w-0 flex-1">
@@ -56,6 +58,16 @@ export function ExerciseCard({
 
       {open && (
         <div className="animate-fade-up border-t border-border px-4 pb-4 pt-3.5">
+          {exercise.imagePath && (
+            <ExerciseImage
+              imagePath={exercise.imagePath}
+              alt={exercise.nameHe}
+              muscleGroup={exercise.muscleGroup}
+              imageKey={exercise.imageKey}
+              sizes="(max-width: 448px) 100vw, 416px"
+              className="mb-3.5 aspect-[16/10] w-full"
+            />
+          )}
           {performance ? (
             <div className="mb-3.5 flex items-center gap-2.5 rounded-2xl bg-[color:var(--accent-soft)] px-3.5 py-2.5">
               <TrophyIcon className="h-5 w-5 shrink-0 text-accent" />

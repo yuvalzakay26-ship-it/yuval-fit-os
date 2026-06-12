@@ -3,8 +3,8 @@ import { MUSCLE_GROUP_LABELS } from "@/lib/seed-exercises";
 import { cn } from "@/lib/utils";
 import { DumbbellIcon } from "@/components/ui/icons";
 
-// Calm, distinct gradient per muscle group. Swap this whole component for a
-// real <Image src=`/exercises/${imageKey}.jpg` /> later — the API is stable.
+// Calm, distinct gradient per muscle group. Rendered by ExerciseImage as the
+// fallback whenever an exercise has no `imagePath` (or its image fails to load).
 const GRADIENTS: Record<MuscleGroup, string> = {
   back: "from-sky-400/30 via-sky-500/15 to-blue-600/20 text-sky-50",
   chest: "from-rose-400/30 via-rose-500/15 to-red-600/20 text-rose-50",

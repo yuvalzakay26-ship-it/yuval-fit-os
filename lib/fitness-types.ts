@@ -31,6 +31,12 @@ export interface Exercise {
   difficulty: Difficulty;
   /** Stable key used to map to a local image/SVG/video later. */
   imageKey: string;
+  /**
+   * Public path to a real exercise image, e.g. `/exercises/back/lat-pulldown.png`.
+   * When absent (or the file fails to load), the UI falls back to the gradient
+   * placeholder. See `public/exercises/README.md` for naming conventions.
+   */
+  imagePath?: string;
   /** Optional video URL reserved for a future phase. */
   videoUrl?: string;
   instructions: string[];

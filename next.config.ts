@@ -6,6 +6,16 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  images: {
+    // Exercise media is the only thing served through next/image; lock the
+    // optimizer endpoint to it (Next 16 localPatterns guardrail).
+    localPatterns: [
+      {
+        pathname: "/exercises/**",
+        search: "",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

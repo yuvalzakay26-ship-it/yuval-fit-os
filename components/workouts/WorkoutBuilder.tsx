@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Input, Label, Select } from "@/components/ui/Field";
 import { CheckIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
-import { ExercisePlaceholder } from "@/components/exercises/ExercisePlaceholder";
+import { ExerciseImage } from "@/components/exercises/ExerciseImage";
 
 function emptySet(setNumber: number): SetEntry {
   return { setNumber, weightKg: 0, reps: 0, completed: false };
@@ -144,9 +144,12 @@ export function WorkoutBuilder({
               className="rounded-2xl border border-border bg-surface-2/60 p-3"
             >
               <div className="mb-3 flex items-center gap-3">
-                <ExercisePlaceholder
+                <ExerciseImage
+                  imagePath={exercise.imagePath}
+                  alt={exercise.nameHe}
                   muscleGroup={exercise.muscleGroup}
                   imageKey={exercise.imageKey}
+                  sizes="40px"
                   className="h-10 w-10 shrink-0"
                 />
                 <p className="flex-1 text-[15px] font-bold text-foreground">

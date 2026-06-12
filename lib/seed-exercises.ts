@@ -1,7 +1,9 @@
 import type { Exercise, MuscleGroup } from "./fitness-types";
 
-// Initial exercise library. Placeholder visuals are derived from `imageKey`
-// + `muscleGroup`; replace with real local images/SVGs/videos later.
+// Initial exercise library. To give an exercise a real image, drop the file
+// under `public/exercises/<muscle-group>/<imageKey>.png` and set `imagePath`
+// on the exercise (see public/exercises/README.md). Exercises without an
+// `imagePath` render the gradient placeholder derived from `muscleGroup`.
 export const SEED_EXERCISES: Exercise[] = [
   {
     id: "lat-pulldown",
