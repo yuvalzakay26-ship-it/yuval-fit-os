@@ -1,26 +1,180 @@
 @import "tailwindcss";
 
+/* Class-based dark mode: toggled by `.dark` on <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================ Design tokens ============================ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surfaces — layered for depth */
+  --background: #f4f6f9;
+  --background-tint: #eef4f1; /* faint accent wash used in the page gradient */
+  --surface: #ffffff;
+  --surface-2: #f5f7fa; /* insets, inputs, subtle fills */
+  --surface-raised: #ffffff;
+
+  /* Text */
+  --foreground: #0b1220;
+  --muted: #5b6678;
+  --faint: #93a0b1;
+
+  /* Lines */
+  --border: #e8ebf0;
+  --border-strong: #d8dde5;
+
+  /* Accent (signature emerald → teal) */
+  --accent: #0f9e6e;
+  --accent-strong: #0b7d57;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(15, 158, 110, 0.1);
+  --gradient-accent: linear-gradient(135deg, #12b886 0%, #0ca678 50%, #099268 100%);
+
+  /* Effects */
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 16px rgba(16, 24, 40, 0.05);
+  --shadow-raised: 0 8px 30px rgba(16, 24, 40, 0.1);
+  --shadow-accent: 0 8px 24px rgba(12, 166, 120, 0.28);
+  --ring: rgba(15, 158, 110, 0.35);
+}
+
+.dark {
+  --background: #06080c;
+  --background-tint: #07110d;
+  --surface: #0f141b;
+  --surface-2: #161c25;
+  --surface-raised: #131a22;
+
+  --foreground: #eaf0f6;
+  --muted: #93a1b4;
+  --faint: #5f6e80;
+
+  --border: #1d2530;
+  --border-strong: #2a3543;
+
+  --accent: #16c088;
+  --accent-strong: #0fa874;
+  --accent-contrast: #03130d;
+  --accent-soft: rgba(22, 192, 136, 0.14);
+  --gradient-accent: linear-gradient(135deg, #1ad99b 0%, #12c08a 50%, #0fa874 100%);
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
+  --shadow-raised: 0 12px 40px rgba(0, 0, 0, 0.55);
+  --shadow-accent: 0 10px 30px rgba(13, 160, 110, 0.35);
+  --ring: rgba(22, 192, 136, 0.4);
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-raised: var(--surface-raised);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-contrast: var(--accent-contrast);
+  --font-sans: var(--font-app-sans);
+
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+  --radius-3xl: 1.5rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================== Base ================================== */
+html {
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--background);
+  min-height: 100dvh;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-app-sans), system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv01";
+  /* Layered page background: soft base + faint accent glow at the top. */
+  background-color: var(--background);
+  background-image:
+    radial-gradient(120% 60% at 50% -10%, var(--background-tint) 0%, transparent 60%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--foreground);
+}
+
+/* Smooth, accessible scrolling for the scroll-to-top behaviour. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Thin, calm scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+/* ===== Custom component classes =====
+   Defined as plain (unlayered) classes — not @utility — so they render
+   identically in dev and prod and never collide with Tailwind's generated
+   colour utilities (e.g. shadow-<color>). They win over layered utilities. */
+
+/* Native-feeling press feedback for interactive elements. */
+.tap {
+  transition: transform 0.12s ease, background-color 0.15s ease, opacity 0.15s ease,
+    box-shadow 0.2s ease, border-color 0.15s ease;
+}
+.tap:active {
+  transform: scale(0.97);
+}
+
+/* Signature brand gradient (background + text variants). */
+.brand-gradient {
+  background-image: var(--gradient-accent);
+}
+.brand-text-gradient {
+  background-image: var(--gradient-accent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Elevation. */
+.shadow-soft {
+  box-shadow: var(--shadow-card);
+}
+.shadow-float {
+  box-shadow: var(--shadow-raised);
+}
+.shadow-glow {
+  box-shadow: var(--shadow-accent);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Fade-up entrance for content sections. */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up {
+    animation: none !important;
+  }
 }
