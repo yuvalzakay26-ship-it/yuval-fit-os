@@ -18,19 +18,34 @@ const DEST_ROOT = "public/exercises";
 const CATEGORIES = {
   "Chest exercises": "chest",
   "back exercises": "back",
+  "leg exercises": "legs",
+  "Shoulder exercises": "shoulders",
 };
 
 // File-name slug overrides so images land on existing seed-exercise imageKeys.
 const SLUG_OVERRIDES = {
   "pull-up": "pull-ups", // existing exercise id "pull-ups"
   "barbell-row": "bent-over-row", // existing exercise id "bent-over-row"
+  "barbell-squat": "squat", // existing exercise id "squat"
+  "seated-dumbbell-shoulder-press": "shoulder-press", // existing exercise id "shoulder-press"
 };
 
 // Per-slug destination overrides (exercise's primary muscleGroup wins over
 // the source folder, per public/exercises/README.md).
 const DEST_OVERRIDES = {
   "romanian-deadlift": "glutes", // seeded under glutes
+  "cable-kickback": "glutes", // glute isolation movement
+  "glute-bridge": "glutes", // glute isolation movement
+  "hip-thrust": "glutes", // glute isolation movement
 };
+
+// Skip specific "<sourceGroup>/<rawSlug>" entries that duplicate an image
+// already imported from another folder (keyed by the source folder's default
+// group, before SLUG/DEST overrides).
+const SKIP = new Set([
+  "legs/romanian-deadlift", // already imported from the back folder -> glutes/romanian-deadlift.webp
+  "shoulders/face-pull", // already imported from the back folder -> back/face-pull.webp
+]);
 
 const SUPPORTED = new Set([".png", ".jpg", ".jpeg", ".webp"]);
 
@@ -58,6 +73,10 @@ for (const [srcDir, defaultGroup] of Object.entries(CATEGORIES)) {
       continue;
     }
     const rawSlug = slugify(base);
+    if (SKIP.has(`${defaultGroup}/${rawSlug}`)) {
+      skipped.push({ file: path.join(srcDir, file), reason: "duplicate of an image already imported from another folder" });
+      continue;
+    }
     const slug = SLUG_OVERRIDES[rawSlug] ?? rawSlug;
     const group = DEST_OVERRIDES[slug] ?? defaultGroup;
     const destDir = path.join(DEST_ROOT, group);

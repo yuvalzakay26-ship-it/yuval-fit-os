@@ -24,6 +24,12 @@ for (const scheme of ["dark", "light"]) {
     hasTouch: true,
     colorScheme: scheme,
   });
+  // Pre-seed the access gate (Phase 3.5) so QA lands directly on the app.
+  await ctx.addInitScript(() => {
+    try {
+      localStorage.setItem("yfos:access-granted:v1", "1");
+    } catch {}
+  });
   const page = await ctx.newPage();
   page.on("console", (m) => m.type() === "error" && errors.push(`[${scheme}] ${m.text()}`));
   page.on("pageerror", (e) => errors.push(`[${scheme}] pageerror: ${e.message}`));
@@ -72,8 +78,9 @@ for (const scheme of ["dark", "light"]) {
   const bodyOverflow = await page.evaluate(() => document.body.style.overflow);
   check(`[${scheme}] body scroll restored`, bodyOverflow !== "hidden");
 
-  // Fallback: placeholder-only exercises must not offer a viewer.
-  await page.getByRole("button", { name: "רגליים", exact: true }).click();
+  // Fallback: placeholder-only exercises must not offer a viewer. Biceps
+  // ("יד קדמית") has no wired images yet (legs/shoulders now do).
+  await page.getByRole("button", { name: "יד קדמית", exact: true }).click();
   await page.locator('button[aria-expanded="false"]').first().click();
   const fallbackBtns = await page.getByRole("button", { name: "פתח תמונה גדולה" }).count();
   check(`[${scheme}] no viewer affordance on placeholder exercises`, fallbackBtns === 0);

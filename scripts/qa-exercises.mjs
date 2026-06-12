@@ -18,6 +18,12 @@ async function makePage(colorScheme) {
     hasTouch: true,
     colorScheme,
   });
+  // Pre-seed the access gate (Phase 3.5) so QA lands directly on the app.
+  await ctx.addInitScript(() => {
+    try {
+      localStorage.setItem("yfos:access-granted:v1", "1");
+    } catch {}
+  });
   const page = await ctx.newPage();
   page.on("console", (msg) => {
     if (msg.type() === "error") errors.push(`[${colorScheme}] ${msg.text()}`);
@@ -49,26 +55,34 @@ for (const scheme of ["dark", "light"]) {
   console.log(`[${scheme}] chest filter: ${chestCards} chest images visible`);
   await page.screenshot({ path: `${OUT}/exercises-${scheme}-chest.png` });
 
-  // Back filter + expand first card for the large image.
-  await page.getByRole("button", { name: "גב", exact: true }).click();
+  // Legs filter (Phase 3.6 — now has real images).
+  await page.getByRole("button", { name: "רגליים", exact: true }).click();
   await page.waitForTimeout(600);
-  const backCards = await page.locator('img[src*="back%2F"]').count();
-  console.log(`[${scheme}] back filter: ${backCards} back images visible`);
+  const legCards = await page.locator('img[src*="legs%2F"]').count();
+  console.log(`[${scheme}] legs filter: ${legCards} leg images visible`);
+  await page.screenshot({ path: `${OUT}/exercises-${scheme}-legs.png` });
+
+  // Shoulders filter + expand first card for the large image.
+  await page.getByRole("button", { name: "כתפיים", exact: true }).click();
+  await page.waitForTimeout(600);
+  const shoulderCards = await page.locator('img[src*="shoulders%2F"]').count();
+  console.log(`[${scheme}] shoulders filter: ${shoulderCards} shoulder images visible`);
   await page.locator('button[aria-expanded="false"]').first().click();
   await page.waitForTimeout(800);
-  await page.screenshot({ path: `${OUT}/exercises-${scheme}-back-expanded.png` });
+  await page.screenshot({ path: `${OUT}/exercises-${scheme}-shoulders-expanded.png` });
 
   await page.context().close();
 }
 
-// Fallback check: an exercise without imagePath (e.g. squat) must render the placeholder.
+// Fallback check: an exercise without imagePath (e.g. biceps-curl) must render
+// the placeholder. Biceps ("יד קדמית") has no wired images yet.
 const page = await makePage("dark");
 await page.goto(`${BASE}/exercises`, { waitUntil: "networkidle" });
-await page.getByRole("button", { name: "רגליים", exact: true }).click();
+await page.getByRole("button", { name: "יד קדמית", exact: true }).click();
 await page.waitForTimeout(400);
-const legsImgs = await page.locator('img[src*="exercises%2F"]').count();
-console.log(`legs filter (no images wired): ${legsImgs} real images (expect 0, placeholder used)`);
-await page.screenshot({ path: `${OUT}/exercises-fallback-legs.png` });
+const bicepsImgs = await page.locator('img[src*="exercises%2F"]').count();
+console.log(`biceps filter (no images wired): ${bicepsImgs} real images (expect 0, placeholder used)`);
+await page.screenshot({ path: `${OUT}/exercises-fallback-biceps.png` });
 await page.context().close();
 
 await browser.close();

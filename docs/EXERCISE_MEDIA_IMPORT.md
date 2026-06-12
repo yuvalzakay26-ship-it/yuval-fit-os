@@ -1,7 +1,9 @@
-# Exercise media import (chest + back)
+# Exercise media import (chest + back + legs + shoulders)
 
 Phase 3.4 imported the real chest/back exercise images into the production
-asset structure and wired them into the exercise library.
+asset structure and wired them into the exercise library. Phase 3.6 extended
+the same pipeline to the legs and shoulders folders (see the dedicated section
+at the end of this file).
 
 ## Source
 
@@ -106,3 +108,108 @@ Skipped: none.
 to the gradient `ExercisePlaceholder`. Images render with `object-cover`
 inside fixed-aspect containers (72px card thumbnail, 16:10 expanded image),
 so portrait sources crop without stretching.
+
+---
+
+# Phase 3.6 — legs + shoulders import
+
+Phase 3.6 imported the legs and shoulders folders through the same
+`scripts/import-exercise-images.mjs` pipeline (PNG → WebP q80 via `sharp`).
+No app, theme, backend, auth, AI, native, video, or chart work was involved —
+this was purely an asset import plus seed-data wiring.
+
+## Source folders inspected
+
+Raw images live in `public/training exercises/` (gitignored, kept untouched):
+
+- `public/training exercises/leg exercises/` — 20 PNG images
+- `public/training exercises/Shoulder exercises/` — 20 PNG images
+
+All sources are 1122×1402 PNG, ~1.4–1.8 MB each. File extensions: `.png` only.
+No unsupported formats, no Hebrew/special-character names, no zero-byte or
+corrupt files. Two names collide with images already imported in Phase 3.4
+(see "Skipped" below).
+
+## Categories found
+
+- **legs** — squats, lunges, leg press/extension/curl, calf raises, wall sit.
+- **glutes** — three clear glute-isolation movements that ship in the leg
+  folder but whose primary `muscleGroup` is `glutes` (cable kickback, glute
+  bridge, hip thrust). Per the folder convention (muscle group wins over
+  source folder, see `public/exercises/README.md`), these land in
+  `public/exercises/glutes/` via `DEST_OVERRIDES` — joining the existing
+  `romanian-deadlift.webp`. No new folder was needed; `glutes/` already existed.
+- **shoulders** — overhead presses, lateral/front/rear raises, shrugs,
+  upright row, pike push-up.
+
+## Destination folders
+
+- `public/exercises/legs/` — 16 images (created this phase)
+- `public/exercises/shoulders/` — 19 images (created this phase)
+- `public/exercises/glutes/` — +3 images (now 4 total)
+
+## Imported images
+
+Legs (16): squat, bulgarian-split-squat, dumbbell-goblet-squat, hack-squat,
+leg-curl-machine, leg-extension, leg-press, reverse-lunges, seated-calf-raise,
+seated-leg-curl, smith-machine-squat, standing-calf-raise, step-up, sumo-squat,
+walking-lunges, wall-sit.
+
+Glutes (+3): cable-kickback, glute-bridge, hip-thrust.
+
+Shoulders (19): arnold-press, barbell-overhead-press, barbell-shrug,
+bent-over-lateral-raise, cable-lateral-raise, cable-rear-delt-fly,
+dumbbell-lateral-raise, dumbbell-shrug, front-raise, landmine-shoulder-press,
+machine-lateral-raise, machine-shoulder-press, pike-push-up, plate-front-raise,
+rear-delt-fly, reverse-pec-deck-fly, shoulder-press, smith-machine-shoulder-press,
+upright-row.
+
+Total imported this phase: 38 images (0 unsupported, 0 conversion errors).
+
+## Skipped files and why
+
+- `leg exercises/Romanian Deadlift.png` — duplicate. `romanian-deadlift` was
+  already imported from the back folder in Phase 3.4 and seeded under
+  `glutes/`. Skipped to avoid overwriting the existing asset.
+- `Shoulder exercises/Face Pull.png` — duplicate. `face-pull` was already
+  imported from the back folder and is seeded with `muscleGroup: "back"`.
+  Skipped to keep a single canonical image.
+
+Both skips are handled by the `SKIP` set in
+`scripts/import-exercise-images.mjs` (keyed by `<sourceGroup>/<rawSlug>`).
+
+## Special mapping decisions
+
+- `Barbell Squat.png` → `squat.webp` via `SLUG_OVERRIDES` — wired onto the
+  existing `squat` seed exercise (barbell, legs) rather than creating a
+  duplicate.
+- `Seated Dumbbell Shoulder Press.png` → `shoulder-press.webp` via
+  `SLUG_OVERRIDES` — wired onto the existing `shoulder-press` seed exercise
+  (dumbbell, shoulders). A note on that entry records that the image depicts a
+  seated dumbbell press.
+- `plate-front-raise` is performed with a weight plate, which isn't in the
+  `Equipment` enum; it's marked `dumbbell` with a review note (same convention
+  as `svend-press` from Phase 3.4).
+- Calf raises, leg curls, and leg extensions use the `legs` group (the app has
+  no separate quads/hamstrings/calves groups).
+
+## Wiring result
+
+- 2 existing exercises received `imagePath`: `squat`
+  (`/exercises/legs/squat.webp`) and `shoulder-press`
+  (`/exercises/shoulders/shoulder-press.webp`).
+- 36 new exercises were added to `lib/seed-exercises.ts`: 15 legs, 3 glutes,
+  18 shoulders — each with a Hebrew name, inferred equipment/difficulty, short
+  conservative form instructions, and `imagePath`.
+- Exercises still using the gradient placeholder (no image): `biceps-curl`,
+  `triceps-pushdown`, `plank`.
+
+## Validation
+
+`npm run lint` clean; `npm run build` succeeds. The QA harnesses
+(`scripts/qa-exercises.mjs`, `scripts/qa-image-viewer.mjs`) were updated to
+pre-seed the Phase 3.5 access flag (`yfos:access-granted:v1 = "1"`) and to use
+biceps (`יד קדמית`) — not legs — as the placeholder-only group, since legs now
+has real images. Both passed in dark and light: 78 real `<img>` tags on "all",
+16 legs / 19 shoulders / 20 chest per filter, 0 horizontal overflow, 0 console
+errors, viewer open/close + fallback all green.
