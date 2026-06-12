@@ -47,3 +47,7 @@ next-env.d.ts
 # Raw exercise image sources (~60MB of PNGs) — kept locally as originals only;
 # optimized WebP copies live in public/exercises/. See docs/EXERCISE_MEDIA_IMPORT.md.
 /public/training exercises/
+
+# Raw food image sources (~30MB of PNGs) — kept locally as originals only;
+# optimized WebP copies live in public/food/. See docs/FOOD_MEDIA_IMPORT.md.
+/public/food source/

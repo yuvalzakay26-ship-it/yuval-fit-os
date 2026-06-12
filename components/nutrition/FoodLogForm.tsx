@@ -2,13 +2,25 @@
 
 import { useState } from "react";
 import type { FoodLog, MealType } from "@/lib/fitness-types";
+import type { FoodCategory } from "@/lib/food-library";
 import { addFoodLog } from "@/lib/fitness-store";
 import { cn, createId, parseOptionalNumber, todayISO } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
-import { PlusIcon } from "@/components/ui/icons";
+import { PlusIcon, XIcon } from "@/components/ui/icons";
 import { MEAL_ORDER, MEAL_TYPE_LABELS } from "./nutrition-labels";
+import { FoodImage } from "./FoodImage";
+
+/** Optional values used to prefill the form from the visual food library. */
+export interface FoodPrefill {
+  foodName: string;
+  category?: string;
+  imagePath?: string;
+  sourceFoodId?: string;
+  quantityText?: string;
+  mealType?: MealType;
+}
 
 const EMPTY = {
   foodName: "",
@@ -18,15 +30,51 @@ const EMPTY = {
   protein: "",
   carbs: "",
   fat: "",
+  // Carried from the food library when a food was picked there; saved onto the
+  // FoodLog so today's rows can show a thumbnail. Never holds nutrition values.
+  imagePath: "",
+  category: "",
+  sourceFoodId: "",
 };
 
-export function FoodLogForm({ onSaved }: { onSaved?: () => void }) {
-  const [form, setForm] = useState(EMPTY);
+type FormState = typeof EMPTY;
 
-  const update = (patch: Partial<typeof EMPTY>) =>
+function buildInitial(prefill?: FoodPrefill | null): FormState {
+  if (!prefill) return EMPTY;
+  return {
+    ...EMPTY,
+    foodName: prefill.foodName,
+    quantityText: prefill.quantityText ?? "",
+    mealType: prefill.mealType ?? "breakfast",
+    imagePath: prefill.imagePath ?? "",
+    category: prefill.category ?? "",
+    sourceFoodId: prefill.sourceFoodId ?? "",
+  };
+}
+
+export function FoodLogForm({
+  prefill,
+  onSaved,
+  onClearPrefill,
+}: {
+  prefill?: FoodPrefill | null;
+  onSaved?: () => void;
+  /** Called when the user clears the picked food (or after a save). */
+  onClearPrefill?: () => void;
+}) {
+  // Parent remounts this form (via `key`) whenever a new food is picked, so the
+  // initializer reliably reflects the latest prefill.
+  const [form, setForm] = useState<FormState>(() => buildInitial(prefill));
+
+  const update = (patch: Partial<FormState>) =>
     setForm((prev) => ({ ...prev, ...patch }));
 
   const canSave = form.foodName.trim().length > 0;
+
+  const clearLibraryLink = () => {
+    update({ imagePath: "", category: "", sourceFoodId: "" });
+    onClearPrefill?.();
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,15 +89,48 @@ export function FoodLogForm({ onSaved }: { onSaved?: () => void }) {
       protein: parseOptionalNumber(form.protein) ?? 0,
       carbs: parseOptionalNumber(form.carbs) ?? 0,
       fat: parseOptionalNumber(form.fat) ?? 0,
+      ...(form.imagePath ? { imagePath: form.imagePath } : {}),
+      ...(form.category ? { category: form.category } : {}),
+      ...(form.sourceFoodId ? { sourceFoodId: form.sourceFoodId } : {}),
     };
     addFoodLog(log);
     setForm(EMPTY);
     onSaved?.();
+    onClearPrefill?.();
   };
 
   return (
     <Card className="p-4">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {form.imagePath && (
+          <div className="flex items-center gap-3 rounded-2xl bg-[color:var(--accent-nutrition-soft)] p-2.5">
+            <FoodImage
+              imagePath={form.imagePath}
+              alt={form.foodName}
+              category={(form.category || "other") as FoodCategory}
+              label={form.foodName}
+              sizes="56px"
+              className="h-14 w-14 shrink-0"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-semibold text-[color:var(--accent-nutrition)]">
+                נבחר מהמאגר
+              </p>
+              <p className="truncate text-[14px] font-bold text-foreground">
+                {form.foodName}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={clearLibraryLink}
+              className="tap -m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-faint hover:bg-surface-2 hover:text-foreground"
+              aria-label="ניקוי הבחירה מהמאגר"
+            >
+              <XIcon className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         <div>
           <Label htmlFor="food-name">מה אכלת?</Label>
           <Input

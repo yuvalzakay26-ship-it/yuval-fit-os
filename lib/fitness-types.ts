@@ -92,6 +92,16 @@ export interface FoodLog {
   carbs: number;
   fat: number;
   notes?: string;
+  /**
+   * Optional publicRoute to a food image, e.g. `/food/breakfast/shakshuka.webp`,
+   * set when the log was created from the visual food library. Existing logs
+   * predate this field and are unaffected. See `lib/food-library.ts`.
+   */
+  imagePath?: string;
+  /** Optional food-library category id (see `FoodCategory`). */
+  category?: string;
+  /** Id of the source `FoodLibraryItem`, when added from the library. */
+  sourceFoodId?: string;
 }
 
 export type ThemePreference = "light" | "dark" | "system";
