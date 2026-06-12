@@ -42,3 +42,8 @@ next-env.d.ts
 
 # QA — keep the reusable scripts (qa/*.mjs), ignore generated screenshots
 /qa/screens/
+/.qa-shots/
+
+# Raw exercise image sources (~60MB of PNGs) — kept locally as originals only;
+# optimized WebP copies live in public/exercises/. See docs/EXERCISE_MEDIA_IMPORT.md.
+/public/training exercises/
