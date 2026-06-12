@@ -46,3 +46,9 @@ npm run lint     # eslint
 
 Data lives in the browser under the `yfos:*` localStorage keys. Reset it from
 the Settings screen.
+
+## Install on your phone (PWA)
+
+This is an installable, mobile-first web app — add it to your Android home
+screen and run it full-screen, with updates staying web-based (no reinstalls).
+See **[docs/PWA.md](docs/PWA.md)** for step-by-step install/testing instructions.
