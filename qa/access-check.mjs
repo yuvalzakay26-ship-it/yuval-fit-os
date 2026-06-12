@@ -1,10 +1,11 @@
 // Phase 3.5 access-gate QA. Drives Chromium at phone width through the gate:
 // fresh visit shows it, wrong code errors, correct code enters, refresh keeps
 // access, Settings "lock" returns to the gate. Also watches the console and
-// checks for horizontal overflow on the gate. Assumes a dev/prod server on :3000.
+// checks for horizontal overflow on the gate. Assumes a dev/prod server on
+// :3000 (override with QA_BASE, e.g. QA_BASE=http://localhost:3199).
 import { chromium } from "@playwright/test";
 
-const BASE = "http://localhost:3000";
+const BASE = process.env.QA_BASE ?? "http://localhost:3000";
 const GATE = "[data-access-gate]";
 
 const failures = [];

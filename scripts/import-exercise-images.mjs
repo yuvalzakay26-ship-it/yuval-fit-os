@@ -21,15 +21,20 @@ const CATEGORIES = {
   "leg exercises": "legs",
   "Shoulder exercises": "shoulders",
   "Bicep training": "biceps",
+  "Triceps training": "triceps",
 };
 
 // File-name slug overrides so images land on existing seed-exercise imageKeys.
+// Keys may be group-scoped ("<group>/<rawSlug>") to disambiguate identical file
+// names across folders; a bare "<rawSlug>" key applies to every folder.
 const SLUG_OVERRIDES = {
   "pull-up": "pull-ups", // existing exercise id "pull-ups"
   "barbell-row": "bent-over-row", // existing exercise id "bent-over-row"
   "barbell-squat": "squat", // existing exercise id "squat"
   "seated-dumbbell-shoulder-press": "shoulder-press", // existing exercise id "shoulder-press"
   "dumbbell-curl": "biceps-curl", // existing exercise id "biceps-curl" (a dumbbell biceps curl)
+  "cable-triceps-pushdown": "triceps-pushdown", // existing exercise id "triceps-pushdown" (a cable pushdown)
+  "triceps/cable-kickback": "cable-triceps-kickback", // distinct from the glutes "cable-kickback"
 };
 
 // Per-slug destination overrides (exercise's primary muscleGroup wins over
@@ -92,7 +97,7 @@ for (const [srcDir, defaultGroup] of Object.entries(CATEGORIES)) {
       skipped.push({ file: path.join(srcDir, file), reason: "duplicate of an image already imported from another folder" });
       continue;
     }
-    const slug = SLUG_OVERRIDES[rawSlug] ?? rawSlug;
+    const slug = SLUG_OVERRIDES[`${defaultGroup}/${rawSlug}`] ?? SLUG_OVERRIDES[rawSlug] ?? rawSlug;
     const group = DEST_OVERRIDES[slug] ?? defaultGroup;
     const destDir = path.join(DEST_ROOT, group);
     fs.mkdirSync(destDir, { recursive: true });

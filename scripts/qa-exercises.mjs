@@ -69,27 +69,33 @@ for (const scheme of ["dark", "light"]) {
   console.log(`[${scheme}] shoulders filter: ${shoulderCards} shoulder images visible`);
   await page.screenshot({ path: `${OUT}/exercises-${scheme}-shoulders.png` });
 
-  // Biceps filter (Phase 3.8 — now has real images) + expand for the large image.
+  // Biceps filter (Phase 3.8 — now has real images).
   await page.getByRole("button", { name: "יד קדמית", exact: true }).click();
   await page.waitForTimeout(600);
   const bicepsCards = await page.locator('img[src*="biceps%2F"]').count();
   console.log(`[${scheme}] biceps filter: ${bicepsCards} biceps images visible`);
+
+  // Triceps filter (Phase 3.9 — now has real images) + expand for the large image.
+  await page.getByRole("button", { name: "יד אחורית", exact: true }).click();
+  await page.waitForTimeout(600);
+  const tricepsCards = await page.locator('img[src*="triceps%2F"]').count();
+  console.log(`[${scheme}] triceps filter: ${tricepsCards} triceps images visible`);
   await page.locator('button[aria-expanded="false"]').first().click();
   await page.waitForTimeout(800);
-  await page.screenshot({ path: `${OUT}/exercises-${scheme}-biceps-expanded.png` });
+  await page.screenshot({ path: `${OUT}/exercises-${scheme}-triceps-expanded.png` });
 
   await page.context().close();
 }
 
-// Fallback check: an exercise without imagePath (e.g. triceps-pushdown) must
-// render the placeholder. Triceps ("יד אחורית") has no wired images yet.
+// Fallback check: an exercise without imagePath (plank) must render the
+// placeholder. Core ("ליבה") has no wired images yet.
 const page = await makePage("dark");
 await page.goto(`${BASE}/exercises`, { waitUntil: "networkidle" });
-await page.getByRole("button", { name: "יד אחורית", exact: true }).click();
+await page.getByRole("button", { name: "ליבה", exact: true }).click();
 await page.waitForTimeout(400);
-const tricepsImgs = await page.locator('img[src*="exercises%2F"]').count();
-console.log(`triceps filter (no images wired): ${tricepsImgs} real images (expect 0, placeholder used)`);
-await page.screenshot({ path: `${OUT}/exercises-fallback-triceps.png` });
+const coreImgs = await page.locator('img[src*="exercises%2F"]').count();
+console.log(`core filter (no images wired): ${coreImgs} real images (expect 0, placeholder used)`);
+await page.screenshot({ path: `${OUT}/exercises-fallback-core.png` });
 await page.context().close();
 
 await browser.close();

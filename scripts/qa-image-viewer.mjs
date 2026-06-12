@@ -78,9 +78,9 @@ for (const scheme of ["dark", "light"]) {
   const bodyOverflow = await page.evaluate(() => document.body.style.overflow);
   check(`[${scheme}] body scroll restored`, bodyOverflow !== "hidden");
 
-  // Fallback: placeholder-only exercises must not offer a viewer. Triceps
-  // ("יד אחורית") has no wired images yet (biceps/legs/shoulders now do).
-  await page.getByRole("button", { name: "יד אחורית", exact: true }).click();
+  // Fallback: placeholder-only exercises must not offer a viewer. Core
+  // ("ליבה") has no wired images yet (triceps/biceps/legs/shoulders now do).
+  await page.getByRole("button", { name: "ליבה", exact: true }).click();
   await page.locator('button[aria-expanded="false"]').first().click();
   const fallbackBtns = await page.getByRole("button", { name: "פתח תמונה גדולה" }).count();
   check(`[${scheme}] no viewer affordance on placeholder exercises`, fallbackBtns === 0);

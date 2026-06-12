@@ -1,4 +1,4 @@
-# Exercise media import (chest + back + legs + shoulders)
+# Exercise media import (chest + back + legs + shoulders + biceps + triceps)
 
 Phase 3.4 imported the real chest/back exercise images into the production
 asset structure and wired them into the exercise library. Phase 3.6 extended
@@ -302,3 +302,91 @@ and light: 98 real `<img>` tags on "all", 20 chest / 16 legs / 19 shoulders /
 horizontal overflow, 0 console errors; image-viewer harness all-green
 (object-contain, open/close via X/backdrop/Escape, body scroll restored, no
 viewer affordance on placeholder-only exercises).
+
+# Phase 3.9 — triceps import
+
+## Source folder inspected
+
+- Path: `public/training exercises/Triceps training/`
+- Folder name on disk: `Triceps training`
+- Images found: **20**, all `.png` (no jpg/jpeg/webp, no unsupported formats).
+- File sizes 1.4–1.6 MB each (1122×1402 PNG) — none oversized.
+- No Hebrew names, no special characters, **no `ChatGPT Image …` / generic /
+  timestamp exports** — every file carries a clear English exercise name.
+- No duplicate or suspicious names within the folder. One file name
+  (`Cable Kickback.png`) collides with a name already used by the legs/glutes
+  import — handled via a group-scoped slug override (see mapping below).
+- The raw source folder is gitignored (`/public/training exercises/` in
+  `.gitignore`) and was left completely untouched.
+
+## Destination folder
+
+- Created: `public/exercises/triceps/` (muscle-group key `triceps`, matching
+  `MuscleGroup` and `MUSCLE_GROUP_LABELS.triceps = "יד אחורית"`).
+- All 20 PNGs converted to WebP q80 via the existing sharp pipeline in
+  `scripts/import-exercise-images.mjs` (extended with a `"Triceps training":
+  "triceps"` category). Output sizes 95–122 KB each.
+
+## Imported images
+
+Triceps (20): bench-dips, cable-triceps-kickback (from `Cable Kickback.png`,
+see mapping), close-grip-bench-press, close-grip-push-up, diamond-push-up,
+dip-machine, dumbbell-kickback, dumbbell-lying-triceps-extension,
+ez-bar-lying-triceps-extension, machine-triceps-extension,
+overhead-cable-triceps-extension, parallel-bar-dips-triceps-focus,
+reverse-grip-triceps-pushdown, rope-overhead-triceps-extension,
+rope-triceps-pushdown, seated-overhead-dumbbell-extension,
+single-arm-cable-pushdown, skull-crushers, standing-overhead-dumbbell-extension,
+triceps-pushdown (from `Cable Triceps Pushdown.png`, see mapping).
+
+Total imported this phase: 20 images (0 unsupported, 0 conversion errors, 0
+skipped within the triceps folder). All prior chest / back / legs / glutes /
+shoulders / biceps files logged `already imported` and were untouched
+(`SKIP_EXISTING`).
+
+## Skipped files and why
+
+None from the triceps folder — all 20 images had clear exercise names and
+imported cleanly.
+
+## Special mapping decisions
+
+- `Cable Triceps Pushdown.png` → `triceps-pushdown.webp` via `SLUG_OVERRIDES`
+  (`"cable-triceps-pushdown": "triceps-pushdown"`). The existing fallback seed
+  exercise `triceps-pushdown` is a cable pushdown (`equipment: "cable"`), so
+  this image is the exact correct asset for it. No separate
+  `cable-triceps-pushdown` exercise was created — it would duplicate
+  `triceps-pushdown`.
+- `Cable Kickback.png` → `cable-triceps-kickback.webp` via a **group-scoped**
+  override (`"triceps/cable-kickback": "cable-triceps-kickback"`). The legs
+  folder already shipped a `Cable Kickback.png` that seeds the glute-isolation
+  `cable-kickback` under `glutes/`; this triceps version is a distinct movement,
+  so it gets its own slug/id to avoid colliding with the glutes asset. The slug
+  override map was extended to accept `"<group>/<rawSlug>"` keys for exactly
+  this disambiguation.
+- `Skull Crushers.png` and `EZ Bar Lying Triceps Extension.png` are kept as two
+  separate entries (`skull-crushers` and `ez-bar-lying-triceps-extension`)
+  because both clearly-named source images exist; they are near-synonyms but the
+  filenames are explicit, so neither identity was invented.
+- Push-up / dip variants (`close-grip-bench-press`, `close-grip-push-up`,
+  `diamond-push-up`, `bench-dips`, `dip-machine`,
+  `parallel-bar-dips-triceps-focus`) carry `secondaryMuscles: ["chest",
+  "shoulders"]` since they are compound pressing movements; all isolation
+  extensions/pushdowns/kickbacks leave `secondaryMuscles` empty.
+
+## Wiring result
+
+- 1 existing exercise received `imagePath`: `triceps-pushdown`
+  (`/exercises/triceps/triceps-pushdown.webp`).
+- 19 new triceps exercises were added to `lib/seed-exercises.ts`, each with a
+  Hebrew name, inferred equipment/difficulty, short conservative form
+  instructions, a note, and `imagePath`.
+- Exercises still using the gradient placeholder (no image): `plank` (core) is
+  now the only seeded exercise without a real image. Triceps is fully covered.
+
+## Validation
+
+`npm run lint` clean; `npm run build` succeeds. The QA harnesses were updated:
+the placeholder-only group used for fallback assertions moved from triceps
+(`יד אחורית`) to core (`ליבה`), since triceps now has real images, and
+`qa-exercises.mjs` gained a triceps coverage + expand check.
