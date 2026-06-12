@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/PageHeader";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import {
+  BookOpenIcon,
   CheckIcon,
   ChevronIcon,
   DumbbellIcon,
@@ -162,6 +163,29 @@ export function TodayView() {
             icon={<ListIcon className="h-5 w-5" />}
           />
         </div>
+      </section>
+
+      {/* Knowledge center */}
+      <section>
+        <SectionHeader title="ללמוד ולהתחזק" />
+        <Link href="/learn" className="tap block">
+          <Card className="relative flex items-center gap-3 overflow-hidden">
+            <div
+              className="pointer-events-none absolute -left-8 -top-10 h-28 w-28 rounded-full opacity-50 blur-2xl"
+              style={{ background: "var(--accent-soft)" }}
+            />
+            <span className="brand-gradient relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-[color:var(--accent-contrast)] shadow-glow">
+              <BookOpenIcon className="h-5 w-5" />
+            </span>
+            <div className="relative min-w-0 flex-1">
+              <p className="text-[15px] font-bold text-foreground">מרכז ידע</p>
+              <p className="text-[12px] text-muted">
+                טיפים קצרים על אימון, חלבון, התקדמות והתאוששות
+              </p>
+            </div>
+            <ChevronIcon className="relative h-4 w-4 shrink-0 text-faint" />
+          </Card>
+        </Link>
       </section>
 
       {/* Last workout */}

@@ -188,3 +188,12 @@ export const SparkIcon = (p: IconProps) =>
     <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" />,
     p,
   );
+
+export const BookOpenIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M12 6.5C10.4 4.9 8 4.2 4.5 4.2v14c3.5 0 5.9.7 7.5 2.3 1.6-1.6 4-2.3 7.5-2.3v-14c-3.5 0-5.9.7-7.5 2.3Z" />
+      <path d="M12 6.5v14" />
+    </>,
+    p,
+  );

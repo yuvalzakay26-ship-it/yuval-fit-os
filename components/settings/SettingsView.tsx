@@ -16,11 +16,14 @@ import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
 import {
   AutoThemeIcon,
+  BookOpenIcon,
+  ChevronIcon,
   DatabaseIcon,
   MoonIcon,
   SunIcon,
   TrashIcon,
 } from "@/components/ui/icons";
+import Link from "next/link";
 
 const THEME_OPTIONS: Array<{
   value: ThemePreference;
@@ -126,7 +129,29 @@ export function SettingsView() {
           </div>
         </div>
         <p className="text-[12px] text-faint">יחידת משקל: קילוגרם (ק&quot;ג)</p>
+        <Link
+          href="/nutrition"
+          className="tap block text-[12.5px] font-semibold text-accent"
+        >
+          אפשר גם לחשב יעד חלבון מותאם לפי משקל גוף ←
+        </Link>
       </Card>
+
+      {/* Knowledge center */}
+      <Link href="/learn" className="tap block">
+        <Card className="flex items-center gap-3 p-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-soft)] text-accent">
+            <BookOpenIcon className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <CardLabel>מרכז ידע</CardLabel>
+            <p className="mt-0.5 text-[13px] text-muted">
+              יסודות אימון, חלבון, התקדמות והתאוששות
+            </p>
+          </div>
+          <ChevronIcon className="h-4 w-4 shrink-0 text-faint" />
+        </Card>
+      </Link>
 
       {/* Storage status */}
       <Card className="p-4">

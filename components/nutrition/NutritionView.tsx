@@ -8,6 +8,7 @@ import { EmptyState, SectionHeader } from "@/components/ui/PageHeader";
 import { AppleIcon, TrashIcon } from "@/components/ui/icons";
 import { FoodLogForm } from "./FoodLogForm";
 import { MacroSummary } from "./MacroSummary";
+import { ProteinCalculator } from "./ProteinCalculator";
 import { MEAL_TYPE_LABELS } from "./nutrition-labels";
 
 export function NutritionView() {
@@ -26,6 +27,11 @@ export function NutritionView() {
         proteinGoal={settings.proteinGoal}
         calorieGoal={settings.calorieGoal}
       />
+
+      <section>
+        <SectionHeader title="יעד חלבון מותאם" />
+        <ProteinCalculator defaultOpen={false} showArticleLink />
+      </section>
 
       <section>
         <SectionHeader title="הוספה ליומן" />

@@ -101,6 +101,10 @@ export interface Settings {
   proteinGoal?: number;
   calorieGoal?: number;
   weightUnit: "kg";
+  /** Body weight used by the protein goal calculator (not medical data). */
+  bodyWeightKg?: number;
+  /** Selected activity level id from `lib/protein.ts`. */
+  proteinActivityLevel?: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
