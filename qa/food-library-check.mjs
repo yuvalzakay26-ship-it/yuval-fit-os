@@ -9,7 +9,7 @@
 //  - totals still come from the manually-entered macros
 //  - no horizontal overflow, no console errors, light + dark
 //
-// Pre-seeds the access flag so the gate (code "yuval") doesn't block QA.
+// Pre-seeds the access flag so the gate doesn't block QA.
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 

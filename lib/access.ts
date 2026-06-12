@@ -12,7 +12,7 @@
 import { useSyncExternalStore } from "react";
 
 /** The code that unlocks the app. */
-export const ACCESS_CODE = "yuval";
+export const ACCESS_CODE = "yuvalzakay123";
 
 /** localStorage key holding the granted flag (value "1" when granted). */
 export const ACCESS_KEY = "yfos:access-granted:v1";

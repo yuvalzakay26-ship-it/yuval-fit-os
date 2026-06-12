@@ -39,15 +39,25 @@ const overflow = await page.evaluate(
 );
 check("no horizontal overflow on gate", !overflow);
 
-// 2. Wrong code shows the error and keeps the gate.
+// 2. Wrong code — including the retired old code "yuval" — shows the error and
+//    keeps the gate.
 await page.fill(`${GATE} input`, "wrong-code");
 await page.click(`${GATE} button[type=submit]`);
 await page.waitForTimeout(200);
 check("wrong code shows קוד שגוי", await page.getByText("קוד שגוי").isVisible());
 check("gate still present after wrong code", await page.locator(GATE).isVisible());
 
-// 3. Correct code enters the app.
 await page.fill(`${GATE} input`, "yuval");
+await page.click(`${GATE} button[type=submit]`);
+await page.waitForTimeout(200);
+check("retired code yuval is rejected", await page.locator(GATE).isVisible());
+check(
+  "retired code yuval does not grant access",
+  (await page.evaluate(() => localStorage.getItem("yfos:access-granted:v1"))) === null,
+);
+
+// 3. Correct code enters the app.
+await page.fill(`${GATE} input`, "yuvalzakay123");
 await page.click(`${GATE} button[type=submit]`);
 await page.waitForTimeout(300);
 check("correct code removes gate", (await page.locator(GATE).count()) === 0);
