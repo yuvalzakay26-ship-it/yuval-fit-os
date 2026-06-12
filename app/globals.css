@@ -153,6 +153,14 @@ body {
   color: var(--foreground);
 }
 
+/* Access gate: when ACCESS_INIT_SCRIPT detects a prior grant it adds this class
+   before paint, hiding the server-rendered gate overlay so returning users never
+   see a flash of the access screen. The class is kept in sync at runtime by
+   grant/revoke (lib/access.ts), so locking re-reveals the gate immediately. */
+.access-granted [data-access-gate] {
+  display: none;
+}
+
 /* Smooth, accessible scrolling for the scroll-to-top behaviour. */
 @media (prefers-reduced-motion: no-preference) {
   html {

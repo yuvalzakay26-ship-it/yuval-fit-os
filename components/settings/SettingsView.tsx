@@ -19,10 +19,12 @@ import {
   BookOpenIcon,
   ChevronIcon,
   DatabaseIcon,
+  LockIcon,
   MoonIcon,
   SunIcon,
   TrashIcon,
 } from "@/components/ui/icons";
+import { revokeAccess } from "@/lib/access";
 import Link from "next/link";
 
 const THEME_OPTIONS: Array<{
@@ -195,6 +197,17 @@ export function SettingsView() {
             איפוס כל הנתונים
           </Button>
         )}
+      </Card>
+
+      {/* Lock app */}
+      <Card className="space-y-3 p-4">
+        <CardLabel>אבטחה</CardLabel>
+        <p className="text-[13px] leading-relaxed text-muted">
+          נעילת המערכת תחזיר את מסך הגישה. תידרש הזנה מחדש של קוד הגישה כדי להיכנס.
+        </p>
+        <Button variant="secondary" onClick={() => revokeAccess()}>
+          <LockIcon className="h-[18px] w-[18px]" /> נעל מערכת
+        </Button>
       </Card>
 
       <p className="pt-1 text-center text-[12px] text-faint">

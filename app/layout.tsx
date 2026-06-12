@@ -3,6 +3,8 @@ import { Heebo } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider, THEME_INIT_SCRIPT } from "@/components/ThemeProvider";
 import { AppShell } from "@/components/layout/AppShell";
+import { AccessGate } from "@/components/access/AccessGate";
+import { ACCESS_INIT_SCRIPT } from "@/lib/access";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
 const heebo = Heebo({
@@ -47,10 +49,14 @@ export default function RootLayout({
       <head>
         {/* Apply saved theme before paint to avoid a flash of the wrong theme. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/* Hide the access gate before paint for already-granted users. */}
+        <script dangerouslySetInnerHTML={{ __html: ACCESS_INIT_SCRIPT }} />
       </head>
       <body className="min-h-dvh">
         <ThemeProvider>
-          <AppShell>{children}</AppShell>
+          <AccessGate>
+            <AppShell>{children}</AppShell>
+          </AccessGate>
         </ThemeProvider>
         <ServiceWorkerRegister />
       </body>
