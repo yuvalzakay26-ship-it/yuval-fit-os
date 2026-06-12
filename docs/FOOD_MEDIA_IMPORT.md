@@ -13,13 +13,26 @@ nutrition values (protein / carbs / fat / calories) are still entered manually.
 ## Source
 
 The raw source for this phase was a single category folder the user provided
-(originally `~/Desktop/ביצים וארוחות בוקר — Eggs & Breakfast/`, 15 PNGs,
+(originally `~/Desktop/ביצים וארוחות בוקר — Eggs & Breakfast/`, **20 PNGs**,
 ~1.8–2.6 MB each, 1254×1254). It was copied untouched into the repo as the
 in-repo source of truth:
 
 ```
-public/food source/breakfast/   ← 15 PNG originals (gitignored)
+public/food source/breakfast/   ← 20 PNG originals (gitignored)
 ```
+
+> **Phase 3.7.1 completion pass.** Phase 3.7 originally imported only **15**
+> of the breakfast items, because the in-repo `public/food source/breakfast/`
+> snapshot was taken before the user added the final 5 PNGs to the Desktop
+> source folder. Phase 3.7.1 re-scanned the original Desktop folder
+> (`~/Desktop/ביצים וארוחות בוקר — Eggs & Breakfast/`, confirmed 20 files),
+> copied the 5 missing PNGs into the in-repo source, re-ran the importer, and
+> added the 5 matching library entries. The 5 items missing before were:
+> **Bagel with Cheese and Vegetables**, **Cereal with Milk**,
+> **Cheese and Vegetable Sandwich**, **Fruit Bowl with Yogurt**, and
+> **Whole Wheat Bread with Peanut Butter**. No naming mismatch was involved —
+> the files simply hadn't been present in the snapshot the first importer ran
+> against. Breakfast is now complete at **20 items / 20 images, 0 skipped**.
 
 The source folder is **gitignored** (`/public/food source/`) — like the
 exercise sources — so ~32 MB of raw PNGs are never committed or served from
@@ -36,7 +49,7 @@ data model are generic and ready for the rest — see "Adding more" below.
 public/food/<category>/<slug>.webp
 ```
 
-- `public/food/breakfast/` — 15 images (created this phase)
+- `public/food/breakfast/` — 20 images (15 in Phase 3.7, +5 in Phase 3.7.1)
 
 `<category>` is a `FoodCategory` from `lib/food-library.ts`:
 `proteins`, `carbs`, `vegetables`, `salads`, `israeli-food`, `full-meals`,
@@ -65,10 +78,17 @@ public/food/<category>/<slug>.webp
 
 ## Imported images
 
-Breakfast (15): avocado-and-egg-toast, boiled-eggs,
-cottage-cheese-with-vegetables, fried-egg, oatmeal, omelet, omelet-sandwich,
-omelet-toast, protein-pancakes, shakshuka, tuna-sandwich, vegetable-omelet,
-white-cheese-with-vegetables, yellow-cheese-toast, yogurt-with-granola-and-fruit.
+Breakfast (20): avocado-and-egg-toast, bagel-with-cheese-and-vegetables,
+boiled-eggs, cereal-with-milk, cheese-and-vegetable-sandwich,
+cottage-cheese-with-vegetables, fried-egg, fruit-bowl-with-yogurt, oatmeal,
+omelet, omelet-sandwich, omelet-toast, protein-pancakes, shakshuka,
+tuna-sandwich, vegetable-omelet, white-cheese-with-vegetables,
+whole-wheat-bread-with-peanut-butter, yellow-cheese-toast,
+yogurt-with-granola-and-fruit.
+
+The bold 5 added in Phase 3.7.1: bagel-with-cheese-and-vegetables,
+cereal-with-milk, cheese-and-vegetable-sandwich, fruit-bowl-with-yogurt,
+whole-wheat-bread-with-peanut-butter.
 
 Skipped: none.
 
@@ -114,8 +134,9 @@ automatically.
 
 `npm run lint` clean; `npm run build` succeeds (TypeScript passes).
 `qa/food-library-check.mjs` (Playwright, pre-seeds the access flag
-`yfos:access-granted:v1 = "1"`) passes with **0 issues**: library renders 15
-loadable food images, search narrows to 1 for "שקשוקה", picking prefills the
+`yfos:access-granted:v1 = "1"`) passes with **0 issues**: library renders all
+20 loadable food images (15 in Phase 3.7 + 5 in Phase 3.7.1), search narrows to
+1 for "שקשוקה", picking prefills the
 form + thumbnail banner, saving writes a `FoodLog` with
 `imagePath`/`category=breakfast`/`sourceFoodId=shakshuka`, the diary row shows a
 thumbnail, manual logging still creates an image-less log, totals reflect the

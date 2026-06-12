@@ -67,11 +67,32 @@ export const FOOD_LIBRARY: FoodLibraryItem[] = [
     imagePath: "/food/breakfast/avocado-and-egg-toast.webp",
   },
   {
+    id: "bagel-with-cheese-and-vegetables",
+    nameHe: "בייגל עם גבינה וירקות",
+    nameEn: "Bagel with Cheese and Vegetables",
+    category: "breakfast",
+    imagePath: "/food/breakfast/bagel-with-cheese-and-vegetables.webp",
+  },
+  {
     id: "boiled-eggs",
     nameHe: "ביצים קשות",
     nameEn: "Boiled Eggs",
     category: "breakfast",
     imagePath: "/food/breakfast/boiled-eggs.webp",
+  },
+  {
+    id: "cereal-with-milk",
+    nameHe: "דגני בוקר עם חלב",
+    nameEn: "Cereal with Milk",
+    category: "breakfast",
+    imagePath: "/food/breakfast/cereal-with-milk.webp",
+  },
+  {
+    id: "cheese-and-vegetable-sandwich",
+    nameHe: "כריך גבינה וירקות",
+    nameEn: "Cheese and Vegetable Sandwich",
+    category: "breakfast",
+    imagePath: "/food/breakfast/cheese-and-vegetable-sandwich.webp",
   },
   {
     id: "cottage-cheese-with-vegetables",
@@ -86,6 +107,13 @@ export const FOOD_LIBRARY: FoodLibraryItem[] = [
     nameEn: "Fried Egg",
     category: "breakfast",
     imagePath: "/food/breakfast/fried-egg.webp",
+  },
+  {
+    id: "fruit-bowl-with-yogurt",
+    nameHe: "קערת פירות עם יוגורט",
+    nameEn: "Fruit Bowl with Yogurt",
+    category: "breakfast",
+    imagePath: "/food/breakfast/fruit-bowl-with-yogurt.webp",
   },
   {
     id: "oatmeal",
@@ -149,6 +177,13 @@ export const FOOD_LIBRARY: FoodLibraryItem[] = [
     nameEn: "White Cheese with Vegetables",
     category: "breakfast",
     imagePath: "/food/breakfast/white-cheese-with-vegetables.webp",
+  },
+  {
+    id: "whole-wheat-bread-with-peanut-butter",
+    nameHe: "לחם מלא עם חמאת בוטנים",
+    nameEn: "Whole Wheat Bread with Peanut Butter",
+    category: "breakfast",
+    imagePath: "/food/breakfast/whole-wheat-bread-with-peanut-butter.webp",
   },
   {
     id: "yellow-cheese-toast",
