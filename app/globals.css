@@ -7,7 +7,7 @@
 :root {
   /* Surfaces — layered for depth */
   --background: #f4f6f9;
-  --background-tint: #eef4f1; /* faint accent wash used in the page gradient */
+  --background-tint: #eaf2f4; /* faint accent wash used in the page gradient */
   --surface: #ffffff;
   --surface-2: #f5f7fa; /* insets, inputs, subtle fills */
   --surface-raised: #ffffff;
@@ -21,18 +21,20 @@
   --border: #e8ebf0;
   --border-strong: #d8dde5;
 
-  /* Accent (signature emerald → teal) */
-  --accent: #0f9e6e;
-  --accent-strong: #0b7d57;
+  /* Accent (refined deep teal — calmer than the dark theme's emerald) */
+  --accent: #0e7a8a;
+  --accent-strong: #0b5f6d;
   --accent-contrast: #ffffff;
-  --accent-soft: rgba(15, 158, 110, 0.1);
-  --gradient-accent: linear-gradient(135deg, #12b886 0%, #0ca678 50%, #099268 100%);
+  --accent-soft: rgba(14, 122, 138, 0.1);
+  --gradient-accent: linear-gradient(135deg, #11a3b2 0%, #0e8a9b 50%, #0c7384 100%);
+  --progress-from: #18b6c7;
+  --progress-to: #0e7a8a;
 
   /* Effects */
   --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 16px rgba(16, 24, 40, 0.05);
   --shadow-raised: 0 8px 30px rgba(16, 24, 40, 0.1);
-  --shadow-accent: 0 8px 24px rgba(12, 166, 120, 0.28);
-  --ring: rgba(15, 158, 110, 0.35);
+  --shadow-accent: 0 8px 24px rgba(14, 122, 138, 0.24);
+  --ring: rgba(14, 122, 138, 0.35);
 }
 
 .dark {
@@ -54,6 +56,8 @@
   --accent-contrast: #03130d;
   --accent-soft: rgba(22, 192, 136, 0.14);
   --gradient-accent: linear-gradient(135deg, #1ad99b 0%, #12c08a 50%, #0fa874 100%);
+  --progress-from: #1ad99b;
+  --progress-to: #0ca678;
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
   --shadow-raised: 0 12px 40px rgba(0, 0, 0, 0.55);
