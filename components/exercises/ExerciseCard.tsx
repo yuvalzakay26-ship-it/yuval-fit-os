@@ -11,8 +11,9 @@ import type { ExercisePerformance } from "@/lib/analytics";
 import { formatHebrewDate, formatSetsSummary } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { ChevronIcon, TrophyIcon } from "@/components/ui/icons";
+import { ChevronIcon, ExpandIcon, TrophyIcon } from "@/components/ui/icons";
 import { ExerciseImage } from "./ExerciseImage";
+import { ExerciseImageViewer } from "./ExerciseImageViewer";
 
 export function ExerciseCard({
   exercise,
@@ -22,6 +23,7 @@ export function ExerciseCard({
   performance?: ExercisePerformance | null;
 }) {
   const [open, setOpen] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   return (
     <Card className="overflow-hidden p-0">
@@ -59,14 +61,36 @@ export function ExerciseCard({
       {open && (
         <div className="animate-fade-up border-t border-border px-4 pb-4 pt-3.5">
           {exercise.imagePath && (
-            <ExerciseImage
-              imagePath={exercise.imagePath}
-              alt={exercise.nameHe}
-              muscleGroup={exercise.muscleGroup}
-              imageKey={exercise.imageKey}
-              sizes="(max-width: 448px) 100vw, 416px"
-              className="mb-3.5 aspect-[16/10] w-full"
-            />
+            <>
+              {/* Tapping the image (or the pill) opens the fullscreen viewer,
+                  which shows the uncropped image with object-contain. */}
+              <button
+                type="button"
+                onClick={() => setViewerOpen(true)}
+                aria-label="פתח תמונה גדולה"
+                className="tap relative mb-3.5 block w-full"
+              >
+                <ExerciseImage
+                  imagePath={exercise.imagePath}
+                  alt={exercise.nameHe}
+                  muscleGroup={exercise.muscleGroup}
+                  imageKey={exercise.imageKey}
+                  sizes="(max-width: 448px) 100vw, 416px"
+                  className="aspect-[4/3] w-full"
+                />
+                <span className="pointer-events-none absolute bottom-2 end-2 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur-sm">
+                  <ExpandIcon className="h-3.5 w-3.5" />
+                  הגדל תמונה
+                </span>
+              </button>
+              <ExerciseImageViewer
+                imagePath={exercise.imagePath}
+                title={exercise.nameHe}
+                subtitle={exercise.nameEn}
+                open={viewerOpen}
+                onClose={() => setViewerOpen(false)}
+              />
+            </>
           )}
           {performance ? (
             <div className="mb-3.5 flex items-center gap-2.5 rounded-2xl bg-[color:var(--accent-soft)] px-3.5 py-2.5">

@@ -189,6 +189,15 @@ export const SparkIcon = (p: IconProps) =>
     p,
   );
 
+export const XIcon = (p: IconProps) =>
+  base(<path d="M6 6l12 12M18 6 6 18" />, p);
+
+export const ExpandIcon = (p: IconProps) =>
+  base(
+    <path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5" />,
+    p,
+  );
+
 export const BookOpenIcon = (p: IconProps) =>
   base(
     <>
