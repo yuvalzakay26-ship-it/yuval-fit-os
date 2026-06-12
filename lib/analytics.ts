@@ -1,7 +1,7 @@
 // Pure derivations over stored data. No localStorage access here — callers
 // pass in the data so these stay testable and SSR-safe.
 
-import type { FoodLog, WorkoutSession } from "./fitness-types";
+import type { FoodLog, SetEntry, WorkoutSession } from "./fitness-types";
 import { startOfWeekISO, todayISO } from "./utils";
 
 export interface ExercisePerformance {
@@ -10,6 +10,8 @@ export interface ExercisePerformance {
   topWeightKg: number;
   reps: number;
   totalSets: number;
+  /** All sets logged in that session, in order. */
+  sets: SetEntry[];
 }
 
 /** Most recent logged performance for an exercise, if any. */
@@ -20,15 +22,19 @@ export function lastPerformance(
   // workouts are expected newest-first.
   for (const session of workouts) {
     const entry = session.exercises.find((e) => e.exerciseId === exerciseId);
-    if (!entry || entry.sets.length === 0) continue;
-    const top = entry.sets.reduce((best, set) =>
+    if (!entry) continue;
+    // Ignore unfilled sets (0 kg × 0 reps) so skipped exercises don't count.
+    const sets = entry.sets.filter((s) => s.weightKg > 0 || s.reps > 0);
+    if (sets.length === 0) continue;
+    const top = sets.reduce((best, set) =>
       set.weightKg > best.weightKg ? set : best,
     );
     return {
       date: session.date,
       topWeightKg: top.weightKg,
       reps: top.reps,
-      totalSets: entry.sets.length,
+      totalSets: sets.length,
+      sets,
     };
   }
   return null;

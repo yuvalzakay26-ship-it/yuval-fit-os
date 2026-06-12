@@ -6,12 +6,16 @@ import {
   type FoodLog,
   type Settings,
   type WorkoutSession,
+  type WorkoutTemplate,
 } from "./fitness-types";
+import { DEFAULT_WORKOUT_TEMPLATES } from "./seed-templates";
+import { createId } from "./utils";
 
 const KEYS = {
   workouts: "yfos:workouts",
   foodLogs: "yfos:foodLogs",
   settings: "yfos:settings",
+  workoutTemplates: "yfos:workout-templates:v1",
 } as const;
 
 function isBrowser(): boolean {
@@ -64,6 +68,48 @@ export function deleteWorkout(id: string): WorkoutSession[] {
   );
   writeJSON(KEYS.workouts, remaining);
   return getWorkouts();
+}
+
+/* ------------------------- Workout templates ------------------------ */
+
+export function getWorkoutTemplates(): WorkoutTemplate[] {
+  // The starter templates are only surfaced while the key has never been
+  // written. The first mutation materializes the full list, so deleting or
+  // editing a default template can never be undone by a re-seed.
+  if (!isBrowser()) return [...DEFAULT_WORKOUT_TEMPLATES];
+  if (window.localStorage.getItem(KEYS.workoutTemplates) === null) {
+    return [...DEFAULT_WORKOUT_TEMPLATES];
+  }
+  return readJSON<WorkoutTemplate[]>(KEYS.workoutTemplates, []);
+}
+
+export function saveWorkoutTemplate(template: WorkoutTemplate): WorkoutTemplate[] {
+  const existing = getWorkoutTemplates();
+  const index = existing.findIndex((t) => t.id === template.id);
+  if (index >= 0) {
+    existing[index] = template;
+  } else {
+    existing.push(template);
+  }
+  writeJSON(KEYS.workoutTemplates, existing);
+  return getWorkoutTemplates();
+}
+
+export function deleteWorkoutTemplate(id: string): WorkoutTemplate[] {
+  const remaining = getWorkoutTemplates().filter((t) => t.id !== id);
+  writeJSON(KEYS.workoutTemplates, remaining);
+  return getWorkoutTemplates();
+}
+
+/** Build (but do not persist) a template from a logged workout session. */
+export function templateFromSession(session: WorkoutSession): WorkoutTemplate {
+  return {
+    id: createId("tpl"),
+    title: session.title,
+    muscleGroups: [...session.muscleGroups],
+    exerciseIds: session.exercises.map((e) => e.exerciseId),
+    createdAt: new Date().toISOString(),
+  };
 }
 
 /* ----------------------------- Food logs ---------------------------- */

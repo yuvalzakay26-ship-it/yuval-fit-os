@@ -162,6 +162,27 @@ export const DatabaseIcon = (p: IconProps) =>
     p,
   );
 
+export const PlayIcon = (p: IconProps) =>
+  base(<path d="M8 5.5v13l10-6.5-10-6.5Z" />, p);
+
+export const PencilIcon = (p: IconProps) =>
+  base(
+    <path d="M16.5 3.7a2.1 2.1 0 0 1 3 3L7.8 18.4 4 20l1.6-3.8L17.3 4.5M14.5 5.7l3 3" />,
+    p,
+  );
+
+export const CopyIcon = (p: IconProps) =>
+  base(
+    <>
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5" />
+    </>,
+    p,
+  );
+
+export const BookmarkIcon = (p: IconProps) =>
+  base(<path d="M6.5 4h11v17L12 17.5 6.5 21V4Z" />, p);
+
 export const SparkIcon = (p: IconProps) =>
   base(
     <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" />,

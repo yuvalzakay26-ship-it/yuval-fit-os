@@ -219,3 +219,13 @@ export const DIFFICULTY_LABELS: Record<Exercise["difficulty"], string> = {
 export function getExerciseById(id: string): Exercise | undefined {
   return SEED_EXERCISES.find((exercise) => exercise.id === id);
 }
+
+/** Unique primary muscle groups for a list of exercise ids, in order. */
+export function muscleGroupsForExercises(exerciseIds: string[]): MuscleGroup[] {
+  const groups = new Set<MuscleGroup>();
+  for (const id of exerciseIds) {
+    const exercise = getExerciseById(id);
+    if (exercise) groups.add(exercise.muscleGroup);
+  }
+  return [...groups];
+}

@@ -8,7 +8,7 @@ import {
   MUSCLE_GROUP_LABELS,
 } from "@/lib/seed-exercises";
 import type { ExercisePerformance } from "@/lib/analytics";
-import { formatHebrewDate } from "@/lib/utils";
+import { formatHebrewDate, formatSetsSummary } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ChevronIcon, TrophyIcon } from "@/components/ui/icons";
@@ -71,10 +71,12 @@ export function ExerciseCard({
           {performance ? (
             <div className="mb-3.5 flex items-center gap-2.5 rounded-2xl bg-[color:var(--accent-soft)] px-3.5 py-2.5">
               <TrophyIcon className="h-5 w-5 shrink-0 text-accent" />
-              <div className="text-[12px] leading-tight">
-                <p className="font-bold text-accent">
-                  {performance.topWeightKg} ק&quot;ג × {performance.reps} ·{" "}
-                  {performance.totalSets} סטים
+              <div className="min-w-0 text-[12px] leading-tight">
+                <p className="truncate font-bold text-accent">
+                  <span dir="ltr" className="tabular-nums">
+                    {formatSetsSummary(performance.sets)}
+                  </span>{" "}
+                  · {performance.totalSets} סטים
                 </p>
                 <p className="text-muted">ביצוע אחרון · {formatHebrewDate(performance.date)}</p>
               </div>

@@ -7,9 +7,15 @@ import type {
   WorkoutExerciseEntry,
   WorkoutSession,
 } from "@/lib/fitness-types";
-import { MUSCLE_GROUP_LABELS, SEED_EXERCISES, getExerciseById } from "@/lib/seed-exercises";
-import { addWorkout } from "@/lib/fitness-store";
-import { cn, createId, todayISO } from "@/lib/utils";
+import {
+  MUSCLE_GROUP_LABELS,
+  SEED_EXERCISES,
+  getExerciseById,
+  muscleGroupsForExercises,
+} from "@/lib/seed-exercises";
+import { addWorkout, useWorkouts } from "@/lib/fitness-store";
+import { lastPerformance } from "@/lib/analytics";
+import { cn, createId, formatSetsSummary, todayISO } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -21,15 +27,26 @@ function emptySet(setNumber: number): SetEntry {
   return { setNumber, weightKg: 0, reps: 0, completed: false };
 }
 
+/** Prefill data for the builder (from a template or a duplicated workout). */
+export interface BuilderSeed {
+  title: string;
+  entries: WorkoutExerciseEntry[];
+}
+
 export function WorkoutBuilder({
+  initial,
   onSaved,
   onCancel,
 }: {
+  initial?: BuilderSeed | null;
   onSaved: (session: WorkoutSession) => void;
   onCancel: () => void;
 }) {
-  const [title, setTitle] = useState("");
-  const [entries, setEntries] = useState<WorkoutExerciseEntry[]>([]);
+  const workouts = useWorkouts();
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [entries, setEntries] = useState<WorkoutExerciseEntry[]>(
+    initial?.entries ?? [],
+  );
   const [pickerValue, setPickerValue] = useState("");
 
   const usedIds = useMemo(() => new Set(entries.map((e) => e.exerciseId)), [entries]);
@@ -85,14 +102,10 @@ export function WorkoutBuilder({
       ),
     );
 
-  const muscleGroups = useMemo<MuscleGroup[]>(() => {
-    const groups = new Set<MuscleGroup>();
-    entries.forEach((e) => {
-      const ex = getExerciseById(e.exerciseId);
-      if (ex) groups.add(ex.muscleGroup);
-    });
-    return [...groups];
-  }, [entries]);
+  const muscleGroups = useMemo<MuscleGroup[]>(
+    () => muscleGroupsForExercises(entries.map((e) => e.exerciseId)),
+    [entries],
+  );
 
   const totalSets = entries.reduce((n, e) => n + e.sets.length, 0);
   const canSave = entries.length > 0;
@@ -138,6 +151,7 @@ export function WorkoutBuilder({
         {entries.map((entry) => {
           const exercise = getExerciseById(entry.exerciseId);
           if (!exercise) return null;
+          const previous = lastPerformance(workouts, entry.exerciseId);
           return (
             <div
               key={entry.exerciseId}
@@ -152,9 +166,23 @@ export function WorkoutBuilder({
                   sizes="40px"
                   className="h-10 w-10 shrink-0"
                 />
-                <p className="flex-1 text-[15px] font-bold text-foreground">
-                  {exercise.nameHe}
-                </p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-bold text-foreground">
+                    {exercise.nameHe}
+                  </p>
+                  <p className="truncate text-[11.5px] text-muted">
+                    {previous ? (
+                      <>
+                        פעם קודמת:{" "}
+                        <span dir="ltr" className="font-semibold tabular-nums">
+                          {formatSetsSummary(previous.sets)}
+                        </span>
+                      </>
+                    ) : (
+                      "אין ביצוע קודם עדיין"
+                    )}
+                  </p>
+                </div>
                 <button
                   onClick={() => removeExercise(entry.exerciseId)}
                   className="tap -m-1.5 flex h-9 w-9 items-center justify-center rounded-xl text-faint hover:bg-surface hover:text-red-500"

@@ -29,6 +29,7 @@ components/
 lib/
   fitness-types.ts        domain types
   seed-exercises.ts       initial exercise library + Hebrew labels
+  seed-templates.ts       starter workout templates (shown until first edit)
   storage.ts              all localStorage access
   fitness-store.ts        reactive layer (useSyncExternalStore) over storage
   analytics.ts            pure derivations (totals, summaries, PRs)
@@ -46,6 +47,12 @@ npm run lint     # eslint
 
 Data lives in the browser under the `yfos:*` localStorage keys. Reset it from
 the Settings screen.
+
+## Direction
+
+Fitness OS is currently standalone, but workout templates and progress
+summaries are kept as clean, structured data (`WorkoutTemplate`,
+`WorkoutSession`) so they can later be surfaced inside Yuval Life OS.
 
 ## Install on your phone (PWA)
 

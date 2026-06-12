@@ -1,11 +1,12 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type { WorkoutSession } from "@/lib/fitness-types";
 import { MUSCLE_GROUP_LABELS, getExerciseById } from "@/lib/seed-exercises";
 import { formatHebrewDate } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { TrashIcon } from "@/components/ui/icons";
+import { BookmarkIcon, CheckIcon, TrashIcon } from "@/components/ui/icons";
 
 function sessionVolume(session: WorkoutSession): number {
   return session.exercises.reduce(
@@ -18,10 +19,29 @@ function sessionVolume(session: WorkoutSession): number {
 export function WorkoutHistory({
   workouts,
   onDelete,
+  onSaveAsTemplate,
 }: {
   workouts: WorkoutSession[];
   onDelete: (id: string) => void;
+  onSaveAsTemplate?: (session: WorkoutSession) => void;
 }) {
+  // Briefly swap the bookmark for a check after saving a template.
+  const [savedTemplateFor, setSavedTemplateFor] = useState<string | null>(null);
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (resetTimer.current) clearTimeout(resetTimer.current);
+    },
+    [],
+  );
+
+  const handleSaveAsTemplate = (session: WorkoutSession) => {
+    onSaveAsTemplate?.(session);
+    setSavedTemplateFor(session.id);
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+    resetTimer.current = setTimeout(() => setSavedTemplateFor(null), 2000);
+  };
+
   return (
     <div className="space-y-3">
       {workouts.map((session) => {
@@ -38,13 +58,28 @@ export function WorkoutHistory({
                   {formatHebrewDate(session.date)}
                 </p>
               </div>
-              <button
-                onClick={() => onDelete(session.id)}
-                className="tap -m-1.5 flex h-9 w-9 items-center justify-center rounded-xl text-faint hover:bg-surface-2 hover:text-red-500"
-                aria-label="מחיקת אימון"
-              >
-                <TrashIcon className="h-[18px] w-[18px]" />
-              </button>
+              <div className="-m-1.5 flex shrink-0 items-center">
+                {onSaveAsTemplate && (
+                  <button
+                    onClick={() => handleSaveAsTemplate(session)}
+                    className="tap flex h-9 w-9 items-center justify-center rounded-xl text-faint hover:bg-surface-2 hover:text-accent"
+                    aria-label="שמירת האימון כתבנית"
+                  >
+                    {savedTemplateFor === session.id ? (
+                      <CheckIcon className="h-[18px] w-[18px] text-accent" />
+                    ) : (
+                      <BookmarkIcon className="h-[17px] w-[17px]" />
+                    )}
+                  </button>
+                )}
+                <button
+                  onClick={() => onDelete(session.id)}
+                  className="tap flex h-9 w-9 items-center justify-center rounded-xl text-faint hover:bg-surface-2 hover:text-red-500"
+                  aria-label="מחיקת אימון"
+                >
+                  <TrashIcon className="h-[18px] w-[18px]" />
+                </button>
+              </div>
             </div>
 
             {session.muscleGroups.length > 0 && (

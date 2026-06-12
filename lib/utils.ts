@@ -56,6 +56,13 @@ export function hebrewGreeting(date: Date = new Date()): string {
   return "ערב טוב";
 }
 
+/** Compact "weight×reps" summary of a set list, e.g. "45×12, 50×10, 50×8". */
+export function formatSetsSummary(
+  sets: Array<{ weightKg: number; reps: number }>,
+): string {
+  return sets.map((s) => `${s.weightKg}×${s.reps}`).join(", ");
+}
+
 /** Parse a possibly-empty numeric input, returning undefined when blank. */
 export function parseOptionalNumber(value: string): number | undefined {
   const trimmed = value.trim();

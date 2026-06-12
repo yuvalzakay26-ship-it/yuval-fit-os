@@ -11,15 +11,18 @@ import {
   type FoodLog,
   type Settings,
   type WorkoutSession,
+  type WorkoutTemplate,
 } from "./fitness-types";
 import * as storage from "./storage";
 
 const EMPTY_WORKOUTS: WorkoutSession[] = [];
 const EMPTY_FOODLOGS: FoodLog[] = [];
+const EMPTY_TEMPLATES: WorkoutTemplate[] = [];
 
 let workoutsCache: WorkoutSession[] | null = null;
 let foodLogsCache: FoodLog[] | null = null;
 let settingsCache: Settings | null = null;
+let templatesCache: WorkoutTemplate[] | null = null;
 
 const listeners = new Set<() => void>();
 
@@ -31,6 +34,7 @@ function invalidate(): void {
   workoutsCache = null;
   foodLogsCache = null;
   settingsCache = null;
+  templatesCache = null;
 }
 
 function subscribe(callback: () => void): () => void {
@@ -64,6 +68,11 @@ function settingsSnapshot(): Settings {
   return settingsCache;
 }
 
+function templatesSnapshot(): WorkoutTemplate[] {
+  if (!templatesCache) templatesCache = storage.getWorkoutTemplates();
+  return templatesCache;
+}
+
 /* -------------------------------- Hooks -------------------------------- */
 
 export function useWorkouts(): WorkoutSession[] {
@@ -76,6 +85,10 @@ export function useFoodLogs(): FoodLog[] {
 
 export function useSettings(): Settings {
   return useSyncExternalStore(subscribe, settingsSnapshot, () => DEFAULT_SETTINGS);
+}
+
+export function useWorkoutTemplates(): WorkoutTemplate[] {
+  return useSyncExternalStore(subscribe, templatesSnapshot, () => EMPTY_TEMPLATES);
 }
 
 /* ------------------------------ Mutations ------------------------------ */
@@ -102,6 +115,26 @@ export function removeFoodLog(id: string): void {
   storage.deleteFoodLog(id);
   foodLogsCache = storage.getFoodLogs();
   notify();
+}
+
+export function saveTemplate(template: WorkoutTemplate): void {
+  storage.saveWorkoutTemplate(template);
+  templatesCache = storage.getWorkoutTemplates();
+  notify();
+}
+
+export function removeTemplate(id: string): void {
+  storage.deleteWorkoutTemplate(id);
+  templatesCache = storage.getWorkoutTemplates();
+  notify();
+}
+
+export function addTemplateFromSession(session: WorkoutSession): WorkoutTemplate {
+  const template = storage.templateFromSession(session);
+  storage.saveWorkoutTemplate(template);
+  templatesCache = storage.getWorkoutTemplates();
+  notify();
+  return template;
 }
 
 export function updateSettings(settings: Settings): void {

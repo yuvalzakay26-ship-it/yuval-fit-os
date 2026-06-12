@@ -65,6 +65,19 @@ export interface WorkoutSession {
   exercises: WorkoutExerciseEntry[];
 }
 
+export interface WorkoutTemplate {
+  id: string;
+  title: string;
+  muscleGroups: MuscleGroup[];
+  exerciseIds: string[];
+  /** Sets pre-created per exercise when starting from the template. */
+  defaultSetCount?: number;
+  notes?: string;
+  /** Full ISO timestamp. */
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
 
 export interface FoodLog {
