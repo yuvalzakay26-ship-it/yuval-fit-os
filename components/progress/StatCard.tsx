@@ -14,7 +14,7 @@ export function StatCard({
   return (
     <Card className="space-y-2 p-4">
       {icon && (
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent-soft)] text-accent">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent-energy-soft)] text-[color:var(--accent-energy)]">
           {icon}
         </span>
       )}

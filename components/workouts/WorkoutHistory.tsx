@@ -62,11 +62,11 @@ export function WorkoutHistory({
                 {onSaveAsTemplate && (
                   <button
                     onClick={() => handleSaveAsTemplate(session)}
-                    className="tap flex h-9 w-9 items-center justify-center rounded-xl text-faint hover:bg-surface-2 hover:text-accent"
+                    className="tap flex h-9 w-9 items-center justify-center rounded-xl text-faint hover:bg-surface-2 hover:text-[color:var(--accent-strength)]"
                     aria-label="שמירת האימון כתבנית"
                   >
                     {savedTemplateFor === session.id ? (
-                      <CheckIcon className="h-[18px] w-[18px] text-accent" />
+                      <CheckIcon className="h-[18px] w-[18px] text-[color:var(--accent-strength)]" />
                     ) : (
                       <BookmarkIcon className="h-[17px] w-[17px]" />
                     )}
@@ -85,7 +85,7 @@ export function WorkoutHistory({
             {session.muscleGroups.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {session.muscleGroups.map((m) => (
-                  <Badge key={m} tone="accent">
+                  <Badge key={m} tone="strength">
                     {MUSCLE_GROUP_LABELS[m]}
                   </Badge>
                 ))}
@@ -106,8 +106,8 @@ export function WorkoutHistory({
                 </p>
                 <p className="text-[10.5px] font-medium text-faint">סטים</p>
               </div>
-              <div className="rounded-xl bg-[color:var(--accent-soft)] px-3 py-2 text-center">
-                <p className="text-[17px] font-extrabold tabular-nums text-accent">
+              <div className="rounded-xl bg-[color:var(--accent-strength-soft)] px-3 py-2 text-center">
+                <p className="text-[17px] font-extrabold tabular-nums text-[color:var(--accent-strength)]">
                   {volume.toLocaleString()}
                 </p>
                 <p className="text-[10.5px] font-medium text-faint">נפח (ק&quot;ג)</p>

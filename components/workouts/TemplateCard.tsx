@@ -53,7 +53,7 @@ export function TemplateCard({
       {template.muscleGroups.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {template.muscleGroups.map((m) => (
-            <Badge key={m} tone="accent">
+            <Badge key={m} tone="strength">
               {MUSCLE_GROUP_LABELS[m]}
             </Badge>
           ))}
@@ -77,7 +77,11 @@ export function TemplateCard({
           </Button>
         </div>
       ) : (
-        <Button size="sm" className="w-full" onClick={onStart}>
+        <Button
+          size="sm"
+          className="strength-gradient shadow-glow-strength w-full"
+          onClick={onStart}
+        >
           <PlayIcon className="h-4 w-4" /> התחל אימון
         </Button>
       )}

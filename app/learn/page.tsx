@@ -19,7 +19,7 @@ export default function LearnPage() {
         {KNOWLEDGE_ARTICLES.map((article) => (
           <Link key={article.id} href={`/learn/${article.id}`} className="tap block">
             <Card className="flex items-center gap-3.5">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-soft)] text-accent">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-learn-soft)] text-[color:var(--accent-learn)]">
                 <BookOpenIcon className="h-5 w-5" />
               </span>
               <div className="min-w-0 flex-1">
@@ -32,7 +32,7 @@ export default function LearnPage() {
                   {article.subtitle}
                 </p>
                 <div className="mt-1.5 flex items-center gap-1.5">
-                  <Badge tone="accent">
+                  <Badge tone="learn">
                     {KNOWLEDGE_CATEGORY_LABELS[article.category]}
                   </Badge>
                   <Badge tone="muted">

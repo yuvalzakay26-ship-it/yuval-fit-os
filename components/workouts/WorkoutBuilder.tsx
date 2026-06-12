@@ -137,7 +137,7 @@ export function WorkoutBuilder({
         {muscleGroups.length > 0 && (
           <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
             {muscleGroups.map((m) => (
-              <Badge key={m} tone="accent">
+              <Badge key={m} tone="strength">
                 {MUSCLE_GROUP_LABELS[m]}
               </Badge>
             ))}
@@ -206,7 +206,7 @@ export function WorkoutBuilder({
                     key={set.setNumber}
                     className={cn(
                       "grid grid-cols-[1.75rem_1fr_1fr_2.25rem_1.75rem] items-center gap-2 rounded-xl py-1 transition-colors",
-                      set.completed && "bg-[color:var(--accent-soft)]",
+                      set.completed && "bg-[color:var(--accent-strength-soft)]",
                     )}
                   >
                     <span className="flex h-6 w-6 items-center justify-center justify-self-center rounded-lg bg-surface text-[12px] font-bold text-muted">
@@ -246,7 +246,7 @@ export function WorkoutBuilder({
                       className={cn(
                         "tap flex h-9 w-9 items-center justify-center justify-self-center rounded-xl border transition-colors",
                         set.completed
-                          ? "brand-gradient border-transparent text-[color:var(--accent-contrast)]"
+                          ? "strength-gradient border-transparent text-[color:var(--accent-contrast)]"
                           : "border-border bg-surface text-faint",
                       )}
                     >
@@ -265,7 +265,7 @@ export function WorkoutBuilder({
 
               <button
                 onClick={() => addSet(entry.exerciseId)}
-                className="tap mt-2.5 inline-flex items-center gap-1 rounded-lg px-1 py-1 text-[12.5px] font-bold text-accent"
+                className="tap mt-2.5 inline-flex items-center gap-1 rounded-lg px-1 py-1 text-[12.5px] font-bold text-[color:var(--accent-strength)]"
               >
                 <PlusIcon className="h-4 w-4" /> הוספת סט
               </button>

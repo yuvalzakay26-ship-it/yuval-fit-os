@@ -89,18 +89,20 @@ export function ProgressView() {
                 <div key={exerciseId} className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {i === 0 && <TrophyIcon className="h-4 w-4 text-accent" />}
+                      {i === 0 && (
+                        <TrophyIcon className="h-4 w-4 text-[color:var(--accent-energy)]" />
+                      )}
                       <span className="text-[14px] font-semibold text-foreground">
                         {exercise?.nameHe ?? exerciseId}
                       </span>
                     </div>
-                    <span className="text-[14px] font-extrabold tabular-nums text-accent">
+                    <span className="text-[14px] font-extrabold tabular-nums text-[color:var(--accent-energy)]">
                       {weight} ק&quot;ג
                     </span>
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
                     <div
-                      className="brand-gradient h-full rounded-full transition-[width] duration-700 ease-out"
+                      className="energy-gradient h-full rounded-full transition-[width] duration-700 ease-out"
                       style={{ width: `${pct}%` }}
                     />
                   </div>

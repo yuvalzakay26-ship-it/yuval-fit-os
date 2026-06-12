@@ -54,7 +54,7 @@ export function ProteinCalculator({
     return (
       <button onClick={() => setOpen(true)} className="tap block w-full text-start">
         <Card className="flex items-center gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-soft)] text-accent">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-nutrition-soft)] text-[color:var(--accent-nutrition)]">
             <TargetIcon className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
@@ -72,7 +72,7 @@ export function ProteinCalculator({
   return (
     <Card className="space-y-4 p-4">
       <div className="flex items-center gap-2.5">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent-soft)] text-accent">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent-nutrition-soft)] text-[color:var(--accent-nutrition)]">
           <TargetIcon className="h-[18px] w-[18px]" />
         </span>
         <div>
@@ -114,14 +114,14 @@ export function ProteinCalculator({
                 className={cn(
                   "tap flex flex-col items-start gap-0.5 rounded-2xl border px-3 py-2.5 text-start",
                   active
-                    ? "border-accent bg-[color:var(--accent-soft)]"
+                    ? "border-[color:var(--accent-nutrition)] bg-[color:var(--accent-nutrition-soft)]"
                     : "border-border bg-surface-2 hover:border-border-strong",
                 )}
               >
                 <span
                   className={cn(
                     "text-[13px] font-bold",
-                    active ? "text-accent" : "text-foreground",
+                    active ? "text-[color:var(--accent-nutrition)]" : "text-foreground",
                   )}
                 >
                   {option.label}
@@ -168,7 +168,7 @@ export function ProteinCalculator({
       {showArticleLink && (
         <Link
           href={`/learn/${PROTEIN_ARTICLE_ID}`}
-          className="tap block text-center text-[12.5px] font-semibold text-accent"
+          className="tap block text-center text-[12.5px] font-semibold text-[color:var(--accent-learn)]"
         >
           למה דווקא g/kg/day? קרא במרכז הידע ←
         </Link>

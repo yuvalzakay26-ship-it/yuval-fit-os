@@ -69,7 +69,7 @@ export function TemplateEditor({
         {muscleGroups.length > 0 && (
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {muscleGroups.map((m) => (
-              <Badge key={m} tone="accent">
+              <Badge key={m} tone="strength">
                 {MUSCLE_GROUP_LABELS[m]}
               </Badge>
             ))}

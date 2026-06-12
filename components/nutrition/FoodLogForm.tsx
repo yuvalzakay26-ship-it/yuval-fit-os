@@ -72,7 +72,7 @@ export function FoodLogForm({ onSaved }: { onSaved?: () => void }) {
                 className={cn(
                   "tap rounded-xl px-1 py-2 text-[12px] font-semibold",
                   form.mealType === meal
-                    ? "brand-gradient text-[color:var(--accent-contrast)] shadow-glow"
+                    ? "nutrition-gradient text-[color:var(--accent-contrast)] shadow-glow-nutrition"
                     : "border border-border bg-surface-2 text-muted",
                 )}
               >

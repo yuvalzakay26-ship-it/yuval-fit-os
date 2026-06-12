@@ -30,6 +30,30 @@
   --progress-from: #18b6c7;
   --progress-to: #0e7a8a;
 
+  /* Feature accents — a controlled secondary palette so light mode isn't
+     one uniform teal. Each area gets one hue: strength (workouts) deep blue,
+     energy (progress/PRs) burnt amber, nutrition fresh green, learn indigo.
+     In dark mode all of these alias back to the emerald brand accent. */
+  --accent-strength: #2456a8;
+  --accent-strength-soft: rgba(36, 86, 168, 0.1);
+  --gradient-strength: linear-gradient(135deg, #3f7ad1 0%, #2d63b8 50%, #2456a8 100%);
+  --shadow-strength: 0 8px 24px rgba(36, 86, 168, 0.24);
+
+  --accent-energy: #c2410c;
+  --accent-energy-soft: rgba(194, 65, 12, 0.1);
+  --gradient-energy: linear-gradient(135deg, #f59e0b 0%, #ea670c 50%, #c2410c 100%);
+  --shadow-energy: 0 8px 24px rgba(194, 65, 12, 0.24);
+
+  --accent-nutrition: #0c7a51;
+  --accent-nutrition-soft: rgba(12, 122, 81, 0.1);
+  --gradient-nutrition: linear-gradient(135deg, #16a06b 0%, #108d5e 50%, #0c7a51 100%);
+  --shadow-nutrition: 0 8px 24px rgba(12, 122, 81, 0.24);
+
+  --accent-learn: #4f46e5;
+  --accent-learn-soft: rgba(79, 70, 229, 0.1);
+  --gradient-learn: linear-gradient(135deg, #7069f0 0%, #5d54ea 50%, #4f46e5 100%);
+  --shadow-learn: 0 8px 24px rgba(79, 70, 229, 0.24);
+
   /* Effects */
   --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 16px rgba(16, 24, 40, 0.05);
   --shadow-raised: 0 8px 30px rgba(16, 24, 40, 0.1);
@@ -58,6 +82,28 @@
   --gradient-accent: linear-gradient(135deg, #1ad99b 0%, #12c08a 50%, #0fa874 100%);
   --progress-from: #1ad99b;
   --progress-to: #0ca678;
+
+  /* Dark mode keeps its single emerald identity: every feature accent
+     resolves to the brand accent so retoned components render unchanged. */
+  --accent-strength: var(--accent);
+  --accent-strength-soft: var(--accent-soft);
+  --gradient-strength: var(--gradient-accent);
+  --shadow-strength: var(--shadow-accent);
+
+  --accent-energy: var(--accent);
+  --accent-energy-soft: var(--accent-soft);
+  --gradient-energy: var(--gradient-accent);
+  --shadow-energy: var(--shadow-accent);
+
+  --accent-nutrition: var(--accent);
+  --accent-nutrition-soft: var(--accent-soft);
+  --gradient-nutrition: var(--gradient-accent);
+  --shadow-nutrition: var(--shadow-accent);
+
+  --accent-learn: var(--accent);
+  --accent-learn-soft: var(--accent-soft);
+  --gradient-learn: var(--gradient-accent);
+  --shadow-learn: var(--shadow-accent);
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
   --shadow-raised: 0 12px 40px rgba(0, 0, 0, 0.55);
@@ -138,6 +184,20 @@ body {
 .brand-gradient {
   background-image: var(--gradient-accent);
 }
+/* Feature gradients — declared after .brand-gradient so they win when both
+   are present (components append a tone class to their brand default). */
+.strength-gradient {
+  background-image: var(--gradient-strength);
+}
+.energy-gradient {
+  background-image: var(--gradient-energy);
+}
+.nutrition-gradient {
+  background-image: var(--gradient-nutrition);
+}
+.learn-gradient {
+  background-image: var(--gradient-learn);
+}
 .brand-text-gradient {
   background-image: var(--gradient-accent);
   -webkit-background-clip: text;
@@ -154,6 +214,18 @@ body {
 }
 .shadow-glow {
   box-shadow: var(--shadow-accent);
+}
+.shadow-glow-strength {
+  box-shadow: var(--shadow-strength);
+}
+.shadow-glow-energy {
+  box-shadow: var(--shadow-energy);
+}
+.shadow-glow-nutrition {
+  box-shadow: var(--shadow-nutrition);
+}
+.shadow-glow-learn {
+  box-shadow: var(--shadow-learn);
 }
 
 .no-scrollbar {

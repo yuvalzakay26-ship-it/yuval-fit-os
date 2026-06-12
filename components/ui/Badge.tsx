@@ -1,12 +1,16 @@
 import { cn } from "@/lib/utils";
 
-type Tone = "neutral" | "accent" | "muted" | "solid";
+type Tone = "neutral" | "accent" | "muted" | "solid" | "strength" | "learn";
 
 const TONES: Record<Tone, string> = {
   neutral: "bg-surface-2 text-foreground border border-border",
   accent: "bg-[color:var(--accent-soft)] text-accent border border-transparent",
   muted: "bg-surface-2 text-muted border border-border",
   solid: "brand-gradient text-[color:var(--accent-contrast)] border border-transparent",
+  strength:
+    "bg-[color:var(--accent-strength-soft)] text-[color:var(--accent-strength)] border border-transparent",
+  learn:
+    "bg-[color:var(--accent-learn-soft)] text-[color:var(--accent-learn)] border border-transparent",
 };
 
 export function Badge({

@@ -44,19 +44,31 @@ function MiniStat({
   );
 }
 
+/* Per-feature tint for quick actions: workouts = strength blue,
+   nutrition = fresh green, browsing = brand teal. Identical in dark mode. */
+const QUICK_ACTION_TINTS = {
+  brand: "brand-gradient shadow-glow",
+  strength: "strength-gradient shadow-glow-strength",
+  nutrition: "nutrition-gradient shadow-glow-nutrition",
+} as const;
+
 function QuickAction({
   href,
   label,
   icon,
+  tint = "brand",
 }: {
   href: string;
   label: string;
   icon: React.ReactNode;
+  tint?: keyof typeof QUICK_ACTION_TINTS;
 }) {
   return (
     <Link href={href} className="tap block">
       <Card className="flex h-full flex-col gap-3 p-3.5">
-        <span className="brand-gradient flex h-10 w-10 items-center justify-center rounded-xl text-[color:var(--accent-contrast)] shadow-glow">
+        <span
+          className={`${QUICK_ACTION_TINTS[tint]} flex h-10 w-10 items-center justify-center rounded-xl text-[color:var(--accent-contrast)]`}
+        >
           {icon}
         </span>
         <span className="text-[12.5px] font-bold leading-tight text-foreground">
@@ -151,11 +163,13 @@ export function TodayView() {
             href="/workouts?new=1"
             label="התחל אימון"
             icon={<DumbbellIcon className="h-5 w-5" />}
+            tint="strength"
           />
           <QuickAction
             href="/nutrition"
             label="הוסף אוכל"
             icon={<PlusIcon className="h-5 w-5" />}
+            tint="nutrition"
           />
           <QuickAction
             href="/exercises"
@@ -172,9 +186,9 @@ export function TodayView() {
           <Card className="relative flex items-center gap-3 overflow-hidden">
             <div
               className="pointer-events-none absolute -left-8 -top-10 h-28 w-28 rounded-full opacity-50 blur-2xl"
-              style={{ background: "var(--accent-soft)" }}
+              style={{ background: "var(--accent-learn-soft)" }}
             />
-            <span className="brand-gradient relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-[color:var(--accent-contrast)] shadow-glow">
+            <span className="learn-gradient relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-[color:var(--accent-contrast)] shadow-glow-learn">
               <BookOpenIcon className="h-5 w-5" />
             </span>
             <div className="relative min-w-0 flex-1">
@@ -194,7 +208,7 @@ export function TodayView() {
         {lastWorkout ? (
           <Link href="/workouts" className="tap block">
             <Card className="flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-soft)] text-accent">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-strength-soft)] text-[color:var(--accent-strength)]">
                 <DumbbellIcon className="h-5 w-5" />
               </span>
               <div className="min-w-0 flex-1">

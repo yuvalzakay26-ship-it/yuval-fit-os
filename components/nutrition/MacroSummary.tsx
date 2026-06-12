@@ -49,7 +49,7 @@ function GoalBar({
       </div>
       <div className="h-2.5 overflow-hidden rounded-full bg-surface-2">
         <div
-          className="brand-gradient h-full rounded-full transition-[width] duration-700 ease-out"
+          className="nutrition-gradient h-full rounded-full transition-[width] duration-700 ease-out"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -78,7 +78,7 @@ export function MacroSummary({
 
         <div className="flex-1">
           <div className="mb-2 flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[color:var(--accent-soft)] text-accent">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[color:var(--accent-nutrition-soft)] text-[color:var(--accent-nutrition)]">
               <FlameIcon className="h-[18px] w-[18px]" />
             </span>
             <div>

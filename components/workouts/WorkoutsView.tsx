@@ -115,7 +115,7 @@ export function WorkoutsView() {
               action={
                 <button
                   onClick={() => setEditingTemplate("new")}
-                  className="tap inline-flex items-center gap-1 rounded-lg px-1 py-1 text-[12.5px] font-bold text-accent"
+                  className="tap inline-flex items-center gap-1 rounded-lg px-1 py-1 text-[12.5px] font-bold text-[color:var(--accent-strength)]"
                 >
                   <PlusIcon className="h-4 w-4" /> תבנית חדשה
                 </button>
@@ -149,7 +149,7 @@ export function WorkoutsView() {
             !building && !editingTemplate && workouts.length > 0 ? (
               <button
                 onClick={duplicateLastWorkout}
-                className="tap inline-flex items-center gap-1 rounded-lg px-1 py-1 text-[12.5px] font-bold text-accent"
+                className="tap inline-flex items-center gap-1 rounded-lg px-1 py-1 text-[12.5px] font-bold text-[color:var(--accent-strength)]"
               >
                 <CopyIcon className="h-4 w-4" /> שכפל אימון אחרון
               </button>

@@ -61,7 +61,7 @@ export function NutritionView() {
                     {log.quantityText && (
                       <span className="text-faint">{log.quantityText} · </span>
                     )}
-                    <span className="font-semibold text-accent">
+                    <span className="font-semibold text-[color:var(--accent-nutrition)]">
                       {Math.round(log.protein)}ג
                     </span>{" "}
                     חלבון · {Math.round(log.carbs)}ג פחמ׳ · {Math.round(log.fat)}ג שומן

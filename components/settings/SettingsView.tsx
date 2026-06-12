@@ -140,7 +140,7 @@ export function SettingsView() {
       {/* Knowledge center */}
       <Link href="/learn" className="tap block">
         <Card className="flex items-center gap-3 p-4">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-soft)] text-accent">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-learn-soft)] text-[color:var(--accent-learn)]">
             <BookOpenIcon className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">

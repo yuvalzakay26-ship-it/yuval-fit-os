@@ -29,7 +29,7 @@ export default async function KnowledgeArticlePage({
     <div>
       <Link
         href="/learn"
-        className="tap mb-4 inline-flex items-center gap-1 text-[13px] font-semibold text-accent"
+        className="tap mb-4 inline-flex items-center gap-1 text-[13px] font-semibold text-[color:var(--accent-learn)]"
       >
         <ChevronIcon className="h-3.5 w-3.5 rotate-180" />
         מרכז ידע
@@ -38,7 +38,7 @@ export default async function KnowledgeArticlePage({
       <PageHeader title={article.title} subtitle={article.subtitle} className="mb-4" />
 
       <div className="mb-5 flex items-center gap-1.5">
-        <Badge tone="accent">{KNOWLEDGE_CATEGORY_LABELS[article.category]}</Badge>
+        <Badge tone="learn">{KNOWLEDGE_CATEGORY_LABELS[article.category]}</Badge>
         <Badge tone="muted">
           <ClockIcon className="h-3 w-3" />
           {article.readingTimeMinutes} דק׳ קריאה
@@ -51,10 +51,10 @@ export default async function KnowledgeArticlePage({
             <CardTitle>{section.title}</CardTitle>
             <p className="text-[13.5px] leading-relaxed text-muted">{section.body}</p>
             {section.practicalTip && (
-              <div className="flex items-start gap-2 rounded-2xl bg-[color:var(--accent-soft)] p-3">
-                <SparkIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+              <div className="flex items-start gap-2 rounded-2xl bg-[color:var(--accent-learn-soft)] p-3">
+                <SparkIcon className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--accent-learn)]" />
                 <p className="text-[12.5px] leading-relaxed text-foreground">
-                  <span className="font-bold text-accent">טיפ מעשי: </span>
+                  <span className="font-bold text-[color:var(--accent-learn)]">טיפ מעשי: </span>
                   {section.practicalTip}
                 </p>
               </div>
