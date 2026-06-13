@@ -4,6 +4,7 @@
 import {
   DEFAULT_SETTINGS,
   type FoodLog,
+  type SavedFoodValue,
   type Settings,
   type WorkoutSession,
   type WorkoutTemplate,
@@ -16,7 +17,11 @@ const KEYS = {
   foodLogs: "yfos:foodLogs",
   settings: "yfos:settings",
   workoutTemplates: "yfos:workout-templates:v1",
+  savedFoodValues: "yfos:saved-food-values:v1",
 } as const;
+
+/** Map of `sourceFoodId` → the user's saved default values for that food. */
+type SavedFoodValuesMap = Record<string, SavedFoodValue>;
 
 function isBrowser(): boolean {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
@@ -139,6 +144,40 @@ export function deleteFoodLog(id: string): FoodLog[] {
   const remaining = readJSON<FoodLog[]>(KEYS.foodLogs, []).filter((l) => l.id !== id);
   writeJSON(KEYS.foodLogs, remaining);
   return getFoodLogs();
+}
+
+/* ------------------------ Saved food values ------------------------- */
+// Personal, user-entered nutrition defaults for food-library items, keyed by
+// `sourceFoodId`. Never inferred from images or external databases — see
+// `docs/NUTRITION_SAVED_VALUES.md`. Kept separate from FoodLog so existing logs
+// stay untouched and backward-compatible.
+
+export function getSavedFoodValues(): SavedFoodValuesMap {
+  return readJSON<SavedFoodValuesMap>(KEYS.savedFoodValues, {});
+}
+
+export function getSavedFoodValue(sourceFoodId: string): SavedFoodValue | undefined {
+  if (!sourceFoodId) return undefined;
+  return getSavedFoodValues()[sourceFoodId];
+}
+
+export function saveSavedFoodValue(value: SavedFoodValue): SavedFoodValuesMap {
+  const existing = getSavedFoodValues();
+  existing[value.sourceFoodId] = value;
+  writeJSON(KEYS.savedFoodValues, existing);
+  return getSavedFoodValues();
+}
+
+export function deleteSavedFoodValue(sourceFoodId: string): SavedFoodValuesMap {
+  const existing = getSavedFoodValues();
+  delete existing[sourceFoodId];
+  writeJSON(KEYS.savedFoodValues, existing);
+  return getSavedFoodValues();
+}
+
+export function clearSavedFoodValues(): void {
+  if (!isBrowser()) return;
+  window.localStorage.removeItem(KEYS.savedFoodValues);
 }
 
 /* ------------------------------ Settings ---------------------------- */

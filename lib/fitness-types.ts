@@ -104,6 +104,27 @@ export interface FoodLog {
   sourceFoodId?: string;
 }
 
+/**
+ * A user's personal default nutrition values for one food-library item, keyed by
+ * `sourceFoodId`. These are NOT official nutrition facts and are never inferred —
+ * they are simply the exact quantity + macros the user last chose to remember for
+ * that food, so the add form can prefill them next time. See `lib/saved-values`
+ * usage in `storage.ts` and `docs/NUTRITION_SAVED_VALUES.md`.
+ */
+export interface SavedFoodValue {
+  sourceFoodId: string;
+  foodName: string;
+  imagePath?: string;
+  category?: string;
+  quantity: string;
+  protein: number;
+  carbs: number;
+  fat: number;
+  calories: number;
+  /** Full ISO timestamp of the last save. */
+  updatedAt: string;
+}
+
 export type ThemePreference = "light" | "dark" | "system";
 
 export interface Settings {

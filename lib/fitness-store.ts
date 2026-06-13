@@ -9,6 +9,7 @@ import { useSyncExternalStore } from "react";
 import {
   DEFAULT_SETTINGS,
   type FoodLog,
+  type SavedFoodValue,
   type Settings,
   type WorkoutSession,
   type WorkoutTemplate,
@@ -18,11 +19,13 @@ import * as storage from "./storage";
 const EMPTY_WORKOUTS: WorkoutSession[] = [];
 const EMPTY_FOODLOGS: FoodLog[] = [];
 const EMPTY_TEMPLATES: WorkoutTemplate[] = [];
+const EMPTY_SAVED_VALUES: Record<string, SavedFoodValue> = {};
 
 let workoutsCache: WorkoutSession[] | null = null;
 let foodLogsCache: FoodLog[] | null = null;
 let settingsCache: Settings | null = null;
 let templatesCache: WorkoutTemplate[] | null = null;
+let savedValuesCache: Record<string, SavedFoodValue> | null = null;
 
 const listeners = new Set<() => void>();
 
@@ -35,6 +38,7 @@ function invalidate(): void {
   foodLogsCache = null;
   settingsCache = null;
   templatesCache = null;
+  savedValuesCache = null;
 }
 
 function subscribe(callback: () => void): () => void {
@@ -73,6 +77,11 @@ function templatesSnapshot(): WorkoutTemplate[] {
   return templatesCache;
 }
 
+function savedValuesSnapshot(): Record<string, SavedFoodValue> {
+  if (!savedValuesCache) savedValuesCache = storage.getSavedFoodValues();
+  return savedValuesCache;
+}
+
 /* -------------------------------- Hooks -------------------------------- */
 
 export function useWorkouts(): WorkoutSession[] {
@@ -89,6 +98,15 @@ export function useSettings(): Settings {
 
 export function useWorkoutTemplates(): WorkoutTemplate[] {
   return useSyncExternalStore(subscribe, templatesSnapshot, () => EMPTY_TEMPLATES);
+}
+
+/** Map of `sourceFoodId` → the user's saved default nutrition values. */
+export function useSavedFoodValues(): Record<string, SavedFoodValue> {
+  return useSyncExternalStore(
+    subscribe,
+    savedValuesSnapshot,
+    () => EMPTY_SAVED_VALUES,
+  );
 }
 
 /* ------------------------------ Mutations ------------------------------ */
@@ -135,6 +153,24 @@ export function addTemplateFromSession(session: WorkoutSession): WorkoutTemplate
   templatesCache = storage.getWorkoutTemplates();
   notify();
   return template;
+}
+
+export function saveFoodValue(value: SavedFoodValue): void {
+  storage.saveSavedFoodValue(value);
+  savedValuesCache = storage.getSavedFoodValues();
+  notify();
+}
+
+export function removeFoodValue(sourceFoodId: string): void {
+  storage.deleteSavedFoodValue(sourceFoodId);
+  savedValuesCache = storage.getSavedFoodValues();
+  notify();
+}
+
+export function clearAllFoodValues(): void {
+  storage.clearSavedFoodValues();
+  savedValuesCache = storage.getSavedFoodValues();
+  notify();
 }
 
 export function updateSettings(settings: Settings): void {

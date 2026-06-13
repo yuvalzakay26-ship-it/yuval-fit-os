@@ -3,9 +3,11 @@
 import { useState } from "react";
 import type { ThemePreference } from "@/lib/fitness-types";
 import {
+  clearAllFoodValues,
   resetAll,
   updateSettings,
   useFoodLogs,
+  useSavedFoodValues,
   useSettings,
   useWorkouts,
 } from "@/lib/fitness-store";
@@ -51,7 +53,10 @@ export function SettingsView() {
   const settings = useSettings();
   const workouts = useWorkouts();
   const foodLogs = useFoodLogs();
+  const savedFoodValues = useSavedFoodValues();
+  const savedFoodCount = Object.keys(savedFoodValues).length;
   const [confirmingReset, setConfirmingReset] = useState(false);
+  const [confirmingClearFoods, setConfirmingClearFoods] = useState(false);
 
   const approxKb =
     ((JSON.stringify(workouts).length +
@@ -67,6 +72,11 @@ export function SettingsView() {
   const handleReset = () => {
     resetAll();
     setConfirmingReset(false);
+  };
+
+  const handleClearFoods = () => {
+    clearAllFoodValues();
+    setConfirmingClearFoods(false);
   };
 
   return (
@@ -198,6 +208,37 @@ export function SettingsView() {
           </Button>
         )}
       </Card>
+
+      {/* Saved food values — only surfaced once the user has some */}
+      {savedFoodCount > 0 && (
+        <Card className="space-y-3 p-4">
+          <CardLabel>ערכי מאכלים שמורים</CardLabel>
+          <p className="text-[13px] leading-relaxed text-muted">
+            שמרת ערכים אישיים ל-{savedFoodCount} מאכלים. פעולה זו תאפס את כל
+            הערכים השמורים. רשומות התזונה שלך לא יושפעו.
+          </p>
+          {confirmingClearFoods ? (
+            <div className="flex gap-2.5">
+              <Button variant="danger" onClick={handleClearFoods} className="flex-1">
+                <TrashIcon className="h-[18px] w-[18px]" /> כן, אפס הכל
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setConfirmingClearFoods(false)}
+              >
+                ביטול
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="secondary"
+              onClick={() => setConfirmingClearFoods(true)}
+            >
+              <TrashIcon className="h-[18px] w-[18px]" /> אפס ערכי מאכלים שמורים
+            </Button>
+          )}
+        </Card>
+      )}
 
       {/* Welcome screen */}
       <Card className="space-y-3 p-4">

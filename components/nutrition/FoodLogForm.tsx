@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FoodLog, MealType } from "@/lib/fitness-types";
 import { FOOD_CATEGORY_LABELS, type FoodCategory } from "@/lib/food-library";
-import { addFoodLog } from "@/lib/fitness-store";
+import {
+  addFoodLog,
+  removeFoodValue,
+  saveFoodValue,
+  useSavedFoodValues,
+} from "@/lib/fitness-store";
 import { cn, createId, parseOptionalNumber, todayISO } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -35,6 +40,9 @@ const EMPTY = {
   imagePath: "",
   category: "",
   sourceFoodId: "",
+  // When checked, the entered quantity + macros are remembered as this user's
+  // personal default for the selected library food (keyed by sourceFoodId).
+  saveValues: false,
 };
 
 type FormState = typeof EMPTY;
@@ -74,29 +82,88 @@ export function FoodLogForm({
 
   const canSave = form.foodName.trim().length > 0;
 
+  // Personal saved defaults for the currently-selected library food (if any).
+  // localStorage hydrates after first paint, so the macros are filled in via the
+  // effect below rather than the (already-run) state initializer.
+  const savedValues = useSavedFoodValues();
+  const sourceFoodId = form.sourceFoodId;
+  const saved = sourceFoodId ? savedValues[sourceFoodId] : undefined;
+
+  // Prefill quantity + macros from the saved values exactly once, the moment
+  // they become available. The ref guard keeps later edits (and a reset) from
+  // being clobbered by a re-run.
+  const savedAppliedRef = useRef(false);
+  useEffect(() => {
+    if (savedAppliedRef.current || !saved) return;
+    savedAppliedRef.current = true;
+    setForm((prev) => ({
+      ...prev,
+      quantityText: saved.quantity,
+      protein: String(saved.protein),
+      carbs: String(saved.carbs),
+      fat: String(saved.fat),
+      calories: String(saved.calories),
+      // Re-saving a remembered food keeps it remembered by default.
+      saveValues: true,
+    }));
+  }, [saved]);
+
   const clearLibraryLink = () => {
-    update({ imagePath: "", category: "", sourceFoodId: "" });
+    update({ imagePath: "", category: "", sourceFoodId: "", saveValues: false });
     onClearPrefill?.();
+  };
+
+  // Forget this food's personal defaults. Form fields are left as-is so the user
+  // doesn't lose what they were editing.
+  const handleResetSaved = () => {
+    if (!sourceFoodId) return;
+    removeFoodValue(sourceFoodId);
+    update({ saveValues: false });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSave) return;
+    const foodName = form.foodName.trim();
+    const quantityText = form.quantityText.trim();
+    const protein = parseOptionalNumber(form.protein) ?? 0;
+    const carbs = parseOptionalNumber(form.carbs) ?? 0;
+    const fat = parseOptionalNumber(form.fat) ?? 0;
+    const calories = parseOptionalNumber(form.calories);
+
     const log: FoodLog = {
       id: createId("food"),
       date: todayISO(),
       mealType: form.mealType,
-      foodName: form.foodName.trim(),
-      quantityText: form.quantityText.trim(),
-      calories: parseOptionalNumber(form.calories),
-      protein: parseOptionalNumber(form.protein) ?? 0,
-      carbs: parseOptionalNumber(form.carbs) ?? 0,
-      fat: parseOptionalNumber(form.fat) ?? 0,
+      foodName,
+      quantityText,
+      calories,
+      protein,
+      carbs,
+      fat,
       ...(form.imagePath ? { imagePath: form.imagePath } : {}),
       ...(form.category ? { category: form.category } : {}),
       ...(form.sourceFoodId ? { sourceFoodId: form.sourceFoodId } : {}),
     };
     addFoodLog(log);
+
+    // Remember these values as the user's personal default for this food. Only
+    // for library foods (we have a stable sourceFoodId) and only when opted in.
+    if (form.sourceFoodId && form.saveValues) {
+      saveFoodValue({
+        sourceFoodId: form.sourceFoodId,
+        foodName,
+        ...(form.imagePath ? { imagePath: form.imagePath } : {}),
+        ...(form.category ? { category: form.category } : {}),
+        quantity: quantityText,
+        protein,
+        carbs,
+        fat,
+        calories: calories ?? 0,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
     setForm(EMPTY);
     onSaved?.();
     onClearPrefill?.();
@@ -209,6 +276,37 @@ export function FoodLogForm({
             ))}
           </div>
         </div>
+
+        {/* Saved-values controls — only for library foods (stable sourceFoodId). */}
+        {sourceFoodId && (
+          <div className="space-y-2.5 rounded-2xl bg-surface-2 p-3">
+            <label className="tap flex cursor-pointer items-center gap-2.5">
+              <input
+                type="checkbox"
+                checked={form.saveValues}
+                onChange={(e) => update({ saveValues: e.target.checked })}
+                className="h-[18px] w-[18px] shrink-0 rounded accent-[color:var(--accent-nutrition)]"
+              />
+              <span className="text-[13.5px] font-semibold text-foreground">
+                שמור ערכים לפעם הבאה
+              </span>
+            </label>
+            {saved && (
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[11.5px] text-[color:var(--accent-nutrition)]">
+                  נטען מהערכים ששמרת
+                </p>
+                <button
+                  type="button"
+                  onClick={handleResetSaved}
+                  className="tap shrink-0 text-[11.5px] font-semibold text-faint underline-offset-2 hover:text-foreground hover:underline"
+                >
+                  אפס ערכים שמורים
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         <Button type="submit" disabled={!canSave} size="lg" className="w-full">
           <PlusIcon className="h-5 w-5" /> הוסף ליומן
