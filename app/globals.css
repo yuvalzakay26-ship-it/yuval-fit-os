@@ -5,6 +5,13 @@
 
 /* ============================ Design tokens ============================ */
 :root {
+  /* Layout — the sticky app header's total height: the safe-area inset, the
+     58px header row (see components/layout/Header.tsx), and its 1px hairline.
+     Single source of truth so full-screen overlays can sit *below* the global
+     header instead of covering it. Same in light and dark (structure is
+     identical), so it lives only here. */
+  --app-header-height: calc(env(safe-area-inset-top) + 59px);
+
   /* Surfaces — layered for depth */
   --background: #f4f6f9;
   --background-tint: #eaf2f4; /* faint accent wash used in the page gradient */

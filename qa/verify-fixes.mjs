@@ -15,8 +15,13 @@ await page.addInitScript(() => {
 // Build a workout (creates history) + builder view with new tap targets.
 await page.goto(BASE + "/workouts?new=1", { waitUntil: "networkidle" });
 await page.fill("#workout-title", "בדיקת מטרות מגע");
-await page.selectOption("#exercise-picker", "squat");
+// Add an exercise via the full-screen visual picker (replaced the old select).
+await page.getByRole("button", { name: "בחר תרגיל ראשון" }).click();
+await page.waitForTimeout(200);
+await page.getByLabel("הוספת סקוואט לאימון").click();
 await page.waitForTimeout(120);
+await page.getByRole("button", { name: /^סיום/ }).click();
+await page.waitForTimeout(200);
 await page.getByText("הוספת סט").first().click();
 await page.waitForTimeout(120);
 const inputs = page.locator(".rounded-xl input[type=number]");

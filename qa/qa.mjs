@@ -93,10 +93,16 @@ async function run() {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(BASE + "/workouts?new=1", { waitUntil: "networkidle" });
   await page.fill("#workout-title", "אימון גב וחזה - בדיקה");
-  await page.selectOption("#exercise-picker", "lat-pulldown");
-  await page.waitForTimeout(150);
-  await page.selectOption("#exercise-picker", "bench-press");
-  await page.waitForTimeout(150);
+  // Exercises are added through the full-screen visual picker (replaced the
+  // old native <select>). Open it once and add both exercises, then close.
+  await page.getByRole("button", { name: "בחר תרגיל ראשון" }).click();
+  await page.waitForTimeout(200);
+  await page.getByLabel("הוספת פולי עליון לאימון").click();
+  await page.waitForTimeout(120);
+  await page.getByLabel("הוספת לחיצת חזה לאימון").click();
+  await page.waitForTimeout(120);
+  await page.getByRole("button", { name: /^סיום/ }).click();
+  await page.waitForTimeout(200);
   // Add a 2nd set to the first exercise.
   await page.getByText("הוספת סט").first().click();
   await page.waitForTimeout(150);

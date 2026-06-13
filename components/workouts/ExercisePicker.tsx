@@ -126,8 +126,13 @@ export function ExercisePicker({
       role="dialog"
       aria-modal="true"
       aria-label="בחירת תרגיל"
-      className="animate-fade-in fixed inset-0 z-50 flex flex-col bg-background"
-      style={{ paddingTop: "env(safe-area-inset-top)" }}
+      // Pinned below the global app header (top offset) and down to the bottom
+      // edge — so the real sticky header stays visible and usable while the
+      // picker still owns the full content area (covering page + bottom nav, as
+      // before). z-50 sits above page content/nav but never overlaps the
+      // header, which lives in the gap above `top`.
+      className="animate-fade-in fixed inset-x-0 bottom-0 z-50 flex flex-col bg-background"
+      style={{ top: "var(--app-header-height)" }}
     >
       {/* ---------- Header: back, title, helper, search, chips ---------- */}
       <div className="module-strength shrink-0 border-b border-border bg-surface/80 backdrop-blur-md">

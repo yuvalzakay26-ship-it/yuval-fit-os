@@ -12,11 +12,16 @@ await page.addInitScript(() => {
   } catch {}
 });
 
-// Workout builder @360 with two exercises + multi-set.
+// Workout builder @360 with an exercise + multi-set. Exercises are added via
+// the full-screen visual picker (replaced the old native select).
 await page.goto(BASE + "/workouts?new=1", { waitUntil: "networkidle" });
 await page.fill("#workout-title", "אימון בדיקה 360");
-await page.selectOption("#exercise-picker", "romanian-deadlift");
+await page.getByRole("button", { name: "בחר תרגיל ראשון" }).click();
+await page.waitForTimeout(200);
+await page.getByLabel("הוספת דדליפט רומני לאימון").click();
 await page.waitForTimeout(120);
+await page.getByRole("button", { name: /^סיום/ }).click();
+await page.waitForTimeout(200);
 await page.getByText("הוספת סט").first().click();
 await page.waitForTimeout(120);
 const inputs = page.locator(".rounded-xl input[type=number]");

@@ -46,6 +46,35 @@ async function run() {
     "picker shows helper text",
   );
   check(await noOverflow(page), "no horizontal overflow — picker open (390px)");
+
+  /* -------- Global app header stays visible above the picker --------- */
+  // The real header (Fit OS title, theme toggle, settings) must remain visible
+  // and uncovered — the picker sits below it, not over it.
+  const settingsLink = page.locator('a[aria-label="הגדרות"]');
+  const themeBtn = page.locator('button[aria-label="החלפת מצב תצוגה"]');
+  check(await settingsLink.isVisible(), "global header settings button visible with picker open");
+  check(await themeBtn.isVisible(), "global header theme toggle visible with picker open");
+  check(
+    await page.getByText("Fit OS", { exact: true }).first().isVisible(),
+    "global header 'Fit OS' title visible with picker open",
+  );
+  // Geometry: the picker's top edge must sit at/below the header's bottom edge.
+  const headerBox = await page.locator("header").first().boundingBox();
+  const dialogBox = await page.locator('[role="dialog"][aria-label="בחירת תרגיל"]').boundingBox();
+  check(
+    headerBox && dialogBox && dialogBox.y >= headerBox.y + headerBox.height - 1,
+    "picker top bar sits below the global header (no overlap)",
+  );
+  // The settings control must be clickable (not covered by the picker overlay).
+  check(
+    await settingsLink.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return el.contains(top) || el === top;
+    }),
+    "global header settings button is not covered by the picker",
+  );
+
   await page.screenshot({ path: `${OUT}/picker-open-390-light.png`, fullPage: true });
 
   /* ----------------------------- Search ------------------------------- */
@@ -115,7 +144,35 @@ async function run() {
   await page.getByRole("button", { name: "בחר תרגיל ראשון" }).click();
   await page.waitForTimeout(250);
   check(await noOverflow(page), "no horizontal overflow — picker open (dark, 390px)");
+  // Header still visible in dark mode with the picker open.
+  check(
+    await page.locator('a[aria-label="הגדרות"]').isVisible(),
+    "global header visible with picker open (dark)",
+  );
   await page.screenshot({ path: `${OUT}/picker-open-390-dark.png`, fullPage: true });
+
+  /* --------------------------- 360px width ---------------------------- */
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.getByRole("button", { name: /^סיום/ }).click();
+  await page.waitForTimeout(200);
+  await page.getByRole("button", { name: "בחר תרגיל ראשון" }).click();
+  await page.waitForTimeout(250);
+  check(await noOverflow(page), "no horizontal overflow — picker open (360px)");
+  check(
+    await page.locator('a[aria-label="הגדרות"]').isVisible(),
+    "global header visible with picker open (360px)",
+  );
+  {
+    const h = await page.locator("header").first().boundingBox();
+    const d = await page.locator('[role="dialog"][aria-label="בחירת תרגיל"]').boundingBox();
+    check(h && d && d.y >= h.y + h.height - 1, "picker below header at 360px");
+  }
+  check(
+    await page.getByRole("button", { name: /^סיום/ }).isVisible(),
+    "sticky footer 'סיום' visible at 360px",
+  );
+  await page.screenshot({ path: `${OUT}/picker-open-360-light.png`, fullPage: true });
 
   await browser.close();
   console.log("\n===== EXERCISE PICKER QA ISSUES (" + issues.length + ") =====");
