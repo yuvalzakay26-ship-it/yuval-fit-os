@@ -43,7 +43,7 @@ export interface FoodLibraryItem {
 /** Hebrew labels for each category, used by the library UI. */
 export const FOOD_CATEGORY_LABELS: Record<FoodCategory, string> = {
   proteins: "חלבונים",
-  carbs: "פחמימות",
+  carbs: "פחמימות ותוספות",
   vegetables: "ירקות",
   salads: "סלטים",
   "israeli-food": "אוכל ישראלי",
@@ -337,6 +337,144 @@ export const FOOD_LIBRARY: FoodLibraryItem[] = [
     nameEn: "White Fish Fillet",
     category: "proteins",
     imagePath: "/food/proteins/white-fish-fillet.webp",
+  },
+
+  // Carbs & side dishes set imported in Phase 3.13. Macros are deliberately
+  // omitted — the user enters them per portion. `id` mirrors the image slug;
+  // none of these slugs collide with existing breakfast/proteins ids. See
+  // docs/FOOD_MEDIA_IMPORT.md.
+  {
+    id: "baked-potato",
+    nameHe: "תפוח אדמה אפוי",
+    nameEn: "Baked Potato",
+    category: "carbs",
+    imagePath: "/food/carbs/baked-potato.webp",
+  },
+  {
+    id: "brown-rice",
+    nameHe: "אורז מלא",
+    nameEn: "Brown Rice",
+    category: "carbs",
+    imagePath: "/food/carbs/brown-rice.webp",
+  },
+  {
+    id: "corn",
+    nameHe: "תירס",
+    nameEn: "Corn",
+    category: "carbs",
+    imagePath: "/food/carbs/corn.webp",
+  },
+  {
+    id: "couscous",
+    nameHe: "קוסקוס",
+    nameEn: "Couscous",
+    category: "carbs",
+    imagePath: "/food/carbs/couscous.webp",
+  },
+  {
+    id: "crackers",
+    nameHe: "קרקרים",
+    nameEn: "Crackers",
+    category: "carbs",
+    imagePath: "/food/carbs/crackers.webp",
+  },
+  {
+    id: "granola",
+    nameHe: "גרנולה",
+    nameEn: "Granola",
+    category: "carbs",
+    imagePath: "/food/carbs/granola.webp",
+  },
+  {
+    id: "laffa-bread",
+    nameHe: "לאפה",
+    nameEn: "Laffa Bread",
+    category: "carbs",
+    imagePath: "/food/carbs/laffa-bread.webp",
+  },
+  {
+    id: "mashed-potatoes",
+    nameHe: "פירה",
+    nameEn: "Mashed Potatoes",
+    category: "carbs",
+    imagePath: "/food/carbs/mashed-potatoes.webp",
+  },
+  {
+    id: "oats",
+    nameHe: "שיבולת שועל",
+    nameEn: "Oats",
+    category: "carbs",
+    imagePath: "/food/carbs/oats.webp",
+  },
+  {
+    id: "pasta",
+    nameHe: "פסטה",
+    nameEn: "Pasta",
+    category: "carbs",
+    imagePath: "/food/carbs/pasta.webp",
+  },
+  {
+    id: "pita-bread",
+    nameHe: "פיתה",
+    nameEn: "Pita Bread",
+    category: "carbs",
+    imagePath: "/food/carbs/pita-bread.webp",
+  },
+  {
+    id: "ptitim",
+    nameHe: "פתיתים",
+    nameEn: "Ptitim",
+    category: "carbs",
+    imagePath: "/food/carbs/ptitim.webp",
+  },
+  {
+    id: "quinoa",
+    nameHe: "קינואה",
+    nameEn: "Quinoa",
+    category: "carbs",
+    imagePath: "/food/carbs/quinoa.webp",
+  },
+  {
+    id: "rice-cakes",
+    nameHe: "פריכיות אורז",
+    nameEn: "Rice Cakes",
+    category: "carbs",
+    imagePath: "/food/carbs/rice-cakes.webp",
+  },
+  {
+    id: "roasted-sweet-potato",
+    nameHe: "בטטה צלויה",
+    nameEn: "Roasted Sweet Potato",
+    category: "carbs",
+    imagePath: "/food/carbs/roasted-sweet-potato.webp",
+  },
+  {
+    id: "tortilla",
+    nameHe: "טורטייה",
+    nameEn: "Tortilla",
+    category: "carbs",
+    imagePath: "/food/carbs/tortilla.webp",
+  },
+  {
+    id: "white-rice",
+    nameHe: "אורז לבן",
+    nameEn: "White Rice",
+    category: "carbs",
+    imagePath: "/food/carbs/white-rice.webp",
+  },
+  {
+    id: "whole-wheat-bread",
+    nameHe: "לחם מלא",
+    nameEn: "Whole Wheat Bread",
+    category: "carbs",
+    imagePath: "/food/carbs/whole-wheat-bread.webp",
+  },
+  {
+    id: "whole-wheat-pasta",
+    nameHe: "פסטה מלאה",
+    nameEn: "Whole Wheat Pasta",
+    category: "carbs",
+    imagePath: "/food/carbs/whole-wheat-pasta.webp",
   },
 ];
 

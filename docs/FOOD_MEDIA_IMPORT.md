@@ -51,6 +51,7 @@ public/food/<category>/<slug>.webp
 
 - `public/food/breakfast/` — 20 images (15 in Phase 3.7, +5 in Phase 3.7.1)
 - `public/food/proteins/` — 19 images (Phase 3.12)
+- `public/food/carbs/` — 19 images (Phase 3.13)
 
 `<category>` is a `FoodCategory` from `lib/food-library.ts`:
 `proteins`, `carbs`, `vegetables`, `salads`, `israeli-food`, `full-meals`,
@@ -147,6 +148,64 @@ Skipped: none.
 > macros manually per portion. The quick-add flow remains prefill-only for
 > name / image / category / `sourceFoodId`.
 
+## Phase 3.13 — Carbs & side-dishes import
+
+The user added a third category folder containing carbs / side-dish images.
+
+- **Source folder inspected:** `public/food source/פחמימות ותוספות — Carbs & Side Dishes/`
+  (in-repo, gitignored). Actual folder name on disk:
+  `פחמימות ותוספות — Carbs & Side Dishes`.
+- **Images found:** **19**, all `.png`, ~1.5–2.6 MB each (1254×1254). No
+  unsupported formats, no duplicates/suspicious names, no oversized outliers,
+  and **no** generic/unclear names (no `ChatGPT Image …`, no bare timestamps) —
+  every filename maps cleanly to a known food, so nothing had to be skipped or
+  guessed.
+- **Converted / skipped:** 19 converted PNG → WebP q80; **0 skipped**. The set
+  shrank from ~37 MB to ~1.9 MB (~30–247 KB per image).
+- **Destination created:** `public/food/carbs/` (19 `.webp`).
+- **Category:** key `carbs` (already existed in `FoodCategory`). The Hebrew
+  label `FOOD_CATEGORY_LABELS.carbs` was updated from `פחמימות` to
+  **`פחמימות ותוספות`** to match the folder's intent (carbs *and side dishes*).
+  This is a display-only string used by the library chips — safe, nothing keys
+  off it. (The `פחמימות` macro-field label in `MacroSummary`/`FoodLogForm` is a
+  separate string and was left unchanged.)
+- **Library items added:** **19** entries appended to `FOOD_LIBRARY`.
+
+### Importer change
+
+The source folder name is Hebrew + English
+(`פחמימות ותוספות — Carbs & Side Dishes`). `slugify()` strips the Hebrew to
+`carbs-side-dishes`, which is not a `FoodCategory`, so without help it would
+fall back to `other`. Four `FOLDER_ALIASES` entries were added to map it to
+`carbs`: `"carbs & side dishes"`, `"carbs and side dishes"`, the full
+`"פחמימות ותוספות — carbs & side dishes"`, and `"פחמימות ותוספות"`.
+
+### Mapping decisions
+
+- `id` mirrors the image slug for stability. None of the 19 carbs slugs collide
+  with existing breakfast/proteins ids (e.g. carbs `whole-wheat-bread` is
+  distinct from breakfast `whole-wheat-bread-with-peanut-butter`; `oats` is
+  distinct from breakfast `oatmeal`), so no category-qualified ids were needed.
+- Filename → Hebrew name choices: `brown-rice` → `אורז מלא`,
+  `white-rice` → `אורז לבן`, `roasted-sweet-potato` → `בטטה צלויה`,
+  `mashed-potatoes` → `פירה`, `ptitim` → `פתיתים`, `laffa-bread` → `לאפה`,
+  `pita-bread` → `פיתה`, `rice-cakes` → `פריכיות אורז`,
+  `whole-wheat-pasta` → `פסטה מלאה`, `oats` → `שיבולת שועל`.
+
+### Carbs imported (19)
+
+baked-potato, brown-rice, corn, couscous, crackers, granola, laffa-bread,
+mashed-potatoes, oats, pasta, pita-bread, ptitim, quinoa, rice-cakes,
+roasted-sweet-potato, tortilla, white-rice, whole-wheat-bread,
+whole-wheat-pasta.
+
+Skipped: none.
+
+> **No nutrition inferred.** As with breakfast and proteins, all carbs items
+> leave `protein` / `carbs` / `fat` / `calories` **undefined** — the user enters
+> macros manually per portion. The quick-add flow remains prefill-only for
+> name / image / category / `sourceFoodId`.
+
 ## Data model & UI
 
 - `lib/food-library.ts` — `FoodCategory`, `FoodLibraryItem`,
@@ -197,6 +256,17 @@ form + thumbnail banner, saving writes a `FoodLog` with
 thumbnail, manual logging still creates an image-less log, totals reflect the
 manually-entered macros, and there is no horizontal overflow or console error in
 light **or** dark mode.
+
+**Phase 3.13** adds `qa/carbs-food-check.mjs` (Playwright, pre-seeds
+`yfos:welcome-seen:v1 = "1"`), which passes with **0 issues**: the
+`פחמימות ותוספות` chip exists, filtering to it shows exactly **19** carbs items
+with all images loaded, search for `אורז מלא` narrows to 1, picking it prefills
+the form + thumbnail banner, saving writes a `FoodLog` with
+`imagePath=/food/carbs/brown-rice.webp` / `category=carbs` /
+`sourceFoodId=brown-rice` and the user-entered macros, and breakfast + proteins
+filters still work — no overflow or console error in light **or** dark mode. The
+existing `qa/food-library-check.mjs` and `qa/welcome-check.mjs` still pass, and
+the exercise library still renders all **133** images (0 broken).
 
 ## Scope note
 

@@ -49,6 +49,11 @@ const FOLDER_ALIASES = {
   salads: "salads",
   vegetables: "vegetables",
   carbs: "carbs",
+  "carbs & side dishes": "carbs",
+  "carbs and side dishes": "carbs",
+  // Hebrew "carbs & side dishes" folder shipped in Phase 3.13.
+  "פחמימות ותוספות — carbs & side dishes": "carbs",
+  "פחמימות ותוספות": "carbs",
   proteins: "proteins",
   "main proteins": "proteins",
   // Hebrew "main proteins" folder shipped in Phase 3.12 ("חלבונים עיקריים — Main Proteins").
