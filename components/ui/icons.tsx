@@ -213,6 +213,15 @@ export const SparkIcon = (p: IconProps) =>
 export const XIcon = (p: IconProps) =>
   base(<path d="M6 6l12 12M18 6 6 18" />, p);
 
+export const SearchIcon = (p: IconProps) =>
+  base(
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.6-3.6" />
+    </>,
+    p,
+  );
+
 export const ExpandIcon = (p: IconProps) =>
   base(
     <path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5" />,

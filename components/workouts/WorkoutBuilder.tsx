@@ -9,7 +9,6 @@ import type {
 } from "@/lib/fitness-types";
 import {
   MUSCLE_GROUP_LABELS,
-  SEED_EXERCISES,
   getExerciseById,
   muscleGroupsForExercises,
 } from "@/lib/seed-exercises";
@@ -19,9 +18,10 @@ import { cn, createId, formatSetsSummary, todayISO } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { Input, Label, Select } from "@/components/ui/Field";
-import { CheckIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
+import { Input, Label } from "@/components/ui/Field";
+import { CheckIcon, PlusIcon, SearchIcon, TrashIcon } from "@/components/ui/icons";
 import { ExerciseImage } from "@/components/exercises/ExerciseImage";
+import { ExercisePicker } from "./ExercisePicker";
 
 function emptySet(setNumber: number): SetEntry {
   return { setNumber, weightKg: 0, reps: 0, completed: false };
@@ -47,15 +47,32 @@ export function WorkoutBuilder({
   const [entries, setEntries] = useState<WorkoutExerciseEntry[]>(
     initial?.entries ?? [],
   );
-  const [pickerValue, setPickerValue] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const usedIds = useMemo(() => new Set(entries.map((e) => e.exerciseId)), [entries]);
-  const available = SEED_EXERCISES.filter((e) => !usedIds.has(e.id));
+
+  // Recently-performed exercises, derived purely from history (newest-first),
+  // de-duplicated. Surfaced as a quick "recently used" rail in the picker — no
+  // new data model, nothing inferred.
+  const recentIds = useMemo(() => {
+    const seen = new Set<string>();
+    const ids: string[] = [];
+    for (const session of workouts) {
+      for (const entry of session.exercises) {
+        if (seen.has(entry.exerciseId)) continue;
+        if (!getExerciseById(entry.exerciseId)) continue;
+        seen.add(entry.exerciseId);
+        ids.push(entry.exerciseId);
+      }
+    }
+    return ids;
+  }, [workouts]);
 
   const addExercise = (exerciseId: string) => {
-    if (!exerciseId) return;
+    // Guard against duplicates so re-tapping in the picker can't add an
+    // exercise twice — matches the builder's long-standing one-of-each rule.
+    if (!exerciseId || usedIds.has(exerciseId)) return;
     setEntries((prev) => [...prev, { exerciseId, sets: [emptySet(1)] }]);
-    setPickerValue("");
   };
 
   const removeExercise = (exerciseId: string) =>
@@ -274,22 +291,29 @@ export function WorkoutBuilder({
         })}
       </div>
 
-      {/* Add exercise */}
+      {/* Add exercise — opens the full-screen visual picker. */}
       <div>
-        <Label htmlFor="exercise-picker">הוספת תרגיל מהספרייה</Label>
-        <Select
-          id="exercise-picker"
-          value={pickerValue}
-          onChange={(e) => addExercise(e.target.value)}
-          disabled={available.length === 0}
+        <p className="mb-1.5 block text-[12px] font-semibold tracking-wide text-muted">
+          הוספת תרגיל מהספרייה
+        </p>
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="tap flex w-full items-center gap-3 rounded-2xl border border-dashed border-border-strong bg-surface-2/60 px-4 py-3.5 text-right hover:border-[color:var(--accent-strength)] hover:bg-surface-2"
         >
-          <option value="">בחר תרגיל…</option>
-          {available.map((ex) => (
-            <option key={ex.id} value={ex.id}>
-              {ex.nameHe} · {MUSCLE_GROUP_LABELS[ex.muscleGroup]}
-            </option>
-          ))}
-        </Select>
+          <span className="strength-gradient shadow-glow-strength flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-[color:var(--accent-contrast)]">
+            <PlusIcon className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14.5px] font-bold text-foreground">
+              {entries.length === 0 ? "בחר תרגיל ראשון" : "הוסף עוד תרגיל"}
+            </span>
+            <span className="block text-[12px] text-muted">
+              דפדף עם תמונות, חפש או סנן לפי קבוצת שריר
+            </span>
+          </span>
+          <SearchIcon className="h-[18px] w-[18px] shrink-0 text-faint" />
+        </button>
       </div>
 
       {/* Actions */}
@@ -301,6 +325,15 @@ export function WorkoutBuilder({
           ביטול
         </Button>
       </div>
+
+      {pickerOpen && (
+        <ExercisePicker
+          onClose={() => setPickerOpen(false)}
+          onAdd={addExercise}
+          selectedIds={usedIds}
+          recentIds={recentIds}
+        />
+      )}
     </Card>
   );
 }

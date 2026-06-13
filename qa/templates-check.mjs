@@ -19,7 +19,12 @@ async function run() {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 
   await page.goto(BASE + "/workouts", { waitUntil: "networkidle" });
-  await page.evaluate(() => localStorage.clear());
+  await page.evaluate(() => {
+    localStorage.clear();
+    // Bypass the welcome screen + private-access notice for the smoke run.
+    localStorage.setItem("yfos:welcome-seen:v1", "1");
+    sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
+  });
   await page.reload({ waitUntil: "networkidle" });
 
   /* ------------------ Default templates render once ------------------ */
@@ -31,7 +36,11 @@ async function run() {
     "default templates render",
   );
   await page.reload({ waitUntil: "networkidle" });
-  const startButtons = await page.getByRole("button", { name: "התחל אימון" }).count();
+  // Exact match: the empty-history CTA "התחל אימון ראשון" would otherwise be
+  // counted via substring, inflating the template count.
+  const startButtons = await page
+    .getByRole("button", { name: "התחל אימון", exact: true })
+    .count();
   check(startButtons === 4, `no duplicate seeding after reload (${startButtons} templates)`);
 
   /* --------------- Start from template → save workout ---------------- */
@@ -125,7 +134,9 @@ async function run() {
   /* --------------------- Save history as template --------------------- */
   await page.locator('button[aria-label="שמירת האימון כתבנית"]').first().click();
   await page.waitForTimeout(300);
-  const startCount = await page.getByRole("button", { name: "התחל אימון" }).count();
+  const startCount = await page
+    .getByRole("button", { name: "התחל אימון", exact: true })
+    .count();
   check(startCount === 5, `workout saved as template (${startCount} templates)`);
 
   /* ----------------------------- Dark mode ---------------------------- */
