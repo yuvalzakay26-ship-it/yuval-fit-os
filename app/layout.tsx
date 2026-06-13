@@ -7,6 +7,8 @@ import { WelcomeGate } from "@/components/welcome/WelcomeGate";
 import { WELCOME_INIT_SCRIPT } from "@/lib/welcome";
 import { PrivateAccessNotice } from "@/components/access/PrivateAccessNotice";
 import { PRIVATE_ACCESS_INIT_SCRIPT } from "@/lib/private-access";
+import { AdminAccessCodeGate } from "@/components/access/AdminAccessCodeGate";
+import { ADMIN_ACCESS_INIT_SCRIPT } from "@/lib/admin-access";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
 const heebo = Heebo({
@@ -57,16 +59,23 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{ __html: PRIVATE_ACCESS_INIT_SCRIPT }}
         />
+        {/* Hide the admin access-code gate before paint on already-granted devices. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: ADMIN_ACCESS_INIT_SCRIPT }}
+        />
       </head>
       <body className="min-h-dvh">
         <ThemeProvider>
-          {/* Gate order: the private-access notice sits above the welcome screen
-              (higher z-index) so it is seen first; accepting it reveals the
-              welcome screen for new users, then the app. */}
+          {/* Gate order (highest z-index seen first): the private-access notice
+              sits above the admin access-code gate, which sits above the welcome
+              screen. Accepting the notice reveals the admin gate; entering the
+              correct code reveals the welcome screen for new users, then the app. */}
           <PrivateAccessNotice>
-            <WelcomeGate>
-              <AppShell>{children}</AppShell>
-            </WelcomeGate>
+            <AdminAccessCodeGate>
+              <WelcomeGate>
+                <AppShell>{children}</AppShell>
+              </WelcomeGate>
+            </AdminAccessCodeGate>
           </PrivateAccessNotice>
         </ThemeProvider>
         <ServiceWorkerRegister />

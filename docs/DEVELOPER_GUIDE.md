@@ -29,7 +29,7 @@ configure, no `.env`, no services to start.
 ```
 app/                    route segments (one folder per screen) + layout, manifest
 components/
-  access/               PrivateAccessNotice gate
+  access/               PrivateAccessNotice + AdminAccessCodeGate
   welcome/              WelcomeGate
   layout/               AppShell, Header, BottomNav, ScrollToTop, nav-items
   today/ workouts/ exercises/ nutrition/ water/ supplements/ progress/ settings/
@@ -42,6 +42,7 @@ lib/
   analytics.ts          pure derivations (totals, summaries, PRs) — no storage
   welcome.ts            welcome gate state + init script
   private-access.ts     private-access gate state + init script
+  admin-access.ts       admin access-code gate state + init script
   seed-exercises.ts     133-exercise library + Hebrew labels
   seed-templates.ts     starter workout templates
   food-library.ts       static food catalogue
@@ -74,18 +75,22 @@ docs/                   feature docs + this guide + PROJECT_STATE.md
 
 ## 4. Gate / welcome behavior
 
-Two independent, fail-open gates wrap the app in `app/layout.tsx`
-(`PrivateAccessNotice → WelcomeGate → AppShell`):
+Three gates wrap the app in `app/layout.tsx`, highest z-index seen first
+(`PrivateAccessNotice → AdminAccessCodeGate → WelcomeGate → AppShell`):
 
 - **Private Access Notice** — `sessionStorage` key
   `yfos:private-access-notice-accepted:session`. Re-appears every fresh session.
-  Informational only (no password/auth).
+  Informational only (no password/auth). Fails open.
+- **Admin Access Code Gate** — `localStorage` key `yfos:admin-access-granted:v1`.
+  A **client-side access-code gate** (code `yuvalzakay123`, in the bundle — not
+  real auth, no backend, no tracking). Persists per device until locked from
+  Settings ("נעל מערכת"). Fails **closed** (a storage hiccup keeps the gate up).
+  See `docs/ADMIN_ACCESS_GATE.md`.
 - **Welcome screen** — `localStorage` key `yfos:welcome-seen:v1`. Shown once, then
-  re-showable from Settings.
+  re-showable from Settings. Fails open.
 
-Both expose a pre-paint init script injected in `<head>` that toggles a class on
-`<html>` so returning users never flash the overlay. Both fail open: if storage
-throws, the user is let through.
+Each exposes a pre-paint init script injected in `<head>` that toggles a class on
+`<html>` so returning users never flash the overlay.
 
 ## 5. Theme
 
@@ -114,6 +119,7 @@ Useful entry points:
 | `qa/check360.mjs` | 360px-width pass across routes |
 | `qa/console-check.mjs` | Asserts no console errors across routes |
 | `qa/private-access-check.mjs` | Private Access Notice gate behavior |
+| `qa/admin-access-check.mjs` | Admin access-code gate: wrong/correct code, persistence, Settings lock |
 | `qa/welcome-check.mjs` | Welcome screen + persistence + reset |
 | `qa/today-dashboard-check.mjs` | Today dashboard |
 | `qa/food-library-check.mjs`, `qa/*-food-check.mjs` | Food library + per-category data |
@@ -130,21 +136,24 @@ Useful entry points:
 
 ### Seeding the gates in QA
 
-Because both gates wrap the app, QA scripts must pre-seed them before asserting
-inner UI, via an init script:
+Because all three gates wrap the app, QA scripts must pre-seed them before
+asserting inner UI, via an init script:
 
 ```js
 await page.addInitScript(() => {
   try {
     localStorage.setItem("yfos:welcome-seen:v1", "1");
     sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
+    localStorage.setItem("yfos:admin-access-granted:v1", "1");
   } catch {}
 });
 ```
 
 `qa/nutrition-helpers.mjs` (`seedAndResetNutrition`) already does this for the
 nutrition flow and is the reference pattern. Reuse those exact key strings —
-they are the contract from `lib/welcome.ts` / `lib/private-access.ts`.
+they are the contract from `lib/welcome.ts` / `lib/private-access.ts` /
+`lib/admin-access.ts`. (The dedicated `qa/admin-access-check.mjs` deliberately
+does NOT seed the admin key, so it can exercise the gate itself.)
 
 **Seed date-keyed data with the LOCAL ISO date, not UTC.** Water logs and
 supplement-logs are keyed/filtered by `lib/utils` `toISODate` (local

@@ -211,6 +211,15 @@ body {
   display: none;
 }
 
+/* Admin access-code gate: when ADMIN_ACCESS_INIT_SCRIPT detects access was
+   already granted on this device it adds this class before paint, hiding the
+   server-rendered gate overlay so returning users never see a flash of it. Kept
+   in sync at runtime by grant/reset (lib/admin-access.ts), so the Settings
+   "נעל מערכת" action re-reveals it immediately. */
+.admin-access-granted [data-admin-access-gate] {
+  display: none;
+}
+
 /* Smooth, accessible scrolling for the scroll-to-top behaviour. */
 @media (prefers-reduced-motion: no-preference) {
   html {

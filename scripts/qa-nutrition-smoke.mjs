@@ -9,7 +9,7 @@ let failures = 0;
 const check = (name, ok) => { console.log(`${ok ? "PASS" : "FAIL"}  ${name}`); if (!ok) failures++; };
 
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-await ctx.addInitScript(() => { try { localStorage.setItem("yfos:welcome-seen:v1", "1"); sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1"); } catch {} });
+await ctx.addInitScript(() => { try { localStorage.setItem("yfos:welcome-seen:v1", "1"); sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1"); localStorage.setItem("yfos:admin-access-granted:v1", "1"); } catch {} });
 const page = await ctx.newPage();
 page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 page.on("pageerror", (e) => errors.push(`pageerror: ${e.message}`));

@@ -21,9 +21,12 @@ a PWA-style web app that can later become a native app via Capacitor.
 `Today` · `Workouts` · `Exercises` · `Nutrition` (incl. Food Library, Water,
 Supplements) · `Progress` · `Settings` · `Learn`
 
-A first-visit `Welcome` screen and a per-session `Private Access` notice wrap the
-app (both informational only — no password/auth). See
-[docs/PROJECT_STATE.md](docs/PROJECT_STATE.md) for the full module + route map.
+Three gates wrap the app, in order: a per-session `Private Access` notice
+(informational only), an `Admin Access Code` gate (a **client-side** code gate —
+not real auth, no backend, no tracking; see
+[docs/ADMIN_ACCESS_GATE.md](docs/ADMIN_ACCESS_GATE.md)), and a first-visit
+`Welcome` screen. See [docs/PROJECT_STATE.md](docs/PROJECT_STATE.md) for the full
+module + route map.
 
 The Learn screen (`/learn`, מרכז ידע) holds short card-based educational
 articles and a daily protein goal calculator (g/kg/day). It is reachable from

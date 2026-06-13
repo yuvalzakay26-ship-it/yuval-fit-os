@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/icons";
 import { resetWelcome } from "@/lib/welcome";
 import { resetPrivateAccess } from "@/lib/private-access";
+import { resetAdminAccess } from "@/lib/admin-access";
 import Link from "next/link";
 
 const THEME_OPTIONS: Array<{
@@ -449,6 +450,18 @@ export function SettingsView() {
         </p>
         <Button variant="secondary" onClick={() => resetPrivateAccess()}>
           <LockIcon className="h-[18px] w-[18px]" /> הצג מסך גישה פרטית
+        </Button>
+      </Card>
+
+      {/* Lock the system — clears the admin access-code grant and re-shows the gate */}
+      <Card className="space-y-3 p-4">
+        <CardLabel>נעילת מערכת</CardLabel>
+        <p className="text-[13px] leading-relaxed text-muted">
+          נעילת המערכת תדרוש קוד גישה מחדש בכניסה הבאה. זהו קוד גישה בצד הלקוח
+          בלבד, לא אימות שרת. הנתונים שלך נשמרים ולא יימחקו.
+        </p>
+        <Button variant="danger" onClick={() => resetAdminAccess()}>
+          <LockIcon className="h-[18px] w-[18px]" /> נעל מערכת
         </Button>
       </Card>
 

@@ -10,14 +10,17 @@ export async function seedAndResetNutrition(page, base) {
   await page.addInitScript(() => {
     try {
       localStorage.setItem("yfos:welcome-seen:v1", "1");
-      sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
+      sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1"); localStorage.setItem("yfos:admin-access-granted:v1", "1");
     } catch {}
   });
   await page.goto(base + "/nutrition", { waitUntil: "networkidle" });
   await page.evaluate(() => {
-    const keep = localStorage.getItem("yfos:welcome-seen:v1");
+    const keepWelcome = localStorage.getItem("yfos:welcome-seen:v1");
+    const keepAdmin = localStorage.getItem("yfos:admin-access-granted:v1");
     localStorage.clear();
-    if (keep) localStorage.setItem("yfos:welcome-seen:v1", keep);
+    if (keepWelcome) localStorage.setItem("yfos:welcome-seen:v1", keepWelcome);
+    // Preserve the admin grant so the access-code gate doesn't block the reset flow.
+    if (keepAdmin) localStorage.setItem("yfos:admin-access-granted:v1", keepAdmin);
   });
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(400);

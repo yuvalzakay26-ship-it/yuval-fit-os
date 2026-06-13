@@ -374,6 +374,36 @@ export const ArchiveIcon = (p: IconProps) =>
     p,
   );
 
+// Alert triangle with an exclamation — used for the admin access-code gate's
+// warning composition. Serious, not clinical.
+export const WarningIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M12 4.2 21 19.5H3L12 4.2Z" />
+      <path d="M12 10v4M12 16.8v.01" />
+    </>,
+    p,
+  );
+
+// Eye / eye-off pair for the optional show/hide code toggle on the gate input.
+export const EyeIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </>,
+    p,
+  );
+
+export const EyeOffIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M9.9 5.7A9.7 9.7 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-3.4 4M6.2 7.8A17 17 0 0 0 2.5 12S6 18.5 12 18.5a9.6 9.6 0 0 0 3.9-.8" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18" />
+    </>,
+    p,
+  );
+
 // Shield with a check — used for the calm, non-alarming safety note.
 export const ShieldIcon = (p: IconProps) =>
   base(

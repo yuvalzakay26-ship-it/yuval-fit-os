@@ -17,7 +17,7 @@ async function capture(name, viewport, state, colorScheme = "light") {
   await page.addInitScript((pairs) => {
     try {
       localStorage.setItem("yfos:welcome-seen:v1", "1");
-      sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
+      sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1"); localStorage.setItem("yfos:admin-access-granted:v1", "1");
       for (const [k, v] of pairs) localStorage.setItem(k, v);
     } catch {}
   }, pairs);

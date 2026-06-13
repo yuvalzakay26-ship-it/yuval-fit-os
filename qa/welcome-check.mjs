@@ -27,7 +27,7 @@ const page = await context.newPage();
 // session flag — the welcome flag stays clean so the welcome screen still shows.
 await page.addInitScript(() => {
   try {
-    sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
+    sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1"); localStorage.setItem("yfos:admin-access-granted:v1", "1");
   } catch {}
 });
 
@@ -79,9 +79,11 @@ check("refresh does not show welcome again", (await page.locator(GATE).count()) 
 // 4. Settings "הצג מסך פתיחה" brings the welcome screen back.
 await page.goto(BASE + "/settings", { waitUntil: "networkidle" });
 await page.waitForTimeout(200);
+// The admin access-code gate adds a Settings lock action ("נעל מערכת"); confirm
+// it is present (it lives alongside, and does not replace, the welcome reset).
 check(
-  "settings has no security/lock copy",
-  !(await page.locator("body").innerText()).includes("נעל מערכת"),
+  "settings has admin lock action",
+  (await page.locator("body").innerText()).includes("נעל מערכת"),
 );
 await page.getByRole("button", { name: "הצג מסך פתיחה" }).click();
 await page.waitForTimeout(300);

@@ -42,11 +42,13 @@ async function newSession(width = 390) {
       consoleMsgs.push(`[${m.type()}] ${m.text()}`);
   });
   page.on("pageerror", (e) => consoleMsgs.push(`[pageerror] ${e.message}`));
-  // Seed the welcome flag so the welcome screen never confounds this script —
-  // we are testing the private-access notice in isolation.
+  // Seed the welcome + admin-access flags so neither the welcome screen nor the
+  // admin access-code gate confounds this script — we are testing the
+  // private-access notice in isolation.
   await page.addInitScript(() => {
     try {
       localStorage.setItem("yfos:welcome-seen:v1", "1");
+      localStorage.setItem("yfos:admin-access-granted:v1", "1");
     } catch {}
   });
   return { context, page };

@@ -23,7 +23,7 @@ async function run() {
     localStorage.clear();
     // Bypass the welcome screen + private-access notice for the smoke run.
     localStorage.setItem("yfos:welcome-seen:v1", "1");
-    sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
+    sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1"); localStorage.setItem("yfos:admin-access-granted:v1", "1");
   });
   await page.reload({ waitUntil: "networkidle" });
 

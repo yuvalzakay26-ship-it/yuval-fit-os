@@ -38,7 +38,7 @@ for (const scheme of ["dark", "light"]) {
   await ctx.addInitScript(() => {
     try {
       localStorage.setItem("yfos:welcome-seen:v1", "1");
-      sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
+      sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1"); localStorage.setItem("yfos:admin-access-granted:v1", "1");
       localStorage.setItem(
         "yfos:saved-food-values:v1",
         JSON.stringify({

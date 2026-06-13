@@ -4,8 +4,8 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.28 (supplements library flow polish: search,
-> already-tracked state, selected-template summary, CTA/bottom-nav clearance).
+> Last reviewed: Phase 3.xx (admin access-code gate: a client-side red/black
+> code gate between the private-access notice and the welcome screen).
 
 ---
 
@@ -42,6 +42,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | Learn (Knowledge Center) | Card-based Hebrew articles + protein calculator | `app/learn/*`, `lib/knowledge-content.ts`, `lib/protein.ts` |
 | Welcome screen | First-visit intro (gate) | `components/welcome/WelcomeGate.tsx`, `lib/welcome.ts` |
 | Private Access Notice | Per-session informational notice (gate) | `components/access/PrivateAccessNotice.tsx`, `lib/private-access.ts` |
+| Admin Access Code Gate | Client-side access-code gate (not real auth) | `components/access/AdminAccessCodeGate.tsx`, `lib/admin-access.ts`, `docs/ADMIN_ACCESS_GATE.md` |
 | PWA | Installable app shell + service worker | `app/manifest.ts`, `components/ServiceWorkerRegister.tsx`, `public/sw.js` |
 
 ## 3. Main routes
@@ -96,17 +97,19 @@ existing user data is bound to them. See §5 for reset behavior.
 | --- | --- | --- | --- |
 | `yfos:welcome-seen:v1` | localStorage | First-visit welcome screen seen flag (`"1"`) | `lib/welcome.ts` |
 | `yfos:private-access-notice-accepted:session` | **sessionStorage** | Private-access notice accepted **this session** (`"1"`) | `lib/private-access.ts` |
+| `yfos:admin-access-granted:v1` | localStorage | Admin access-code gate unlocked on this device (`"1"`) | `lib/admin-access.ts` |
 
 > The theme has **no separate key** — it is a field inside `yfos:settings`. The
-> pre-paint `THEME_INIT_SCRIPT` reads `yfos:settings` directly. The two gates use
-> pre-paint init scripts that toggle `.welcome-seen` / `.private-access-accepted`
-> on `<html>` so returning users never see a flash.
+> pre-paint `THEME_INIT_SCRIPT` reads `yfos:settings` directly. The three gates
+> use pre-paint init scripts that toggle `.welcome-seen` /
+> `.private-access-accepted` / `.admin-access-granted` on `<html>` so returning
+> users never see a flash.
 
 ## 5. Reset behavior
 
 | Action (Settings) | What it clears | What it preserves |
 | --- | --- | --- |
-| **Reset all data** (`resetAll`) | All 9 `STORAGE_KEYS` data keys, incl. `yfos:settings` (theme returns to `system`) | Both gate flags (`welcome-seen`, `private-access`) — gates are not "data" |
+| **Reset all data** (`resetAll`) | All 9 `STORAGE_KEYS` data keys, incl. `yfos:settings` (theme returns to `system`) | All gate flags (`welcome-seen`, `private-access`, `admin-access`) — gates are not "data" |
 | Reset saved food values | `yfos:saved-food-values:v1` only | Food logs, favorites |
 | Reset favorite foods | `yfos:favorite-foods:v1` only | Food logs, saved values |
 | Reset supplements | `yfos:supplements:v1` (deleting a supplement also drops its logs) | Other modules |
@@ -114,6 +117,7 @@ existing user data is bound to them. See §5 for reset behavior.
 | Reset water day | One date inside `yfos:water-logs:v1` | All other days |
 | Show welcome again (`resetWelcome`) | `yfos:welcome-seen:v1` only | All real data |
 | Show private notice again (`resetPrivateAccess`) | `yfos:private-access-notice-accepted:session` only | All real data |
+| Lock system — "נעל מערכת" (`resetAdminAccess`) | `yfos:admin-access-granted:v1` only — re-shows the access-code gate | All real data |
 
 `resetAll` deliberately does **not** clear the gate flags, and the gate resets
 deliberately do **not** touch user data. Keep these concerns separate.
@@ -143,12 +147,15 @@ deliberately do **not** touch user data. Keep these concerns separate.
   constants; the real client value swaps in after mount).
 - **Pure derivations (`lib/analytics.ts`)** never touch storage — callers pass data
   in, so they stay testable and SSR-safe.
-- **Gates (`lib/welcome.ts`, `lib/private-access.ts`)** mirror that same
-  `useSyncExternalStore` shape and expose pre-paint init scripts.
+- **Gates (`lib/welcome.ts`, `lib/private-access.ts`, `lib/admin-access.ts`)**
+  mirror that same `useSyncExternalStore` shape and expose pre-paint init
+  scripts. The admin gate fails **closed** (storage hiccup keeps it up); the
+  other two fail open.
 - **Theme (`components/ThemeProvider.tsx`)** resolves `system` via `matchMedia`
   and toggles `.dark` on `<html>`; the saved value lives in settings.
-- All four `<head>` init scripts (theme + 2 gates) run before paint to prevent
-  flashes; `RootLayout` nests `PrivateAccessNotice → WelcomeGate → AppShell`.
+- All four `<head>` init scripts (theme + 3 gates) run before paint to prevent
+  flashes; `RootLayout` nests
+  `PrivateAccessNotice → AdminAccessCodeGate → WelcomeGate → AppShell`.
 
 ## 8. Product boundaries — what must NOT be broken
 
@@ -162,6 +169,10 @@ deliberately do **not** touch user data. Keep these concerns separate.
   or hosted) — not medical or physical-therapy advice.
 - **The Private Access Notice is informational only** — not authentication, no
   password, no backend check, no tracking. Fails open if storage is unavailable.
+- **The Admin Access Code Gate is a client-side code gate** — not real auth, no
+  backend check, no device detection, no tracking. The code lives in the bundle
+  and is not a secret. Fails closed if storage is unavailable. See
+  `docs/ADMIN_ACCESS_GATE.md`.
 - **The Welcome screen is a first-visit intro** — not a gate that protects data.
 - **No backend / auth / database / cloud sync / AI / external APIs** currently.
 - Storage keys, exercise ids, exercise images, food data/images and supplement
