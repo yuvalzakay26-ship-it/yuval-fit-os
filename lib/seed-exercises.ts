@@ -2223,7 +2223,7 @@ export const SEED_EXERCISES: Exercise[] = [
   {
     id: "cable-crunch",
     nameEn: "Cable Crunch",
-    nameHe: "כפיפות בטן בכבל",
+    nameHe: "כפיפות בטן בפולי",
     muscleGroup: "core",
     secondaryMuscles: [],
     equipment: "cable",

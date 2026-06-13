@@ -8,11 +8,18 @@ import { useWorkouts } from "@/lib/fitness-store";
 import { cn } from "@/lib/utils";
 import { ExerciseCard } from "./ExerciseCard";
 
-const FILTERS: Array<{ value: MuscleGroup | "all"; label: string }> = [
-  { value: "all", label: "הכל" },
+// Exercise count per primary muscle group, derived from the data so the chip
+// labels stay correct as the library grows (no hardcoded numbers).
+const GROUP_COUNTS = SEED_EXERCISES.reduce<Record<string, number>>((acc, e) => {
+  acc[e.muscleGroup] = (acc[e.muscleGroup] ?? 0) + 1;
+  return acc;
+}, {});
+
+const FILTERS: Array<{ value: MuscleGroup | "all"; label: string; count: number }> = [
+  { value: "all", label: "הכל", count: SEED_EXERCISES.length },
   ...(
     [...new Set(SEED_EXERCISES.map((e) => e.muscleGroup))] as MuscleGroup[]
-  ).map((m) => ({ value: m, label: MUSCLE_GROUP_LABELS[m] })),
+  ).map((m) => ({ value: m, label: MUSCLE_GROUP_LABELS[m], count: GROUP_COUNTS[m] })),
 ];
 
 export function ExerciseLibrary() {
@@ -43,6 +50,17 @@ export function ExerciseLibrary() {
             )}
           >
             {f.label}
+            {/* Decorative count — aria-hidden keeps the button's accessible
+                name the plain category label (e.g. "גב"), not "גב 19". */}
+            <span
+              aria-hidden="true"
+              className={cn(
+                "ms-1.5 tabular-nums text-[11px] font-bold",
+                filter === f.value ? "opacity-75" : "text-faint",
+              )}
+            >
+              {f.count}
+            </span>
           </button>
         ))}
       </div>

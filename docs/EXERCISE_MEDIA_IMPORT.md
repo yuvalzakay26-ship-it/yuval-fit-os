@@ -1,4 +1,4 @@
-# Exercise media import (chest + back + legs + shoulders + biceps + triceps)
+# Exercise media import (chest + back + legs + shoulders + biceps + triceps + core)
 
 Phase 3.4 imported the real chest/back exercise images into the production
 asset structure and wired them into the exercise library. Phase 3.6 extended
@@ -494,4 +494,87 @@ None from the Abs folder — all 15 images mapped cleanly to a known exercise.
   overflow, no console errors.
 
 No backend / auth / AI / native / video / chart / theme / food-library /
+access-code changes were made.
+
+# Phase 3.11 — exercise library final polish
+
+A QA + polish pass after all exercise image imports were complete. **No images
+were imported in this phase** and no new exercises were added — it audits the
+finished library, adds a small data-driven UI touch, fixes one Hebrew naming
+inconsistency, and hardens the QA harnesses now that coverage is 100%.
+
+## Precondition
+
+Phase 3.10 (abs/core) was confirmed complete, validated, committed, and pushed
+before starting: commit `619a5b8` ("feat: import core exercise images") was the
+tip of both local `main` and `origin/main`, and all 15 core images exist on
+disk and are wired.
+
+## Final coverage (data-driven audit)
+
+`node scripts/audit-exercises.mjs` parses `lib/seed-exercises.ts` and reports:
+
+- **Total exercises: 133**
+- Per primary muscle group: chest 20, biceps (יד קדמית) 20, triceps (יד אחורית)
+  20, back (גב) 19, shoulders (כתפיים) 19, legs (רגליים) 16, core (ליבה) 15,
+  glutes (עכוז) 4.
+- **Image coverage: 133 / 133 (100%)** — **0 fallbacks remaining**.
+- 0 duplicate ids, 0 duplicate imageKeys, 0 duplicate Hebrew/English names.
+- 0 imagePaths missing on disk, 0 path-convention mismatches, 0 orphan image
+  files in `public/exercises/`.
+
+The only "odd" category count is **glutes (4)** — expected: glutes was always a
+small satellite group seeded alongside legs (Phase 3.6), not a dedicated import.
+
+## Polish changes
+
+- **Category chip counts** (`components/exercises/ExerciseLibrary.tsx`): each
+  filter chip now shows its exercise count (e.g. `חזה 20`, `הכל 133`), derived
+  from `SEED_EXERCISES` at module load — **never hardcoded**. The count `<span>`
+  is `aria-hidden` so the button's accessible name stays the plain category
+  label (e.g. `גב`), which keeps screen-reader output clean and existing
+  role-based selectors working.
+- **Hebrew consistency** (`lib/seed-exercises.ts`): `cable-crunch` `nameHe` was
+  the only cable exercise using "בכבל"; changed to "כפיפות בטן בפולי" to match
+  the other 54 cable references (its own instructions already said "פולי").
+
+No other UI changes were needed — the image viewer (safe-area insets,
+object-contain, 40px close target, X/backdrop/Escape close, scroll lock), card
+density, truncation, and placeholder fallback were already in good shape.
+
+## Fallback cleanup
+
+No seeded fallback exercises remain (coverage is 100%). The QA harnesses no
+longer assume any specific placeholder-only group. The `ExercisePlaceholder`
+component and the `ExerciseImage` fallback path are intentionally retained as
+defensive behavior for any future image-less exercise.
+
+## QA changes
+
+- `scripts/qa-exercises.mjs` rewritten to be **data-driven**: instead of
+  hardcoding per-group expectations, each view asserts `realImages === cardCount`
+  and `placeholders === 0` (placeholders detected via the `[data-image-key]`
+  attribute on `ExercisePlaceholder`). It iterates every muscle-group chip,
+  tracks pass/fail, and exits non-zero on any failure or console error.
+- Added `scripts/audit-exercises.mjs` — the standalone data audit above.
+
+## Validation
+
+`npm run lint` clean; `npm run build` succeeds (17 static pages, TypeScript
+passes). QA on a `next start -p 3199` prod server with the access flag
+pre-seeded:
+
+- `qa-exercises.mjs`: all green dark + light — 133/133 real images on "all",
+  every filter fully imaged (19 גב, 4 עכוז, 20 חזה, 19 כתפיים, 16 רגליים,
+  20 יד קדמית, 20 יד אחורית, 15 ליבה), 0 placeholders, 0 overflow, 0 console
+  errors.
+- `qa-image-viewer.mjs`: all green dark + light (object-contain, open/close via
+  X/backdrop/Escape, body scroll restored, core offers the viewer).
+- `qa/access-check.mjs`: all pass — gate accepts `yuvalzakay123`, rejects the
+  retired `yuval`, persists + locks correctly.
+- `qa/food-library-check.mjs`: passes (0 issues) — food library untouched.
+- Workout-builder smoke: full 133-exercise picker, selected exercises render
+  real images, multi-set, 0 overflow, no console errors.
+
+No backend / auth / AI / native / video / chart / theme / food-import /
 access-code changes were made.
