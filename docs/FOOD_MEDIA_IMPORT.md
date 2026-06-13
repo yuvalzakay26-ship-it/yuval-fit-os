@@ -52,6 +52,7 @@ public/food/<category>/<slug>.webp
 - `public/food/breakfast/` — 20 images (15 in Phase 3.7, +5 in Phase 3.7.1)
 - `public/food/proteins/` — 19 images (Phase 3.12)
 - `public/food/carbs/` — 19 images (Phase 3.13)
+- `public/food/vegetables/` — 20 images (Phase 3.14)
 
 `<category>` is a `FoodCategory` from `lib/food-library.ts`:
 `proteins`, `carbs`, `vegetables`, `salads`, `israeli-food`, `full-meals`,
@@ -206,6 +207,59 @@ Skipped: none.
 > macros manually per portion. The quick-add flow remains prefill-only for
 > name / image / category / `sourceFoodId`.
 
+## Phase 3.14 — Vegetables import
+
+The user added a fourth category folder containing vegetable images.
+
+- **Source folder inspected:** `public/food source/ירקות — Vegetables/`
+  (in-repo, gitignored). Actual folder name on disk: `ירקות — Vegetables`.
+- **Images found:** **20**, all `.png`, ~1.7–2.5 MB each. No unsupported
+  formats, no duplicates/suspicious names, no oversized outliers, and **no**
+  generic/unclear names (no `ChatGPT Image …`, no bare timestamps) — every
+  filename maps cleanly to a known vegetable, so nothing had to be skipped or
+  guessed.
+- **Converted / skipped:** 20 converted PNG → WebP q80; **0 skipped**. The set
+  shrank from ~40 MB to ~1.9 MB (~51–187 KB per image).
+- **Destination created:** `public/food/vegetables/` (20 `.webp`).
+- **Category:** key `vegetables`, Hebrew label `ירקות` (both already existed in
+  `FoodCategory` / `FOOD_CATEGORY_LABELS` — no model change needed).
+- **Library items added:** **20** entries appended to `FOOD_LIBRARY`.
+
+### Importer change
+
+The source folder name is Hebrew + English (`ירקות — Vegetables`). `slugify()`
+strips the Hebrew to `vegetables`, which *is* a valid `FoodCategory`, so the
+importer already resolved it correctly. Two `FOLDER_ALIASES` entries were added
+anyway for explicit, self-documenting mapping (matching the proteins/carbs
+phases): `"ירקות — vegetables"` and `"ירקות"`.
+
+### Mapping decisions
+
+- `id` mirrors the image slug for stability. None of the 20 vegetable slugs
+  collide with existing breakfast/proteins/carbs ids (e.g. vegetables `avocado`
+  is distinct from breakfast `avocado-and-egg-toast`), so no category-qualified
+  ids were needed.
+- Source `Mushrooms.png` keeps its plural slug `mushrooms` (Hebrew `פטריות`);
+  `Mixed Vegetables.png` → `mixed-vegetables` (`ירקות מעורבים`).
+- Filename → Hebrew name choices: `beetroot` → `סלק`, `cauliflower` → `כרובית`,
+  `eggplant` → `חציל`, `green-beans` → `שעועית ירוקה`, `lettuce` → `חסה`,
+  `red-bell-pepper` → `פלפל אדום`, `yellow-bell-pepper` → `פלפל צהוב`,
+  `red-cabbage` → `כרוב אדום`, `spinach` → `תרד`, `zucchini` → `קישוא`,
+  `peas` → `אפונה`, `onion` → `בצל`, `cucumber` → `מלפפון`, `tomato` → `עגבנייה`.
+
+### Vegetables imported (20)
+
+avocado, beetroot, broccoli, cabbage, carrot, cauliflower, cucumber, eggplant,
+green-beans, lettuce, mixed-vegetables, mushrooms, onion, peas, red-bell-pepper,
+red-cabbage, spinach, tomato, yellow-bell-pepper, zucchini.
+
+Skipped: none.
+
+> **No nutrition inferred.** As with breakfast, proteins, and carbs, all
+> vegetables items leave `protein` / `carbs` / `fat` / `calories` **undefined** —
+> the user enters macros manually per portion. The quick-add flow remains
+> prefill-only for name / image / category / `sourceFoodId`.
+
 ## Data model & UI
 
 - `lib/food-library.ts` — `FoodCategory`, `FoodLibraryItem`,
@@ -267,6 +321,16 @@ the form + thumbnail banner, saving writes a `FoodLog` with
 filters still work — no overflow or console error in light **or** dark mode. The
 existing `qa/food-library-check.mjs` and `qa/welcome-check.mjs` still pass, and
 the exercise library still renders all **133** images (0 broken).
+
+**Phase 3.14** adds `qa/vegetables-food-check.mjs` (Playwright, pre-seeds
+`yfos:welcome-seen:v1 = "1"`), which passes with **0 issues**: the `ירקות` chip
+exists, filtering to it shows exactly **20** vegetables items with all images
+loaded, search for `כרובית` narrows to 1, picking it prefills the form +
+thumbnail banner, saving writes a `FoodLog` with
+`imagePath=/food/vegetables/cauliflower.webp` / `category=vegetables` /
+`sourceFoodId=cauliflower` and the user-entered macros, and breakfast + proteins
++ carbs filters still work — no overflow or console error in light **or** dark
+mode.
 
 ## Scope note
 

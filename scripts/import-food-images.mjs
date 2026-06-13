@@ -48,6 +48,9 @@ const FOLDER_ALIASES = {
   dinner: "full-meals",
   salads: "salads",
   vegetables: "vegetables",
+  // Hebrew "vegetables" folder shipped in Phase 3.14 ("ירקות — Vegetables").
+  "ירקות — vegetables": "vegetables",
+  ירקות: "vegetables",
   carbs: "carbs",
   "carbs & side dishes": "carbs",
   "carbs and side dishes": "carbs",
