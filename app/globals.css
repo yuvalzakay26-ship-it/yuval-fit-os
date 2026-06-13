@@ -315,6 +315,18 @@ body {
 .module-supplement {
   background-image: linear-gradient(160deg, var(--accent-supplement-soft) 0%, transparent 55%);
 }
+.module-strength {
+  background-image: linear-gradient(160deg, var(--accent-strength-soft) 0%, transparent 55%);
+}
+.module-nutrition {
+  background-image: linear-gradient(160deg, var(--accent-nutrition-soft) 0%, transparent 55%);
+}
+.module-learn {
+  background-image: linear-gradient(160deg, var(--accent-learn-soft) 0%, transparent 55%);
+}
+.module-energy {
+  background-image: linear-gradient(160deg, var(--accent-energy-soft) 0%, transparent 55%);
+}
 
 .no-scrollbar {
   scrollbar-width: none;
