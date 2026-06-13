@@ -136,6 +136,27 @@ export interface FavoriteFood {
   addedAt: string;
 }
 
+/** A single drink logged during a day. */
+export interface WaterEntry {
+  id: string;
+  amountMl: number;
+  /** Full ISO timestamp of when it was logged. */
+  createdAt: string;
+}
+
+/**
+ * A day's hydration record, keyed by local ISO date. `totalMl` is always the
+ * sum of `entries` — it is recomputed on every mutation so it can never drift.
+ * Days never roll over: today's total derives from today's date only, and past
+ * days stay stored for future history. See `docs/WATER_TRACKING.md`.
+ */
+export interface WaterLog {
+  /** ISO date string (YYYY-MM-DD). */
+  date: string;
+  totalMl: number;
+  entries: WaterEntry[];
+}
+
 export type ThemePreference = "light" | "dark" | "system";
 
 export interface Settings {
@@ -147,11 +168,20 @@ export interface Settings {
   bodyWeightKg?: number;
   /** Selected activity level id from `lib/protein.ts`. */
   proteinActivityLevel?: string;
+  /**
+   * Daily water goal in millilitres. A personal preference, not a medical
+   * recommendation — the user can edit it freely (see `docs/WATER_TRACKING.md`).
+   */
+  waterGoalMl?: number;
 }
+
+/** Default daily water goal (ml). A neutral starting point, not medical advice. */
+export const DEFAULT_WATER_GOAL_ML = 2500;
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: "system",
   proteinGoal: 150,
   calorieGoal: 2200,
   weightUnit: "kg",
+  waterGoalMl: DEFAULT_WATER_GOAL_ML,
 };

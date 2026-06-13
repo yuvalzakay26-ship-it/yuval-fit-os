@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { ThemePreference } from "@/lib/fitness-types";
+import { DEFAULT_WATER_GOAL_ML, type ThemePreference } from "@/lib/fitness-types";
 import {
   clearAllFavoriteFoods,
   clearAllFoodValues,
@@ -13,7 +13,7 @@ import {
   useSettings,
   useWorkouts,
 } from "@/lib/fitness-store";
-import { cn, parseOptionalNumber } from "@/lib/utils";
+import { cn, formatLiters, parseOptionalNumber } from "@/lib/utils";
 import { useTheme } from "@/components/ThemeProvider";
 import { Card, CardLabel } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -23,6 +23,7 @@ import {
   BookOpenIcon,
   ChevronIcon,
   DatabaseIcon,
+  DropletIcon,
   MoonIcon,
   SparkIcon,
   SunIcon,
@@ -59,6 +60,10 @@ export function SettingsView() {
   const savedFoodCount = Object.keys(savedFoodValues).length;
   const favoriteFoods = useFavoriteFoods();
   const favoriteCount = Object.keys(favoriteFoods).length;
+  const waterGoalMl = settings.waterGoalMl ?? DEFAULT_WATER_GOAL_ML;
+  const [waterLitersInput, setWaterLitersInput] = useState(
+    formatLiters(waterGoalMl),
+  );
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [confirmingClearFoods, setConfirmingClearFoods] = useState(false);
   const [confirmingClearFavs, setConfirmingClearFavs] = useState(false);
@@ -72,6 +77,14 @@ export function SettingsView() {
 
   const updateGoal = (patch: Partial<typeof settings>) => {
     updateSettings({ ...settings, ...patch });
+  };
+
+  const handleWaterGoalChange = (raw: string) => {
+    setWaterLitersInput(raw);
+    const liters = parseOptionalNumber(raw);
+    if (liters !== undefined && liters > 0) {
+      updateGoal({ waterGoalMl: Math.round(liters * 1000) });
+    }
   };
 
   const handleReset = () => {
@@ -157,6 +170,40 @@ export function SettingsView() {
         >
           אפשר גם לחשב יעד חלבון מותאם לפי משקל גוף ←
         </Link>
+      </Card>
+
+      {/* Daily water goal */}
+      <Card className="space-y-3 p-4">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent-water-soft)] text-[color:var(--accent-water)]">
+            <DropletIcon className="h-[18px] w-[18px]" />
+          </span>
+          <div>
+            <CardLabel>יעד מים יומי</CardLabel>
+            <p className="text-[12px] text-muted">כמה מים תרצה לשתות ביום?</p>
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="water-goal">יעד (ליטר)</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              id="water-goal"
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step={0.1}
+              className="text-center font-semibold"
+              value={waterLitersInput}
+              onChange={(e) => handleWaterGoalChange(e.target.value)}
+            />
+            <span className="shrink-0 text-[13px] font-semibold text-muted">
+              ≈ {waterGoalMl} {`מ"ל`}
+            </span>
+          </div>
+        </div>
+        <p className="text-[12px] text-faint">
+          אפשר לעדכן את היעד לפי ההרגשה והשגרה שלך.
+        </p>
       </Card>
 
       {/* Knowledge center */}

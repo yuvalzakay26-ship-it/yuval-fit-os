@@ -228,6 +228,43 @@ export const BookOpenIcon = (p: IconProps) =>
     p,
   );
 
+export const DropletIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M12 3.2c3.4 3.9 6 7.1 6 10.2a6 6 0 0 1-12 0c0-3.1 2.6-6.3 6-10.2Z" />
+      <path d="M9.2 13.6a2.8 2.8 0 0 0 2.3 2.6" />
+    </>,
+    p,
+  );
+
+export const GlassIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M6 4h12l-1.1 15.2a1.8 1.8 0 0 1-1.8 1.6H8.9a1.8 1.8 0 0 1-1.8-1.6L6 4Z" />
+      <path d="M6.6 10.5h10.8" />
+    </>,
+    p,
+  );
+
+export const BottleIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M10 2.5h4v2.2c0 .7.3 1.3.8 1.8l.9.9c.5.5.8 1.2.8 2V19a2.5 2.5 0 0 1-2.5 2.5h-3.6A2.5 2.5 0 0 1 7.5 19V9.4c0-.8.3-1.5.8-2l.9-.9c.5-.5.8-1.1.8-1.8V2.5Z" />
+      <path d="M7.5 12.5h9" />
+    </>,
+    p,
+  );
+
+// Droplet carrying a plus sign — the signature "add water" affordance.
+export const PlusWaterIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M12 3.2c3.4 3.9 6 7.1 6 10.2a6 6 0 0 1-12 0c0-3.1 2.6-6.3 6-10.2Z" />
+      <path d="M12 11v5M9.5 13.5h5" />
+    </>,
+    p,
+  );
+
 export const LockIcon = (p: IconProps) =>
   base(
     <>

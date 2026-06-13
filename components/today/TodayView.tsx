@@ -15,6 +15,7 @@ import {
   ListIcon,
   PlusIcon,
 } from "@/components/ui/icons";
+import { WaterCard } from "@/components/water/WaterCard";
 import Link from "next/link";
 
 function MiniStat({
@@ -177,6 +178,12 @@ export function TodayView() {
             icon={<ListIcon className="h-5 w-5" />}
           />
         </div>
+      </section>
+
+      {/* Hydration */}
+      <section>
+        <SectionHeader title="הידרציה" />
+        <WaterCard />
       </section>
 
       {/* Knowledge center */}

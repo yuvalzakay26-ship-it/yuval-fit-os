@@ -12,6 +12,7 @@ import {
   type FoodLog,
   type SavedFoodValue,
   type Settings,
+  type WaterLog,
   type WorkoutSession,
   type WorkoutTemplate,
 } from "./fitness-types";
@@ -22,6 +23,7 @@ const EMPTY_FOODLOGS: FoodLog[] = [];
 const EMPTY_TEMPLATES: WorkoutTemplate[] = [];
 const EMPTY_SAVED_VALUES: Record<string, SavedFoodValue> = {};
 const EMPTY_FAVORITES: Record<string, FavoriteFood> = {};
+const EMPTY_WATER_LOGS: WaterLog[] = [];
 
 let workoutsCache: WorkoutSession[] | null = null;
 let foodLogsCache: FoodLog[] | null = null;
@@ -29,6 +31,7 @@ let settingsCache: Settings | null = null;
 let templatesCache: WorkoutTemplate[] | null = null;
 let savedValuesCache: Record<string, SavedFoodValue> | null = null;
 let favoritesCache: Record<string, FavoriteFood> | null = null;
+let waterLogsCache: WaterLog[] | null = null;
 
 const listeners = new Set<() => void>();
 
@@ -43,6 +46,7 @@ function invalidate(): void {
   templatesCache = null;
   savedValuesCache = null;
   favoritesCache = null;
+  waterLogsCache = null;
 }
 
 function subscribe(callback: () => void): () => void {
@@ -91,6 +95,11 @@ function favoritesSnapshot(): Record<string, FavoriteFood> {
   return favoritesCache;
 }
 
+function waterLogsSnapshot(): WaterLog[] {
+  if (!waterLogsCache) waterLogsCache = storage.getWaterLogs();
+  return waterLogsCache;
+}
+
 /* -------------------------------- Hooks -------------------------------- */
 
 export function useWorkouts(): WorkoutSession[] {
@@ -121,6 +130,11 @@ export function useSavedFoodValues(): Record<string, SavedFoodValue> {
 /** Map of `sourceFoodId` → the user's favorite-food records. */
 export function useFavoriteFoods(): Record<string, FavoriteFood> {
   return useSyncExternalStore(subscribe, favoritesSnapshot, () => EMPTY_FAVORITES);
+}
+
+/** All daily water logs, newest day first. */
+export function useWaterLogs(): WaterLog[] {
+  return useSyncExternalStore(subscribe, waterLogsSnapshot, () => EMPTY_WATER_LOGS);
 }
 
 /* ------------------------------ Mutations ------------------------------ */
@@ -196,6 +210,24 @@ export function toggleFavoriteFood(sourceFoodId: string): void {
 export function clearAllFavoriteFoods(): void {
   storage.clearFavoriteFoods();
   favoritesCache = storage.getFavoriteFoods();
+  notify();
+}
+
+export function logWater(date: string, amountMl: number): void {
+  storage.addWaterEntry(date, amountMl);
+  waterLogsCache = storage.getWaterLogs();
+  notify();
+}
+
+export function removeWaterEntry(date: string, entryId: string): void {
+  storage.deleteWaterEntry(date, entryId);
+  waterLogsCache = storage.getWaterLogs();
+  notify();
+}
+
+export function resetWaterDay(date: string): void {
+  storage.resetWaterDay(date);
+  waterLogsCache = storage.getWaterLogs();
   notify();
 }
 

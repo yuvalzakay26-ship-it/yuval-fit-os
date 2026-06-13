@@ -54,6 +54,16 @@
   --gradient-learn: linear-gradient(135deg, #7069f0 0%, #5d54ea 50%, #4f46e5 100%);
   --shadow-learn: 0 8px 24px rgba(79, 70, 229, 0.24);
 
+  /* Water (hydration) — a calm cyan-blue, kept adjacent to the teal brand so it
+     reads as part of the same family rather than a generic flat blue block. */
+  --accent-water: #0a7ea4;
+  --accent-water-soft: rgba(10, 126, 164, 0.1);
+  --gradient-water: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 50%, #0284c7 100%);
+  --shadow-water: 0 8px 24px rgba(2, 132, 199, 0.24);
+  /* Fill gradient for the water gauge (top → bottom of the vessel). */
+  --water-from: #5cc8f5;
+  --water-to: #0c8ec9;
+
   /* Effects */
   --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 16px rgba(16, 24, 40, 0.05);
   --shadow-raised: 0 8px 30px rgba(16, 24, 40, 0.1);
@@ -104,6 +114,15 @@
   --accent-learn-soft: var(--accent-soft);
   --gradient-learn: var(--gradient-accent);
   --shadow-learn: var(--shadow-accent);
+
+  /* Water keeps a true (brighter) blue in dark mode — water reads as water, and
+     a cyan-blue still sits comfortably beside the emerald accent. */
+  --accent-water: #4cc4f2;
+  --accent-water-soft: rgba(56, 189, 248, 0.16);
+  --gradient-water: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 50%, #0ea5e9 100%);
+  --shadow-water: 0 10px 30px rgba(56, 189, 248, 0.3);
+  --water-from: #7dd3fc;
+  --water-to: #1ea7e6;
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
   --shadow-raised: 0 12px 40px rgba(0, 0, 0, 0.55);
@@ -206,6 +225,9 @@ body {
 .learn-gradient {
   background-image: var(--gradient-learn);
 }
+.water-gradient {
+  background-image: var(--gradient-water);
+}
 .brand-text-gradient {
   background-image: var(--gradient-accent);
   -webkit-background-clip: text;
@@ -234,6 +256,9 @@ body {
 }
 .shadow-glow-learn {
   box-shadow: var(--shadow-learn);
+}
+.shadow-glow-water {
+  box-shadow: var(--shadow-water);
 }
 
 .no-scrollbar {
@@ -284,10 +309,30 @@ body {
   animation: zoom-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Water gauge: the surface drifts sideways for a living, satisfying ripple.
+   The path is twice the gauge width so one period loops seamlessly. */
+@keyframes water-wave {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    /* One wave period in gauge user units (viewBox is 100 wide). */
+    transform: translateX(-50px);
+  }
+}
+.water-wave {
+  animation: water-wave 6s linear infinite;
+}
+.water-wave-slow {
+  animation: water-wave 9s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
   .animate-fade-in,
-  .animate-zoom-in {
+  .animate-zoom-in,
+  .water-wave,
+  .water-wave-slow {
     animation: none !important;
   }
 }

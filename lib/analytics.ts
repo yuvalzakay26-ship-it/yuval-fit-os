@@ -1,7 +1,7 @@
 // Pure derivations over stored data. No localStorage access here — callers
 // pass in the data so these stay testable and SSR-safe.
 
-import type { FoodLog, SetEntry, WorkoutSession } from "./fitness-types";
+import type { FoodLog, SetEntry, WaterLog, WorkoutSession } from "./fitness-types";
 import { startOfWeekISO, todayISO } from "./utils";
 
 export interface ExercisePerformance {
@@ -153,4 +153,34 @@ export function recentFoods(foodLogs: FoodLog[], limit = 8): RecentFood[] {
 export function todaysWorkout(workouts: WorkoutSession[]): WorkoutSession | null {
   const today = todayISO();
   return workouts.find((w) => w.date === today) ?? null;
+}
+
+/* ------------------------------- Water ------------------------------- */
+// Pure derivations over water logs. Quick-add presets live here so every entry
+// point (Today, Nutrition, the detail screen) stays consistent.
+
+/** Quick-add presets in millilitres, shared across all water UIs. */
+export const WATER_QUICK_ADD_ML = [250, 500, 750] as const;
+
+/** The full water log for a given date, if any drinks were logged that day. */
+export function waterForDate(logs: WaterLog[], date: string): WaterLog | null {
+  return logs.find((log) => log.date === date) ?? null;
+}
+
+/** Total millilitres logged today (0 when nothing is logged). */
+export function todaysWaterMl(logs: WaterLog[]): number {
+  return waterForDate(logs, todayISO())?.totalMl ?? 0;
+}
+
+/**
+ * Average daily water (ml) across days in the current week that have any entry.
+ * Returns null when no day this week has water logged, so callers can show a
+ * neutral placeholder rather than a misleading zero.
+ */
+export function weeklyWaterAverageMl(logs: WaterLog[]): number | null {
+  const weekStart = startOfWeekISO();
+  const days = logs.filter((log) => log.date >= weekStart && log.totalMl > 0);
+  if (days.length === 0) return null;
+  const sum = days.reduce((total, log) => total + log.totalMl, 0);
+  return Math.round(sum / days.length);
 }

@@ -22,6 +22,7 @@ import {
   StarIcon,
   TrashIcon,
 } from "@/components/ui/icons";
+import { WaterCard } from "@/components/water/WaterCard";
 import { FoodImage } from "./FoodImage";
 import { MacroSummary } from "./MacroSummary";
 import { ProteinCalculator } from "./ProteinCalculator";
@@ -63,13 +64,19 @@ export function NutritionView() {
         calorieGoal={settings.calorieGoal}
       />
 
-      {/* 2 — Protein goal */}
+      {/* 2 — Water tracking (compact entry point into /nutrition/water) */}
+      <section>
+        <SectionHeader title="מעקב מים" />
+        <WaterCard title="מעקב מים" />
+      </section>
+
+      {/* 3 — Protein goal */}
       <section>
         <SectionHeader title="יעד חלבון מותאם" />
         <ProteinCalculator defaultOpen={false} showArticleLink />
       </section>
 
-      {/* 3 — Quick actions (entry points into the full-screen flows) */}
+      {/* 4 — Quick actions (entry points into the full-screen flows) */}
       <section>
         <SectionHeader title="הוספה מהירה" />
         <div className="grid grid-cols-2 gap-2.5">
@@ -167,7 +174,7 @@ export function NutritionView() {
         )}
       </section>
 
-      {/* 4 — Today's diary */}
+      {/* 5 — Today's diary */}
       <section>
         <SectionHeader title={`היומן של היום${today.length ? ` · ${today.length}` : ""}`} />
         {today.length === 0 ? (

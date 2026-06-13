@@ -7,6 +7,8 @@ import {
   type FoodLog,
   type SavedFoodValue,
   type Settings,
+  type WaterEntry,
+  type WaterLog,
   type WorkoutSession,
   type WorkoutTemplate,
 } from "./fitness-types";
@@ -20,6 +22,7 @@ const KEYS = {
   workoutTemplates: "yfos:workout-templates:v1",
   savedFoodValues: "yfos:saved-food-values:v1",
   favoriteFoods: "yfos:favorite-foods:v1",
+  waterLogs: "yfos:water-logs:v1",
 } as const;
 
 /** Map of `sourceFoodId` → the user's saved default values for that food. */
@@ -219,6 +222,70 @@ export function toggleFavoriteFood(sourceFoodId: string): FavoriteFoodsMap {
 export function clearFavoriteFoods(): void {
   if (!isBrowser()) return;
   window.localStorage.removeItem(KEYS.favoriteFoods);
+}
+
+/* ------------------------------ Water ------------------------------- */
+// Daily hydration logs keyed by local ISO date. localStorage-only, no backend.
+// `totalMl` is always recomputed from `entries`, so it can never drift out of
+// sync. Days are independent — today reads today's date only and past days stay
+// stored for future history. See `docs/WATER_TRACKING.md`.
+
+function recomputeTotal(entries: WaterEntry[]): number {
+  return entries.reduce((sum, entry) => sum + entry.amountMl, 0);
+}
+
+export function getWaterLogs(): WaterLog[] {
+  const logs = readJSON<WaterLog[]>(KEYS.waterLogs, []);
+  // Newest day first.
+  return [...logs].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+}
+
+export function getWaterLogByDate(date: string): WaterLog | undefined {
+  return readJSON<WaterLog[]>(KEYS.waterLogs, []).find((log) => log.date === date);
+}
+
+/** Append a drink to the given day, creating the day's record if needed. */
+export function addWaterEntry(date: string, amountMl: number): WaterLog[] {
+  const all = readJSON<WaterLog[]>(KEYS.waterLogs, []);
+  const entry: WaterEntry = {
+    id: createId("water"),
+    amountMl,
+    createdAt: new Date().toISOString(),
+  };
+  const index = all.findIndex((log) => log.date === date);
+  if (index >= 0) {
+    const entries = [...all[index].entries, entry];
+    all[index] = { date, entries, totalMl: recomputeTotal(entries) };
+  } else {
+    all.push({ date, entries: [entry], totalMl: amountMl });
+  }
+  writeJSON(KEYS.waterLogs, all);
+  return getWaterLogs();
+}
+
+/** Remove a single drink. Drops the whole day record once it has no entries. */
+export function deleteWaterEntry(date: string, entryId: string): WaterLog[] {
+  const all = readJSON<WaterLog[]>(KEYS.waterLogs, []);
+  const index = all.findIndex((log) => log.date === date);
+  if (index >= 0) {
+    const entries = all[index].entries.filter((e) => e.id !== entryId);
+    if (entries.length === 0) {
+      all.splice(index, 1);
+    } else {
+      all[index] = { date, entries, totalMl: recomputeTotal(entries) };
+    }
+    writeJSON(KEYS.waterLogs, all);
+  }
+  return getWaterLogs();
+}
+
+/** Clear a single day entirely (used by the "reset today" action). */
+export function resetWaterDay(date: string): WaterLog[] {
+  const remaining = readJSON<WaterLog[]>(KEYS.waterLogs, []).filter(
+    (log) => log.date !== date,
+  );
+  writeJSON(KEYS.waterLogs, remaining);
+  return getWaterLogs();
 }
 
 /* ------------------------------ Settings ---------------------------- */

@@ -63,6 +63,15 @@ export function formatSetsSummary(
   return sets.map((s) => `${s.weightKg}×${s.reps}`).join(", ");
 }
 
+/**
+ * Format millilitres as a compact litres string, e.g. 2500 → "2.5", 1000 → "1".
+ * One decimal max, trailing ".0" trimmed. Used for water-tracking labels.
+ */
+export function formatLiters(ml: number): string {
+  const liters = Math.round((ml / 1000) * 10) / 10;
+  return Number.isInteger(liters) ? String(liters) : liters.toFixed(1);
+}
+
 /** Parse a possibly-empty numeric input, returning undefined when blank. */
 export function parseOptionalNumber(value: string): number | undefined {
   const trimmed = value.trim();

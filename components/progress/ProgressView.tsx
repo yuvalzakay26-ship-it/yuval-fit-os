@@ -1,9 +1,14 @@
 "use client";
 
-import { bestWeightPerExercise, progressSummary } from "@/lib/analytics";
+import {
+  bestWeightPerExercise,
+  progressSummary,
+  todaysWaterMl,
+  weeklyWaterAverageMl,
+} from "@/lib/analytics";
 import { getExerciseById } from "@/lib/seed-exercises";
-import { useFoodLogs, useWorkouts } from "@/lib/fitness-store";
-import { formatHebrewDate } from "@/lib/utils";
+import { useFoodLogs, useWaterLogs, useWorkouts } from "@/lib/fitness-store";
+import { formatHebrewDate, formatLiters } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { EmptyState, SectionHeader } from "@/components/ui/PageHeader";
 import {
@@ -11,6 +16,7 @@ import {
   CalendarIcon,
   ChartIcon,
   ClockIcon,
+  DropletIcon,
   DumbbellIcon,
   TrophyIcon,
 } from "@/components/ui/icons";
@@ -19,10 +25,14 @@ import { StatCard } from "./StatCard";
 export function ProgressView() {
   const workouts = useWorkouts();
   const foodLogs = useFoodLogs();
+  const waterLogs = useWaterLogs();
 
   const summary = progressSummary(workouts, foodLogs);
   const bestWeights = bestWeightPerExercise(workouts);
-  const hasData = workouts.length > 0 || foodLogs.length > 0;
+  const waterToday = todaysWaterMl(waterLogs);
+  const waterWeekAvg = weeklyWaterAverageMl(waterLogs);
+  const hasData =
+    workouts.length > 0 || foodLogs.length > 0 || waterLogs.length > 0;
 
   if (!hasData) {
     return (
@@ -71,6 +81,40 @@ export function ProgressView() {
           hint={summary.latestWorkout?.title}
         />
       </div>
+
+      <section>
+        <SectionHeader title="מים" />
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="space-y-2 p-4">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent-water-soft)] text-[color:var(--accent-water)]">
+              <DropletIcon className="h-[18px] w-[18px]" />
+            </span>
+            <div>
+              <p className="text-[26px] font-extrabold leading-none tabular-nums text-foreground">
+                {formatLiters(waterToday)}
+                <span className="text-[14px] font-semibold text-muted"> ליטר</span>
+              </p>
+              <p className="mt-1.5 text-[12px] font-medium text-muted">מים היום</p>
+            </div>
+          </Card>
+          <Card className="space-y-2 p-4">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent-water-soft)] text-[color:var(--accent-water)]">
+              <DropletIcon className="h-[18px] w-[18px]" />
+            </span>
+            <div>
+              <p className="text-[26px] font-extrabold leading-none tabular-nums text-foreground">
+                {waterWeekAvg != null ? formatLiters(waterWeekAvg) : "—"}
+                {waterWeekAvg != null && (
+                  <span className="text-[14px] font-semibold text-muted"> ליטר</span>
+                )}
+              </p>
+              <p className="mt-1.5 text-[12px] font-medium text-muted">
+                ממוצע מים השבוע
+              </p>
+            </div>
+          </Card>
+        </div>
+      </section>
 
       <section>
         <SectionHeader title="שיא משקל לפי תרגיל" />
