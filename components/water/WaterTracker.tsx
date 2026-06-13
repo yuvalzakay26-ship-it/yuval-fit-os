@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { waterForDate } from "@/lib/analytics";
+import { resolveWaterPresets, waterForDate } from "@/lib/analytics";
 import {
   logWater,
   removeWaterEntry,
@@ -19,11 +19,12 @@ import { EmptyState, PageHeader, SectionHeader } from "@/components/ui/PageHeade
 import {
   ChevronIcon,
   DropletIcon,
+  PencilIcon,
   PlusWaterIcon,
   TrashIcon,
 } from "@/components/ui/icons";
 import { WaterGauge } from "./WaterGauge";
-import { WaterQuickAdd } from "./WaterQuickAdd";
+import { WaterPresetChips } from "./WaterPresetChips";
 import { WATER_HELPER_COPY, waterStatusLine } from "./water-copy";
 
 const TIME_FORMAT = new Intl.DateTimeFormat("he-IL", {
@@ -49,6 +50,7 @@ export function WaterTracker() {
 
   const today = todayISO();
   const goal = settings.waterGoalMl ?? DEFAULT_WATER_GOAL_ML;
+  const presets = resolveWaterPresets(settings);
   const log = waterForDate(logs, today);
   const total = log?.totalMl ?? 0;
   const entries = log ? [...log.entries].reverse() : []; // newest first
@@ -108,10 +110,21 @@ export function WaterTracker() {
         </div>
       </Card>
 
-      {/* Quick add */}
+      {/* Quick add — the full personal preset set */}
       <section className="mt-6">
-        <SectionHeader title="הוספה מהירה" />
-        <WaterQuickAdd onAdd={handleAdd} />
+        <SectionHeader
+          title="הוספה מהירה"
+          action={
+            <Link
+              href="/nutrition/water/presets"
+              className="tap -m-1 flex items-center gap-1 rounded-full px-2 py-1 text-[12px] font-semibold text-[color:var(--accent-water)]"
+            >
+              <PencilIcon className="h-3.5 w-3.5" />
+              עריכת קיצורים
+            </Link>
+          }
+        />
+        <WaterPresetChips presets={presets} onAdd={handleAdd} columns={2} />
 
         {/* Custom amount */}
         <div className="mt-2.5 flex items-stretch gap-2">

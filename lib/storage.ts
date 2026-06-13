@@ -3,6 +3,7 @@
 
 import {
   DEFAULT_SETTINGS,
+  DEFAULT_WATER_PRESETS,
   type FavoriteFood,
   type FoodLog,
   type SavedFoodValue,
@@ -11,6 +12,7 @@ import {
   type SupplementLog,
   type WaterEntry,
   type WaterLog,
+  type WaterPreset,
   type WorkoutSession,
   type WorkoutTemplate,
 } from "./fitness-types";
@@ -290,6 +292,24 @@ export function resetWaterDay(date: string): WaterLog[] {
   );
   writeJSON(KEYS.waterLogs, remaining);
   return getWaterLogs();
+}
+
+/* -------------------------- Water presets --------------------------- */
+// Personal quick-add presets, stored inside `Settings.waterPresets` (no new
+// storage key). Falling back to DEFAULT_WATER_PRESETS keeps existing users —
+// and the post-`resetAll` settings — on the defaults without ever overwriting a
+// customized set. Presets are UI sugar only; they never touch water logs. See
+// `docs/WATER_PRESETS.md`.
+
+/** Resolve the active presets, falling back to defaults when none are stored. */
+export function getWaterPresets(): WaterPreset[] {
+  const presets = getSettings().waterPresets;
+  return presets && presets.length > 0 ? presets : [...DEFAULT_WATER_PRESETS];
+}
+
+/** Persist a new set of presets onto settings, returning the saved settings. */
+export function saveWaterPresets(presets: WaterPreset[]): Settings {
+  return saveSettings({ ...getSettings(), waterPresets: presets });
 }
 
 /* ---------------------------- Supplements --------------------------- */

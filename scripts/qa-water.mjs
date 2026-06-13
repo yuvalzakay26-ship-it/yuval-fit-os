@@ -21,8 +21,10 @@ const check = (name, ok) => {
 };
 
 const WATER = `${BASE}/nutrition/water`;
-const ADD_500 = 'הוסף 500 מ"ל';
-const ADD_750 = 'הוסף 750 מ"ל';
+// Quick-add is now driven by personal presets (Phase 3.26). The default "בקבוק"
+// preset is 500 ml and "הבקבוק שלי" is 750 ml; the aria-label carries the amount.
+const ADD_500 = 'הוסף בקבוק, 500 מ"ל';
+const ADD_750 = 'הוסף הבקבוק שלי, 750 מ"ל';
 const EMPTY = "עדיין לא נרשמו מים היום";
 
 const noOverflow = (page) =>
@@ -68,7 +70,7 @@ for (const scheme of ["dark", "light"]) {
 
   /* 1. Today shows the hydration card with the default goal; quick-add works. */
   await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-  check(`[${scheme}] Today shows הידרציה section`, await page.getByText("הידרציה", { exact: true }).isVisible());
+  check(`[${scheme}] Today shows הרגלים יומיים section`, await page.getByText("הרגלים יומיים", { exact: true }).isVisible());
   check(`[${scheme}] Today water card shows default goal`, await page.getByText("מתוך 2.5 ליטר").first().isVisible());
   await page.getByRole("button", { name: ADD_500, exact: true }).click();
   await page.waitForTimeout(150);

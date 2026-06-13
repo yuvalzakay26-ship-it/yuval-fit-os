@@ -255,6 +255,38 @@ export const BottleIcon = (p: IconProps) =>
     p,
   );
 
+// A drinking cup / tumbler — slightly tapered with a rim line. Used for the
+// "כוס" water preset.
+export const CupIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M6.5 5h11l-1 13.4a1.8 1.8 0 0 1-1.8 1.6H9.3a1.8 1.8 0 0 1-1.8-1.6L6.5 5Z" />
+      <path d="M7 9.5h10" />
+    </>,
+    p,
+  );
+
+// A sport / gym bottle — a narrow neck with a flip cap, the "הבקבוק שלי" preset.
+export const SportBottleIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M10.2 2.5h3.6v1.4c0 .5.2 1 .6 1.4l.7.7c.6.6.9 1.4.9 2.2V19a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V8.2c0-.8.3-1.6.9-2.2l.7-.7c.4-.4.6-.9.6-1.4V2.5Z" />
+      <path d="M9.5 2.5h5" />
+      <path d="M8.7 11h6.6" />
+    </>,
+    p,
+  );
+
+// A large bottle / jug — wider body with a carry shoulder, the "בקבוק גדול" preset.
+export const LargeBottleIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M10.5 2.5h3v1.6c0 .6.3 1.1.8 1.5C16 6.7 17 8.1 17 9.9V19a2.5 2.5 0 0 1-2.5 2.5h-5A2.5 2.5 0 0 1 7 19V9.9c0-1.8 1-3.2 2.7-4.3.5-.4.8-.9.8-1.5V2.5Z" />
+      <path d="M7 11.5h10" />
+    </>,
+    p,
+  );
+
 // Droplet carrying a plus sign — the signature "add water" affordance.
 export const PlusWaterIcon = (p: IconProps) =>
   base(

@@ -184,6 +184,46 @@ export interface WaterLog {
   entries: WaterEntry[];
 }
 
+/**
+ * Icon identity for a water preset. Maps to an SVG in `components/ui/icons.tsx`
+ * via `WATER_PRESET_ICONS` (`components/water/water-presets.ts`).
+ */
+export type WaterPresetIcon = "cup" | "bottle" | "sport-bottle" | "large-bottle" | "drop";
+
+/**
+ * A user-customizable quick-add shortcut for water (Phase 3.26). Tapping a preset
+ * logs a normal `WaterEntry` of `amountMl` — presets are pure UI sugar over the
+ * existing water log, so history stays fully backward-compatible. Presets are a
+ * user preference and live inside `Settings.waterPresets` (not a new storage
+ * key). See `docs/WATER_PRESETS.md`.
+ */
+export interface WaterPreset {
+  id: string;
+  /** Hebrew label shown on the chip, e.g. "כוס", "בקבוק". */
+  label: string;
+  /** Amount logged when the preset is tapped (positive, ≤ MAX_WATER_PRESET_ML). */
+  amountMl: number;
+  icon: WaterPresetIcon;
+  /** True for the seeded defaults; informational only. */
+  isDefault?: boolean;
+}
+
+/** Smallest / largest allowed amount for a single water preset (ml). */
+export const MIN_WATER_PRESET_ML = 1;
+export const MAX_WATER_PRESET_ML = 3000;
+
+/**
+ * Seeded default presets. Existing users with no `waterPresets` field fall back
+ * to these (never overwriting a user-customized set). The first three are the
+ * "most useful" set surfaced on the compact Today / Nutrition card.
+ */
+export const DEFAULT_WATER_PRESETS: WaterPreset[] = [
+  { id: "preset-cup", label: "כוס", amountMl: 250, icon: "cup", isDefault: true },
+  { id: "preset-bottle", label: "בקבוק", amountMl: 500, icon: "bottle", isDefault: true },
+  { id: "preset-my-bottle", label: "הבקבוק שלי", amountMl: 750, icon: "sport-bottle", isDefault: true },
+  { id: "preset-large", label: "בקבוק גדול", amountMl: 1500, icon: "large-bottle", isDefault: true },
+];
+
 /* ----------------------------- Supplements ---------------------------- */
 // Personal supplement/medication tracking. This is a tracking tool ONLY: the app
 // never recommends supplements, never suggests dosages, and carries no medical
@@ -261,6 +301,13 @@ export interface Settings {
    * recommendation — the user can edit it freely (see `docs/WATER_TRACKING.md`).
    */
   waterGoalMl?: number;
+  /**
+   * Personal water quick-add presets (Phase 3.26). When absent or empty, the app
+   * falls back to `DEFAULT_WATER_PRESETS` — so existing users get the defaults
+   * safely and a customized set is never silently overwritten. See
+   * `docs/WATER_PRESETS.md`.
+   */
+  waterPresets?: WaterPreset[];
 }
 
 /** Default daily water goal (ml). A neutral starting point, not medical advice. */

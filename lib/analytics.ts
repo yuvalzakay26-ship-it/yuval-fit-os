@@ -1,13 +1,16 @@
 // Pure derivations over stored data. No localStorage access here — callers
 // pass in the data so these stay testable and SSR-safe.
 
-import type {
-  FoodLog,
-  SetEntry,
-  Supplement,
-  SupplementLog,
-  WaterLog,
-  WorkoutSession,
+import {
+  DEFAULT_WATER_PRESETS,
+  type FoodLog,
+  type SetEntry,
+  type Settings,
+  type Supplement,
+  type SupplementLog,
+  type WaterLog,
+  type WaterPreset,
+  type WorkoutSession,
 } from "./fitness-types";
 import { startOfWeekISO, todayISO } from "./utils";
 
@@ -166,8 +169,25 @@ export function todaysWorkout(workouts: WorkoutSession[]): WorkoutSession | null
 // Pure derivations over water logs. Quick-add presets live here so every entry
 // point (Today, Nutrition, the detail screen) stays consistent.
 
-/** Quick-add presets in millilitres, shared across all water UIs. */
+/** Legacy fixed quick-add presets (ml). Kept for any non-preset callers. */
 export const WATER_QUICK_ADD_ML = [250, 500, 750] as const;
+
+/**
+ * Resolve the user's water presets from settings, falling back to the defaults
+ * when none are stored (existing users, or settings after `resetAll`). Pure, so
+ * components can derive presets straight from `useSettings()`. See
+ * `docs/WATER_PRESETS.md`.
+ */
+export function resolveWaterPresets(settings: Settings): WaterPreset[] {
+  const presets = settings.waterPresets;
+  return presets && presets.length > 0 ? presets : DEFAULT_WATER_PRESETS;
+}
+
+/**
+ * How many presets the compact Today / Nutrition card shows — the "most useful"
+ * leading set. The full water screen shows them all.
+ */
+export const TODAY_WATER_PRESET_COUNT = 3;
 
 /** The full water log for a given date, if any drinks were logged that day. */
 export function waterForDate(logs: WaterLog[], date: string): WaterLog | null {

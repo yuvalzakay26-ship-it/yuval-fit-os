@@ -30,6 +30,7 @@ import {
   DropletIcon,
   LockIcon,
   MoonIcon,
+  PencilIcon,
   PillIcon,
   SparkIcon,
   SunIcon,
@@ -225,6 +226,18 @@ export function SettingsView() {
         <p className="text-[12px] text-faint">
           אפשר לעדכן את היעד לפי ההרגשה והשגרה שלך.
         </p>
+        <Link
+          href="/nutrition/water/presets"
+          className="tap flex items-center justify-between rounded-2xl border border-border bg-surface-2 px-3.5 py-3 text-[13px] font-semibold text-foreground hover:bg-surface"
+        >
+          <span className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[color:var(--accent-water-soft)] text-[color:var(--accent-water)]">
+              <PencilIcon className="h-[16px] w-[16px]" />
+            </span>
+            ערוך קיצורי מים
+          </span>
+          <ChevronIcon className="h-4 w-4 rotate-180 text-faint" />
+        </Link>
       </Card>
 
       {/* Knowledge center */}

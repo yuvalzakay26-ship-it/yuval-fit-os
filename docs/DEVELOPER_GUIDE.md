@@ -126,6 +126,7 @@ Useful entry points:
 | `scripts/qa-nutrition-smoke.mjs` | Nutrition add/log flow |
 | `scripts/qa-saved-values.mjs`, `scripts/qa-favorites.mjs` | Saved values, favorites |
 | `scripts/qa-water.mjs`, `scripts/qa-supplements.mjs` | Water, supplements |
+| `scripts/qa-water-presets.mjs` | Personal water presets (`:3326`) |
 
 ### Seeding the gates in QA
 

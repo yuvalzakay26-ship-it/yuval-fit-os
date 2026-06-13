@@ -1,14 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { todaysWaterMl } from "@/lib/analytics";
+import {
+  resolveWaterPresets,
+  TODAY_WATER_PRESET_COUNT,
+  todaysWaterMl,
+} from "@/lib/analytics";
 import { logWater, useSettings, useWaterLogs } from "@/lib/fitness-store";
 import { DEFAULT_WATER_GOAL_ML } from "@/lib/fitness-types";
 import { formatLiters, todayISO } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { ChevronIcon } from "@/components/ui/icons";
 import { WaterGauge } from "./WaterGauge";
-import { WaterQuickAdd } from "./WaterQuickAdd";
+import { WaterPresetChips } from "./WaterPresetChips";
 import { waterStatusLine } from "./water-copy";
 
 /**
@@ -22,6 +26,8 @@ export function WaterCard({ title = "מים היום" }: { title?: string }) {
 
   const goal = settings.waterGoalMl ?? DEFAULT_WATER_GOAL_ML;
   const total = todaysWaterMl(logs);
+  // Keep Today compact: only the leading "most useful" presets.
+  const presets = resolveWaterPresets(settings).slice(0, TODAY_WATER_PRESET_COUNT);
 
   const handleAdd = (ml: number) => logWater(todayISO(), ml);
 
@@ -59,7 +65,11 @@ export function WaterCard({ title = "מים היום" }: { title?: string }) {
         </div>
       </div>
 
-      <WaterQuickAdd onAdd={handleAdd} className="relative mt-3.5" />
+      <WaterPresetChips
+        presets={presets}
+        onAdd={handleAdd}
+        className="relative mt-3.5"
+      />
     </Card>
   );
 }

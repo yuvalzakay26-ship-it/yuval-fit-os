@@ -18,14 +18,18 @@ auth, database, sync, AI, or external APIs. Hebrew RTL, light + dark.
 | --- | --- | --- |
 | **Today** (`/`) | "הידרציה" section with the compact card (gauge + litres-of-goal + status + quick-add + "פתח") | `components/water/WaterCard.tsx` |
 | **Nutrition** (`/nutrition`) | "מעקב מים" compact card (same component, different title) | `components/water/WaterCard.tsx` |
-| **Water detail** (`/nutrition/water`) | Full screen: hero gauge, quick-add, custom amount, today's entries, delete, reset, empty/success states | `components/water/WaterTracker.tsx` |
-| **Settings** (`/settings`) | "יעד מים יומי" — edit the daily goal in litres | `components/settings/SettingsView.tsx` |
+| **Water detail** (`/nutrition/water`) | Full screen: hero gauge, preset quick-add, custom amount, "עריכת קיצורים", today's entries, delete, reset, empty/success states | `components/water/WaterTracker.tsx` |
+| **Water presets** (`/nutrition/water/presets`) | Edit personal cup/bottle presets (Phase 3.26) | `components/water/WaterPresetsEditor.tsx`, [`WATER_PRESETS.md`](WATER_PRESETS.md) |
+| **Settings** (`/settings`) | "יעד מים יומי" — edit the daily goal in litres, plus a "ערוך קיצורי מים" shortcut | `components/settings/SettingsView.tsx` |
 | **Progress** (`/progress`) | "מים היום" + "ממוצע מים השבוע" stat cards | `components/progress/ProgressView.tsx` |
 
 ## Storage keys
 
 - `yfos:water-logs:v1` — array of `WaterLog`, one per day with entries.
 - `waterGoalMl` — a field on the existing `yfos:settings` object (default `2500`).
+- `waterPresets` — personal quick-add presets, also a field on `yfos:settings`
+  (Phase 3.26; falls back to defaults when absent). See
+  [`WATER_PRESETS.md`](WATER_PRESETS.md).
 
 No new top-level settings key was introduced; the goal lives in the existing
 `Settings` model. The water-logs key is included in `STORAGE_KEYS`, so the
@@ -73,8 +77,12 @@ type WaterLog = {
 
 ## Quick-add, delete, reset
 
-- **Quick-add** presets `[250, 500, 750]` ml live in `WATER_QUICK_ADD_ML`
-  (`lib/analytics.ts`) so every entry point stays consistent (`WaterQuickAdd`).
+- **Quick-add** is driven by personal **water presets** (Phase 3.26) — cups and
+  bottles the user can rename/resize. The shared `WaterPresetChips` renders them
+  on the Today/Nutrition card (3 leading presets) and the detail screen (full
+  set). See [`WATER_PRESETS.md`](WATER_PRESETS.md). The legacy fixed
+  `WATER_QUICK_ADD_ML = [250, 500, 750]` constant is retained for reference but is
+  no longer the source of the chips.
 - **Custom amount** (detail screen only): a numeric ml input + add button.
 - **Delete** removes a single entry (trash icon per row).
 - **Reset today** is confirm-gated and only offered when entries exist; it clears

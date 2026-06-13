@@ -8,6 +8,7 @@
 import { useSyncExternalStore } from "react";
 import {
   DEFAULT_SETTINGS,
+  DEFAULT_WATER_PRESETS,
   type FavoriteFood,
   type FoodLog,
   type SavedFoodValue,
@@ -15,6 +16,7 @@ import {
   type Supplement,
   type SupplementLog,
   type WaterLog,
+  type WaterPreset,
   type WorkoutSession,
   type WorkoutTemplate,
 } from "./fitness-types";
@@ -265,6 +267,18 @@ export function resetWaterDay(date: string): void {
   storage.resetWaterDay(date);
   waterLogsCache = storage.getWaterLogs();
   notify();
+}
+
+/** Persist a new set of water presets (stored inside settings). */
+export function saveWaterPresets(presets: WaterPreset[]): void {
+  storage.saveWaterPresets(presets);
+  settingsCache = storage.getSettings();
+  notify();
+}
+
+/** Restore the default water presets. */
+export function resetWaterPresets(): void {
+  saveWaterPresets([...DEFAULT_WATER_PRESETS]);
 }
 
 export function saveSupplement(supplement: Supplement): void {
