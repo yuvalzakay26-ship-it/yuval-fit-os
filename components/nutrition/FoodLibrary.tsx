@@ -7,17 +7,22 @@ import {
   filterFoods,
   foodCategoriesInLibrary,
 } from "@/lib/food-library";
+import { toggleFavoriteFood, useFavoriteFoods } from "@/lib/fitness-store";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/Field";
-import { PlusIcon } from "@/components/ui/icons";
+import { PlusIcon, StarIcon } from "@/components/ui/icons";
 import { FoodImage } from "./FoodImage";
 
 const INITIAL_VISIBLE = 6;
+
+/** A category filter, plus the synthetic "favorites" view. */
+export type FoodFilter = FoodCategory | "all" | "favorites";
 
 export function FoodLibrary({
   onSelect,
   selectedId,
   expandable = true,
+  initialFilter = "all",
 }: {
   onSelect: (item: FoodLibraryItem) => void;
   /** Id of the currently-selected food, for a subtle "selected" highlight. */
@@ -28,19 +33,35 @@ export function FoodLibrary({
    * every result directly — the sheet handles scrolling.
    */
   expandable?: boolean;
+  /** Initial filter chip — e.g. "favorites" when deep-linked from Nutrition. */
+  initialFilter?: FoodFilter;
 }) {
   const categories = useMemo(() => foodCategoriesInLibrary(), []);
-  const [filter, setFilter] = useState<FoodCategory | "all">("all");
+  const favorites = useFavoriteFoods();
+  const [filter, setFilter] = useState<FoodFilter>(initialFilter);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState(false);
 
-  const results = useMemo(() => filterFoods(filter, query), [filter, query]);
+  const hasFavorites = Object.keys(favorites).length > 0;
+  const showingFavorites = filter === "favorites";
+
+  const results = useMemo(() => {
+    // The favorites view reuses the same text search, then keeps only favorited
+    // items. Macros are never involved — this is pure identity filtering.
+    if (filter === "favorites") {
+      return filterFoods("all", query).filter((item) => favorites[item.id]);
+    }
+    return filterFoods(filter, query);
+  }, [filter, query, favorites]);
   const collapsed = expandable && !expanded;
   const visible = collapsed ? results.slice(0, INITIAL_VISIBLE) : results;
   const hasMore = expandable && results.length > INITIAL_VISIBLE;
 
-  // Only show the category row when there is more than one category to pick.
-  const showChips = categories.length > 1;
+  // Show the chip row when there are real categories to pick, or when the
+  // favorites chip is relevant. Keep the favorites chip while it is the active
+  // filter so it never vanishes mid-view after unfavoriting the last item.
+  const showFavChip = hasFavorites || showingFavorites;
+  const showChips = categories.length > 1 || showFavChip;
 
   return (
     <div>
@@ -54,6 +75,21 @@ export function FoodLibrary({
 
       {showChips && (
         <div className="no-scrollbar -mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1">
+          {showFavChip && (
+            <button
+              type="button"
+              onClick={() => setFilter("favorites")}
+              className={cn(
+                "tap inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold",
+                showingFavorites
+                  ? "nutrition-gradient text-[color:var(--accent-contrast)] shadow-glow-nutrition"
+                  : "border border-border bg-surface text-muted hover:text-foreground",
+              )}
+            >
+              <StarIcon filled={showingFavorites} className="h-3.5 w-3.5" />
+              מועדפים
+            </button>
+          )}
           {[{ value: "all" as const, label: "הכל" }, ...categories.map((c) => ({ value: c, label: FOOD_CATEGORY_LABELS[c] }))].map(
             (chip) => (
               <button
@@ -75,45 +111,74 @@ export function FoodLibrary({
       )}
 
       {results.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border-strong bg-surface/40 px-4 py-8 text-center text-[13px] text-muted">
-          לא נמצאו מאכלים תואמים.
-        </p>
+        showingFavorites ? (
+          <div className="rounded-2xl border border-dashed border-border-strong bg-surface/40 px-4 py-8 text-center">
+            <StarIcon className="mx-auto mb-2 h-7 w-7 text-faint" />
+            <p className="text-[13.5px] font-semibold text-foreground">
+              עדיין אין מאכלים מועדפים
+            </p>
+            <p className="mt-1 text-[12.5px] text-muted">
+              סמן מאכלים בכוכב כדי למצוא אותם מהר יותר.
+            </p>
+          </div>
+        ) : (
+          <p className="rounded-2xl border border-dashed border-border-strong bg-surface/40 px-4 py-8 text-center text-[13px] text-muted">
+            לא נמצאו מאכלים תואמים.
+          </p>
+        )
       ) : (
         <>
           <div className="grid grid-cols-2 gap-2.5">
             {visible.map((item) => {
               const isSelected = item.id === selectedId;
+              const isFav = Boolean(favorites[item.id]);
               return (
-                <button
+                <div
                   key={item.id}
-                  type="button"
-                  onClick={() => onSelect(item)}
                   className={cn(
-                    "tap group flex flex-col overflow-hidden rounded-2xl border bg-surface text-right shadow-soft transition-[border-color,box-shadow]",
+                    "group relative flex flex-col overflow-hidden rounded-2xl border bg-surface text-right shadow-soft transition-[border-color,box-shadow]",
                     isSelected
                       ? "border-[color:var(--accent-nutrition)] ring-2 ring-[color:var(--accent-nutrition)]/30"
                       : "border-border hover:border-border-strong",
                   )}
-                  aria-label={`הוספת ${item.nameHe} ליומן`}
                 >
-                  <FoodImage
-                    imagePath={item.imagePath}
-                    alt={item.nameHe}
-                    category={item.category}
-                    label={item.nameHe}
-                    sizes="(max-width: 448px) 45vw, 200px"
-                    className="aspect-square w-full rounded-none"
-                  />
-                  <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-2.5">
-                    <p className="truncate text-[13.5px] font-bold leading-tight text-foreground">
-                      {item.nameHe}
-                    </p>
-                    <span className="mt-auto inline-flex items-center justify-center gap-1 rounded-xl bg-[color:var(--accent-nutrition-soft)] px-2 py-1.5 text-[11.5px] font-bold text-[color:var(--accent-nutrition)] group-hover:brightness-95">
-                      <PlusIcon className="h-3.5 w-3.5" />
-                      הוסף ליומן
-                    </span>
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(item)}
+                    className="tap flex flex-1 flex-col text-right"
+                    aria-label={`הוספת ${item.nameHe} ליומן`}
+                  >
+                    <FoodImage
+                      imagePath={item.imagePath}
+                      alt={item.nameHe}
+                      category={item.category}
+                      label={item.nameHe}
+                      sizes="(max-width: 448px) 45vw, 200px"
+                      className="aspect-square w-full rounded-none"
+                    />
+                    <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-2.5">
+                      <p className="truncate text-[13.5px] font-bold leading-tight text-foreground">
+                        {item.nameHe}
+                      </p>
+                      <span className="mt-auto inline-flex items-center justify-center gap-1 rounded-xl bg-[color:var(--accent-nutrition-soft)] px-2 py-1.5 text-[11.5px] font-bold text-[color:var(--accent-nutrition)] group-hover:brightness-95">
+                        <PlusIcon className="h-3.5 w-3.5" />
+                        הוסף ליומן
+                      </span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleFavoriteFood(item.id)}
+                    aria-label={isFav ? "הסר מהמועדפים" : "הוסף למועדפים"}
+                    aria-pressed={isFav}
+                    className="tap absolute end-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm transition hover:bg-black/55"
+                  >
+                    <StarIcon
+                      filled={isFav}
+                      className={cn("h-[18px] w-[18px]", isFav && "text-amber-300")}
+                    />
+                  </button>
+                </div>
               );
             })}
           </div>

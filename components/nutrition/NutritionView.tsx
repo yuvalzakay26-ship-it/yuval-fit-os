@@ -2,14 +2,26 @@
 
 import Link from "next/link";
 import { recentFoods, sumNutrition, todaysFoodLogs } from "@/lib/analytics";
-import { removeFoodLog, useFoodLogs, useSettings } from "@/lib/fitness-store";
+import {
+  removeFoodLog,
+  useFavoriteFoods,
+  useFoodLogs,
+  useSettings,
+} from "@/lib/fitness-store";
 import type { FoodCategory } from "@/lib/food-library";
+import { foodById } from "@/lib/food-library";
 import type { RecentFood } from "@/lib/analytics";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState, SectionHeader } from "@/components/ui/PageHeader";
-import { AppleIcon, DatabaseIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
+import {
+  AppleIcon,
+  DatabaseIcon,
+  PlusIcon,
+  StarIcon,
+  TrashIcon,
+} from "@/components/ui/icons";
 import { FoodImage } from "./FoodImage";
 import { MacroSummary } from "./MacroSummary";
 import { ProteinCalculator } from "./ProteinCalculator";
@@ -26,10 +38,19 @@ function recentHref(food: RecentFood): string {
 export function NutritionView() {
   const logs = useFoodLogs();
   const settings = useSettings();
+  const favorites = useFavoriteFoods();
 
   const today = todaysFoodLogs(logs);
   const totals = sumNutrition(today);
   const recents = recentFoods(logs);
+
+  // Resolve favorite ids to library items (newest first), dropping any whose
+  // source food no longer exists. Capped to keep the Nutrition screen compact.
+  const favoriteFoods = Object.values(favorites)
+    .sort((a, b) => (a.addedAt < b.addedAt ? 1 : a.addedAt > b.addedAt ? -1 : 0))
+    .map((fav) => foodById(fav.sourceFoodId))
+    .filter((item) => item !== undefined)
+    .slice(0, 6);
 
   const handleDelete = (id: string) => removeFoodLog(id);
 
@@ -79,9 +100,47 @@ export function NutritionView() {
           </Link>
         </div>
 
+        {/* "מועדפים" — quick chips for favorited library foods. Compact and
+            shown only when at least one favorite exists. Identity only — no
+            macros are stored or inferred here (see docs/NUTRITION_FAVORITES.md). */}
+        {favoriteFoods.length > 0 && (
+          <div className="mt-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="flex items-center gap-1.5 text-[12px] font-semibold text-muted">
+                <StarIcon filled className="h-3.5 w-3.5 text-amber-400" />
+                מועדפים
+              </p>
+              <Link
+                href="/nutrition/library?view=favorites"
+                className="tap text-[12px] font-semibold text-[color:var(--accent-nutrition)]"
+              >
+                הצג הכל
+              </Link>
+            </div>
+            <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+              {favoriteFoods.map((food) => (
+                <Link
+                  key={food.id}
+                  href={`/nutrition/add?foodId=${encodeURIComponent(food.id)}`}
+                  className="tap flex shrink-0 items-center gap-2 rounded-full border border-border bg-surface py-1.5 pe-3 ps-1.5 text-[12.5px] font-semibold text-foreground hover:border-border-strong"
+                >
+                  <FoodImage
+                    imagePath={food.imagePath}
+                    alt={food.nameHe}
+                    category={food.category}
+                    label={food.nameHe}
+                    sizes="28px"
+                    className="h-7 w-7 shrink-0 rounded-full"
+                  />
+                  <span className="max-w-[8rem] truncate">{food.nameHe}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* "אחרונים" — backed by real log data; shown only when it exists.
-            Favorites and saved macro values are intentionally not built yet
-            (see docs/NUTRITION_UX.md). */}
+            Saved macro values prefill in the add flow (Phase 3.18). */}
         {recents.length > 0 && (
           <div className="mt-3">
             <p className="mb-2 text-[12px] font-semibold text-muted">אחרונים</p>

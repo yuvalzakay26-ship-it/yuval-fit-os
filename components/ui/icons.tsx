@@ -183,6 +183,27 @@ export const CopyIcon = (p: IconProps) =>
 export const BookmarkIcon = (p: IconProps) =>
   base(<path d="M6.5 4h11v17L12 17.5 6.5 21V4Z" />, p);
 
+// Star with an optional solid fill, used for the favorite-food toggle so the
+// active state reads clearly. Renders its own svg (the shared `base` forces
+// fill="none", which would defeat the filled state).
+export const StarIcon = ({
+  className,
+  filled = false,
+}: IconProps & { filled?: boolean }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className ?? "h-5 w-5"}
+    aria-hidden="true"
+  >
+    <path d="M12 3.5l2.6 5.27 5.82.85-4.21 4.1.99 5.79L12 16.77l-5.2 2.73.99-5.79-4.21-4.1 5.82-.85L12 3.5Z" />
+  </svg>
+);
+
 export const SparkIcon = (p: IconProps) =>
   base(
     <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" />,

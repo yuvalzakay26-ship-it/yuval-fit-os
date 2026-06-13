@@ -3,6 +3,7 @@
 
 import {
   DEFAULT_SETTINGS,
+  type FavoriteFood,
   type FoodLog,
   type SavedFoodValue,
   type Settings,
@@ -18,10 +19,14 @@ const KEYS = {
   settings: "yfos:settings",
   workoutTemplates: "yfos:workout-templates:v1",
   savedFoodValues: "yfos:saved-food-values:v1",
+  favoriteFoods: "yfos:favorite-foods:v1",
 } as const;
 
 /** Map of `sourceFoodId` → the user's saved default values for that food. */
 type SavedFoodValuesMap = Record<string, SavedFoodValue>;
+
+/** Map of `sourceFoodId` → the favorite record for that food. */
+type FavoriteFoodsMap = Record<string, FavoriteFood>;
 
 function isBrowser(): boolean {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
@@ -178,6 +183,42 @@ export function deleteSavedFoodValue(sourceFoodId: string): SavedFoodValuesMap {
 export function clearSavedFoodValues(): void {
   if (!isBrowser()) return;
   window.localStorage.removeItem(KEYS.savedFoodValues);
+}
+
+/* -------------------------- Favorite foods -------------------------- */
+// Quick-access favorites for food-library items, keyed by `sourceFoodId`. This
+// is favorite identity only — no nutrition values live here. Only library items
+// can be favorited (manual logs have no stable id). See
+// `docs/NUTRITION_FAVORITES.md`.
+
+export function getFavoriteFoods(): FavoriteFoodsMap {
+  return readJSON<FavoriteFoodsMap>(KEYS.favoriteFoods, {});
+}
+
+export function isFavoriteFood(sourceFoodId: string): boolean {
+  if (!sourceFoodId) return false;
+  return Boolean(getFavoriteFoods()[sourceFoodId]);
+}
+
+/** Toggle a food's favorite state, returning the updated map. */
+export function toggleFavoriteFood(sourceFoodId: string): FavoriteFoodsMap {
+  if (!sourceFoodId) return getFavoriteFoods();
+  const existing = getFavoriteFoods();
+  if (existing[sourceFoodId]) {
+    delete existing[sourceFoodId];
+  } else {
+    existing[sourceFoodId] = {
+      sourceFoodId,
+      addedAt: new Date().toISOString(),
+    };
+  }
+  writeJSON(KEYS.favoriteFoods, existing);
+  return getFavoriteFoods();
+}
+
+export function clearFavoriteFoods(): void {
+  if (!isBrowser()) return;
+  window.localStorage.removeItem(KEYS.favoriteFoods);
 }
 
 /* ------------------------------ Settings ---------------------------- */

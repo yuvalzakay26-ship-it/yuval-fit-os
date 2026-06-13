@@ -911,6 +911,13 @@ export const FOOD_LIBRARY: FoodLibraryItem[] = [
   },
 ];
 
+const FOOD_BY_ID = new Map(FOOD_LIBRARY.map((item) => [item.id, item]));
+
+/** Look up a library item by its `id` (a.k.a. `sourceFoodId`). */
+export function foodById(id: string): FoodLibraryItem | undefined {
+  return FOOD_BY_ID.get(id);
+}
+
 /**
  * Categories that actually have items in the library, in a stable display
  * order. Used to build the filter chips so empty categories never show.

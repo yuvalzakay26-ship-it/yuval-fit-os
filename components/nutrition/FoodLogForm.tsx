@@ -7,13 +7,15 @@ import {
   addFoodLog,
   removeFoodValue,
   saveFoodValue,
+  toggleFavoriteFood,
+  useFavoriteFoods,
   useSavedFoodValues,
 } from "@/lib/fitness-store";
 import { cn, createId, parseOptionalNumber, todayISO } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
-import { PlusIcon, XIcon } from "@/components/ui/icons";
+import { PlusIcon, StarIcon, XIcon } from "@/components/ui/icons";
 import { MEAL_ORDER, MEAL_TYPE_LABELS } from "./nutrition-labels";
 import { FoodImage } from "./FoodImage";
 
@@ -88,6 +90,9 @@ export function FoodLogForm({
   const savedValues = useSavedFoodValues();
   const sourceFoodId = form.sourceFoodId;
   const saved = sourceFoodId ? savedValues[sourceFoodId] : undefined;
+
+  const favorites = useFavoriteFoods();
+  const isFavorite = sourceFoodId ? Boolean(favorites[sourceFoodId]) : false;
 
   // Prefill quantity + macros from the saved values exactly once, the moment
   // they become available. The ref guard keeps later edits (and a reset) from
@@ -182,8 +187,14 @@ export function FoodLogForm({
               className="h-14 w-14 shrink-0"
             />
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold text-[color:var(--accent-nutrition)]">
+              <p className="flex items-center gap-1 text-[11px] font-semibold text-[color:var(--accent-nutrition)]">
                 נבחר מהמאגר
+                {isFavorite && (
+                  <span className="inline-flex items-center gap-0.5 text-amber-500">
+                    <StarIcon filled className="h-3 w-3" />
+                    מועדף
+                  </span>
+                )}
               </p>
               <p className="truncate text-[14px] font-bold text-foreground">
                 {form.foodName}
@@ -194,6 +205,20 @@ export function FoodLogForm({
                 </p>
               )}
             </div>
+            {sourceFoodId && (
+              <button
+                type="button"
+                onClick={() => toggleFavoriteFood(sourceFoodId)}
+                className="tap -m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-faint hover:bg-surface-2"
+                aria-label={isFavorite ? "הסר מהמועדפים" : "הוסף למועדפים"}
+                aria-pressed={isFavorite}
+              >
+                <StarIcon
+                  filled={isFavorite}
+                  className={cn("h-[18px] w-[18px]", isFavorite && "text-amber-400")}
+                />
+              </button>
+            )}
             <button
               type="button"
               onClick={clearLibraryLink}

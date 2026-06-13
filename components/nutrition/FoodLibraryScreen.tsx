@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { FoodLibraryItem } from "@/lib/food-library";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ChevronIcon } from "@/components/ui/icons";
-import { FoodLibrary } from "./FoodLibrary";
+import { FoodLibrary, type FoodFilter } from "./FoodLibrary";
 
 /**
  * Full-screen food library. Replaces the old bottom-sheet picker: this is a
@@ -13,7 +13,11 @@ import { FoodLibrary } from "./FoodLibrary";
  * dimmed page). Picking a food moves the user into the dedicated add-food
  * route, prefilled from the chosen item.
  */
-export function FoodLibraryScreen() {
+export function FoodLibraryScreen({
+  initialFilter = "all",
+}: {
+  initialFilter?: FoodFilter;
+}) {
   const router = useRouter();
 
   const handleSelect = (item: FoodLibraryItem) => {
@@ -36,7 +40,11 @@ export function FoodLibraryScreen() {
         className="mb-4"
       />
 
-      <FoodLibrary onSelect={handleSelect} expandable={false} />
+      <FoodLibrary
+        onSelect={handleSelect}
+        expandable={false}
+        initialFilter={initialFilter}
+      />
     </div>
   );
 }

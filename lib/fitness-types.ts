@@ -125,6 +125,17 @@ export interface SavedFoodValue {
   updatedAt: string;
 }
 
+/**
+ * A food-library item the user marked as a favorite for quick access, keyed by
+ * `sourceFoodId`. This is favorite *identity* only — it carries no nutrition
+ * values and never infers macros. See `docs/NUTRITION_FAVORITES.md`.
+ */
+export interface FavoriteFood {
+  sourceFoodId: string;
+  /** Full ISO timestamp of when it was favorited. */
+  addedAt: string;
+}
+
 export type ThemePreference = "light" | "dark" | "system";
 
 export interface Settings {

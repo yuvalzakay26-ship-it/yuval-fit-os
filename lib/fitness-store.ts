@@ -8,6 +8,7 @@
 import { useSyncExternalStore } from "react";
 import {
   DEFAULT_SETTINGS,
+  type FavoriteFood,
   type FoodLog,
   type SavedFoodValue,
   type Settings,
@@ -20,12 +21,14 @@ const EMPTY_WORKOUTS: WorkoutSession[] = [];
 const EMPTY_FOODLOGS: FoodLog[] = [];
 const EMPTY_TEMPLATES: WorkoutTemplate[] = [];
 const EMPTY_SAVED_VALUES: Record<string, SavedFoodValue> = {};
+const EMPTY_FAVORITES: Record<string, FavoriteFood> = {};
 
 let workoutsCache: WorkoutSession[] | null = null;
 let foodLogsCache: FoodLog[] | null = null;
 let settingsCache: Settings | null = null;
 let templatesCache: WorkoutTemplate[] | null = null;
 let savedValuesCache: Record<string, SavedFoodValue> | null = null;
+let favoritesCache: Record<string, FavoriteFood> | null = null;
 
 const listeners = new Set<() => void>();
 
@@ -39,6 +42,7 @@ function invalidate(): void {
   settingsCache = null;
   templatesCache = null;
   savedValuesCache = null;
+  favoritesCache = null;
 }
 
 function subscribe(callback: () => void): () => void {
@@ -82,6 +86,11 @@ function savedValuesSnapshot(): Record<string, SavedFoodValue> {
   return savedValuesCache;
 }
 
+function favoritesSnapshot(): Record<string, FavoriteFood> {
+  if (!favoritesCache) favoritesCache = storage.getFavoriteFoods();
+  return favoritesCache;
+}
+
 /* -------------------------------- Hooks -------------------------------- */
 
 export function useWorkouts(): WorkoutSession[] {
@@ -107,6 +116,11 @@ export function useSavedFoodValues(): Record<string, SavedFoodValue> {
     savedValuesSnapshot,
     () => EMPTY_SAVED_VALUES,
   );
+}
+
+/** Map of `sourceFoodId` → the user's favorite-food records. */
+export function useFavoriteFoods(): Record<string, FavoriteFood> {
+  return useSyncExternalStore(subscribe, favoritesSnapshot, () => EMPTY_FAVORITES);
 }
 
 /* ------------------------------ Mutations ------------------------------ */
@@ -170,6 +184,18 @@ export function removeFoodValue(sourceFoodId: string): void {
 export function clearAllFoodValues(): void {
   storage.clearSavedFoodValues();
   savedValuesCache = storage.getSavedFoodValues();
+  notify();
+}
+
+export function toggleFavoriteFood(sourceFoodId: string): void {
+  storage.toggleFavoriteFood(sourceFoodId);
+  favoritesCache = storage.getFavoriteFoods();
+  notify();
+}
+
+export function clearAllFavoriteFoods(): void {
+  storage.clearFavoriteFoods();
+  favoritesCache = storage.getFavoriteFoods();
   notify();
 }
 

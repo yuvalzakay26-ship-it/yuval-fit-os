@@ -3,9 +3,11 @@
 import { useState } from "react";
 import type { ThemePreference } from "@/lib/fitness-types";
 import {
+  clearAllFavoriteFoods,
   clearAllFoodValues,
   resetAll,
   updateSettings,
+  useFavoriteFoods,
   useFoodLogs,
   useSavedFoodValues,
   useSettings,
@@ -55,8 +57,11 @@ export function SettingsView() {
   const foodLogs = useFoodLogs();
   const savedFoodValues = useSavedFoodValues();
   const savedFoodCount = Object.keys(savedFoodValues).length;
+  const favoriteFoods = useFavoriteFoods();
+  const favoriteCount = Object.keys(favoriteFoods).length;
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [confirmingClearFoods, setConfirmingClearFoods] = useState(false);
+  const [confirmingClearFavs, setConfirmingClearFavs] = useState(false);
 
   const approxKb =
     ((JSON.stringify(workouts).length +
@@ -77,6 +82,11 @@ export function SettingsView() {
   const handleClearFoods = () => {
     clearAllFoodValues();
     setConfirmingClearFoods(false);
+  };
+
+  const handleClearFavs = () => {
+    clearAllFavoriteFoods();
+    setConfirmingClearFavs(false);
   };
 
   return (
@@ -235,6 +245,37 @@ export function SettingsView() {
               onClick={() => setConfirmingClearFoods(true)}
             >
               <TrashIcon className="h-[18px] w-[18px]" /> אפס ערכי מאכלים שמורים
+            </Button>
+          )}
+        </Card>
+      )}
+
+      {/* Favorite foods — only surfaced once the user has some */}
+      {favoriteCount > 0 && (
+        <Card className="space-y-3 p-4">
+          <CardLabel>מאכלים מועדפים</CardLabel>
+          <p className="text-[13px] leading-relaxed text-muted">
+            סימנת {favoriteCount} מאכלים כמועדפים. פעולה זו תסיר את כולם. רשומות
+            התזונה והערכים השמורים שלך לא יושפעו.
+          </p>
+          {confirmingClearFavs ? (
+            <div className="flex gap-2.5">
+              <Button variant="danger" onClick={handleClearFavs} className="flex-1">
+                <TrashIcon className="h-[18px] w-[18px]" /> כן, אפס הכל
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setConfirmingClearFavs(false)}
+              >
+                ביטול
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="secondary"
+              onClick={() => setConfirmingClearFavs(true)}
+            >
+              <TrashIcon className="h-[18px] w-[18px]" /> אפס מאכלים מועדפים
             </Button>
           )}
         </Card>
