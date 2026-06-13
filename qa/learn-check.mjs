@@ -39,6 +39,16 @@ const context = await browser.newContext({
 const page = await context.newPage();
 page.on("pageerror", (e) => issues.push(`[pageerror] ${e.message}`));
 
+// Seed past both gates (welcome + private-access notice) on every navigation so
+// neither overlay intercepts the interaction checks below. Re-applies after the
+// localStorage.clear() on the next load.
+await page.addInitScript(() => {
+  try {
+    localStorage.setItem("yfos:welcome-seen:v1", "1");
+    sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
+  } catch {}
+});
+
 await page.goto(BASE + "/", { waitUntil: "networkidle" });
 await page.evaluate(() => localStorage.clear());
 
@@ -100,11 +110,12 @@ if (stored?.proteinActivityLevel !== "intense")
 const nutritionText = await page.textContent("body");
 if (!nutritionText.includes("126")) issues.push("[calc] nutrition screen does not show new goal 126");
 
-// Today hero should use the saved goal.
+// Today hero should use the saved goal. The upgraded Today dashboard renders the
+// protein goal as "מ-126" (was "מתוך 126" before the dashboard upgrade).
 await page.goto(BASE + "/", { waitUntil: "networkidle" });
 await page.waitForTimeout(200);
 const todayAfter = await page.textContent("body");
-if (!todayAfter.includes("מתוך 126")) issues.push("[calc] Today ring does not show מתוך 126");
+if (!todayAfter.includes("מ-126")) issues.push("[calc] Today ring does not show the saved goal 126");
 
 /* -------------------- Settings: manual override still works -------------------- */
 await page.goto(BASE + "/settings", { waitUntil: "networkidle" });

@@ -1,8 +1,13 @@
 # Yuval Fit OS
 
 A clean, mobile-first personal fitness operating system for tracking workouts,
-exercises, sets/reps/weights, nutrition and basic macros. Built as a PWA-style
-web app that can later become a native app via Capacitor.
+exercises, sets/reps/weights, nutrition, macros, water and supplements. Built as
+a PWA-style web app that can later become a native app via Capacitor.
+
+> **New here?** Start with **[docs/PROJECT_STATE.md](docs/PROJECT_STATE.md)** (what
+> the app is, routes, storage keys, product boundaries) and
+> **[docs/DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md)** (how to run, test and
+> extend it safely).
 
 ## Stack
 
@@ -13,7 +18,12 @@ web app that can later become a native app via Capacitor.
 
 ## Screens
 
-`Today` · `Workouts` · `Exercises` · `Nutrition` · `Progress` · `Settings` · `Learn`
+`Today` · `Workouts` · `Exercises` · `Nutrition` (incl. Food Library, Water,
+Supplements) · `Progress` · `Settings` · `Learn`
+
+A first-visit `Welcome` screen and a per-session `Private Access` notice wrap the
+app (both informational only — no password/auth). See
+[docs/PROJECT_STATE.md](docs/PROJECT_STATE.md) for the full module + route map.
 
 The Learn screen (`/learn`, מרכז ידע) holds short card-based educational
 articles and a daily protein goal calculator (g/kg/day). It is reachable from

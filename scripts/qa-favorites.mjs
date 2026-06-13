@@ -17,7 +17,6 @@ let failures = 0;
 const check = (name, ok) => { console.log(`${ok ? "PASS" : "FAIL"}  ${name}`); if (!ok) failures++; };
 
 const LIB = `${BASE}/nutrition/library`;
-const FAV_VIEW = `${LIB}?view=favorites`;
 const FAV_CHIP = "מועדפים";
 const ADD_FAV = "הוסף למועדפים";
 const REMOVE_FAV = "הסר מהמועדפים";
@@ -39,6 +38,7 @@ for (const scheme of ["dark", "light"]) {
   await ctx.addInitScript(() => {
     try {
       localStorage.setItem("yfos:welcome-seen:v1", "1");
+      sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
       localStorage.setItem(
         "yfos:saved-food-values:v1",
         JSON.stringify({

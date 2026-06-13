@@ -1,4 +1,4 @@
-import type { Equipment, MuscleGroup } from "@/lib/fitness-types";
+import type { MuscleGroup } from "@/lib/fitness-types";
 import { MUSCLE_GROUP_LABELS } from "@/lib/seed-exercises";
 import { cn } from "@/lib/utils";
 import { DumbbellIcon } from "@/components/ui/icons";
@@ -34,7 +34,6 @@ export function ExercisePlaceholder({
 }: {
   muscleGroup: MuscleGroup;
   imageKey: string;
-  equipment?: Equipment;
   className?: string;
 }) {
   return (

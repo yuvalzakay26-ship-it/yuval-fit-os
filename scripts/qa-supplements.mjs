@@ -22,7 +22,6 @@ const check = (name, ok) => {
 };
 
 const SUPPS = `${BASE}/nutrition/supplements`;
-const ADD = `${BASE}/nutrition/supplements/add`;
 const EMPTY = "עדיין לא הוגדרו תוספים";
 const SAFETY = "המעקב הוא אישי בלבד ואינו מהווה המלצה רפואית.";
 
@@ -44,6 +43,7 @@ for (const scheme of ["dark", "light"]) {
   await ctx.addInitScript(() => {
     try {
       localStorage.setItem("yfos:welcome-seen:v1", "1");
+      sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
       if (!localStorage.getItem("yfos:supplement-logs:v1")) {
         localStorage.setItem(
           "yfos:supplement-logs:v1",

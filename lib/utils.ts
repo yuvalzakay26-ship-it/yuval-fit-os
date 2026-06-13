@@ -37,7 +37,7 @@ export function createId(prefix = "id"): string {
   return `${prefix}_${time}${random}`;
 }
 
-/** ISO date string for the Monday-based start of the current week. */
+/** ISO date string for the Sunday-based start of the current week (Israel). */
 export function startOfWeekISO(reference: Date = new Date()): string {
   const date = new Date(reference);
   const day = date.getDay(); // 0 = Sunday

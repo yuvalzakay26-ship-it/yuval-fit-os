@@ -24,10 +24,11 @@ for (const scheme of ["dark", "light"]) {
     hasTouch: true,
     colorScheme: scheme,
   });
-  // Pre-seed the welcome flag so QA lands directly on the app.
+  // Pre-seed both gate flags so QA lands directly on the app.
   await ctx.addInitScript(() => {
     try {
       localStorage.setItem("yfos:welcome-seen:v1", "1");
+      sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
     } catch {}
   });
   const page = await ctx.newPage();

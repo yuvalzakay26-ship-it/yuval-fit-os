@@ -45,6 +45,7 @@ for (const scheme of ["dark", "light"]) {
   await ctx.addInitScript(() => {
     try {
       localStorage.setItem("yfos:welcome-seen:v1", "1");
+      sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
       if (!localStorage.getItem("yfos:water-logs:v1")) {
         localStorage.setItem(
           "yfos:water-logs:v1",
