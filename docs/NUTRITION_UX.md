@@ -1,22 +1,37 @@
-# Nutrition UX (Phase 3.17)
+# Nutrition UX
 
 A pass focused on flow, not features. The Nutrition screen had grown into one
 long scroll — daily summary, protein calculator, the full food library grid, the
 add-food form, and today's diary all stacked together. As the food library
-keeps growing this became crowded and the add-food form was easy to lose. This
-phase reorganizes the screen into a short, action-based flow and moves the heavy
-pieces into focused bottom sheets.
+keeps growing this became crowded and the add-food form was easy to lose. The
+screen was reorganized into a short, action-based flow, and the heavy pieces
+(library + add form) were moved out of the main page.
 
 No nutrition data is invented, no images are imported, and the existing
 `yfos:foodLogs` localStorage data continues to work unchanged.
+
+## Update — Phase 3.17.1: full-screen routes instead of sheets
+
+Phase 3.17 moved the library and add-food form into **bottom sheets**. That felt
+cramped, temporary, and non-premium — a "sheet on top of sheet" stack with a
+dimmed page behind. Phase 3.17.1 replaces the sheets with **dedicated
+full-screen routes** that behave like real app screens (rendered inside the
+normal app shell — header + bottom nav — with no overlay and no dimming):
+
+- **`/nutrition/library`** — the full food library screen (`FoodLibraryScreen`).
+- **`/nutrition/add`** — the add-food screen (`AddFoodView`), which reads
+  optional `?foodId=` / `?name=` search params to prefill.
+
+The reusable bottom-sheet component (`components/ui/Sheet.tsx`) and its
+`sheet-up` animation were removed — nothing else used them.
 
 ## Main screen structure (after the change)
 
 1. **Daily nutrition summary** (`MacroSummary`) — protein ring, calories, carbs/fat pills, goal bars.
 2. **Protein goal** (`ProteinCalculator`) — collapsed g/kg calculator.
 3. **Quick actions** — the compact entry points:
-   - `בחר מהמאגר` — opens the food library picker sheet.
-   - `הוסף ידנית` — opens a blank add-food sheet.
+   - `בחר מהמאגר` — opens the full-screen food library (`/nutrition/library`).
+   - `הוסף ידנית` — opens the full-screen add-food screen (`/nutrition/add`).
    - `אחרונים` — a horizontal row of recently logged foods (shown only when such data exists).
 4. **Today's diary** — logged foods with thumbnails, or an action-oriented empty state.
 
@@ -26,20 +41,26 @@ gets.
 
 ## How food selection works now
 
-- Tapping **`בחר מהמאגר`** opens the **food library picker** — a bottom sheet
-  (`components/ui/Sheet.tsx`) containing search, category chips, and the full
-  food-card grid. The grid renders all results inside the scrollable sheet
-  (`FoodLibrary` is passed `expandable={false}`); the sheet handles scrolling, so
-  there's no "show more" toggle there.
-- Selecting a food **closes the picker and opens the add-food sheet**, prefilled
-  with the food's name, image, and category.
-- Tapping **`הוסף ידנית`** opens the same add-food sheet with an empty form.
-- Tapping a chip under **`אחרונים`** opens the add-food sheet prefilled from a
-  previously logged food.
+- Tapping **`בחר מהמאגר`** navigates to **`/nutrition/library`** — a full-screen
+  library with a back link, header, search, category chips, and the full
+  food-card grid (`FoodLibrary` is passed `expandable={false}`, so every match
+  shows and the page itself scrolls).
+- Selecting a food navigates to **`/nutrition/add?foodId=<id>`**, prefilled with
+  the food's name, image, and category. The add screen's back link returns to
+  the library.
+- Tapping **`הוסף ידנית`** navigates to **`/nutrition/add`** with a blank form
+  (back link to Nutrition).
+- Tapping a chip under **`אחרונים`** navigates to `/nutrition/add` prefilled from
+  a previously logged food (`?foodId=` when it came from the library, otherwise
+  `?name=`).
+
+Each step is a real route, so the browser/hardware **back** button works
+naturally (library → add → back → library), and there is never a stacked-overlay
+feeling.
 
 ## Selected-food add flow
 
-The add sheet (`FoodLogForm`, rendered with `bare`) shows, in order:
+The add screen (`AddFoodView` → `FoodLogForm` in a card) shows, in order:
 
 - A "נבחר מהמאגר" card with the food image, name, and **category label** (when
   the food came from the library).
@@ -48,8 +69,8 @@ The add sheet (`FoodLogForm`, rendered with `bare`) shows, in order:
 - Primary button: **`הוסף ליומן`**.
 
 Macros are never pre-filled from the library — the user enters portion values
-each time. Saving writes a `FoodLog` and closes the sheet; the diary and totals
-update from the user-entered values only.
+each time. Saving writes a `FoodLog` and returns to the Nutrition screen; the
+diary and totals update from the user-entered values only.
 
 ## Macro / progress text clarity
 
@@ -74,6 +95,6 @@ These were left as future work to avoid shipping empty/broken features:
   added (only data-backed "אחרונים").
 - **Meal templates** — saving a group of foods as a reusable meal.
 
-The structure is ready for these: the quick-actions row and the picker/add
-sheets are the natural homes for favorites, saved values, and templates when a
+The structure is ready for these: the quick-actions row and the library/add
+screens are the natural homes for favorites, saved values, and templates when a
 backing data model exists.

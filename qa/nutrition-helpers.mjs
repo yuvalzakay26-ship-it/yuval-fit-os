@@ -1,8 +1,9 @@
 // Shared Playwright helpers for the Nutrition screen.
 //
-// Phase 3.17 turned the food library and the add-food form into focused bottom
-// sheets (instead of one long inline page). These helpers open those sheets so
-// QA scripts can keep asserting the same behaviors against the new flow.
+// Phase 3.17.1 turned the food library and the add-food form into full-screen
+// routes (/nutrition/library and /nutrition/add) instead of bottom sheets.
+// These helpers drive that route flow so QA scripts can keep asserting the same
+// behaviors (open library, pick a food, add manually, save a log).
 
 /** Pre-seed the welcome flag and start from a clean (but welcome-seen) state. */
 export async function seedAndResetNutrition(page, base) {
@@ -21,14 +22,14 @@ export async function seedAndResetNutrition(page, base) {
   await page.waitForTimeout(400);
 }
 
-/** Click the first button whose visible text contains `text`. */
-async function clickButtonByText(page, text) {
+/** Click the first link/button whose visible text contains `text`. */
+async function clickByText(page, text) {
   const clicked = await page.evaluate((t) => {
-    const btn = [...document.querySelectorAll("button")].find((b) =>
+    const el = [...document.querySelectorAll("a, button")].find((b) =>
       (b.textContent || "").includes(t),
     );
-    if (btn) {
-      btn.click();
+    if (el) {
+      el.click();
       return true;
     }
     return false;
@@ -37,31 +38,31 @@ async function clickButtonByText(page, text) {
   return clicked;
 }
 
-/** Open the food library picker sheet (waits for the search input). */
+/** Navigate into the full-screen food library (waits for the search input). */
 export async function openPicker(page) {
-  await clickButtonByText(page, "בחר מהמאגר");
-  await page.waitForSelector('input[aria-label="חיפוש במאגר האוכל"]', { timeout: 4000 });
-  await page.waitForTimeout(200);
-}
-
-/** Open the blank manual add sheet (waits for the name field). */
-export async function openManualAdd(page) {
-  await clickButtonByText(page, "הוסף ידנית");
-  await page.waitForSelector("#food-name", { timeout: 4000 });
-  await page.waitForTimeout(200);
-}
-
-/**
- * Pick a food from the (already open) picker by its card aria-label
- * ("הוספת <name> ליומן"). The picker closes and the add sheet opens.
- */
-export async function pickFood(page, name) {
-  await page.click(`button[aria-label="הוספת ${name} ליומן"]`);
-  await page.waitForSelector("#food-name", { timeout: 4000 });
+  await clickByText(page, "בחר מהמאגר");
+  await page.waitForSelector('input[aria-label="חיפוש במאגר האוכל"]', { timeout: 6000 });
   await page.waitForTimeout(250);
 }
 
-/** Count food cards currently shown in the open picker sheet. */
+/** Navigate into the blank manual add flow (waits for the name field). */
+export async function openManualAdd(page) {
+  await clickByText(page, "הוסף ידנית");
+  await page.waitForSelector("#food-name", { timeout: 6000 });
+  await page.waitForTimeout(250);
+}
+
+/**
+ * Pick a food from the (already open) library by its card aria-label
+ * ("הוספת <name> ליומן"). Navigates to the add-food route, prefilled.
+ */
+export async function pickFood(page, name) {
+  await page.click(`button[aria-label="הוספת ${name} ליומן"]`);
+  await page.waitForSelector("#food-name", { timeout: 6000 });
+  await page.waitForTimeout(300);
+}
+
+/** Count food cards currently shown on the open library screen. */
 export function pickerCardCount(page) {
   return page.evaluate(
     () => document.querySelectorAll('button[aria-label^="הוספת"]').length,

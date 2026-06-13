@@ -1,23 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 import { recentFoods, sumNutrition, todaysFoodLogs } from "@/lib/analytics";
 import { removeFoodLog, useFoodLogs, useSettings } from "@/lib/fitness-store";
-import type { FoodCategory, FoodLibraryItem } from "@/lib/food-library";
+import type { FoodCategory } from "@/lib/food-library";
+import type { RecentFood } from "@/lib/analytics";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState, SectionHeader } from "@/components/ui/PageHeader";
-import { Sheet } from "@/components/ui/Sheet";
 import { AppleIcon, DatabaseIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
-import { FoodLogForm, type FoodPrefill } from "./FoodLogForm";
-import { FoodLibrary } from "./FoodLibrary";
 import { FoodImage } from "./FoodImage";
 import { MacroSummary } from "./MacroSummary";
 import { ProteinCalculator } from "./ProteinCalculator";
 import { MEAL_TYPE_LABELS } from "./nutrition-labels";
 
-type ActiveSheet = "none" | "picker" | "add";
+/** Deep-link into the add-food flow for a previously logged food. */
+function recentHref(food: RecentFood): string {
+  if (food.sourceFoodId) {
+    return `/nutrition/add?foodId=${encodeURIComponent(food.sourceFoodId)}`;
+  }
+  return `/nutrition/add?name=${encodeURIComponent(food.foodName)}`;
+}
 
 export function NutritionView() {
   const logs = useFoodLogs();
@@ -27,30 +31,6 @@ export function NutritionView() {
   const totals = sumNutrition(today);
   const recents = recentFoods(logs);
 
-  // The add flow opens in a focused bottom sheet so the main page stays short.
-  // `prefill` carries the picked/recent food into the form; `formNonce` forces
-  // the form to remount fresh each time the sheet opens.
-  const [sheet, setSheet] = useState<ActiveSheet>("none");
-  const [prefill, setPrefill] = useState<FoodPrefill | null>(null);
-  const [formNonce, setFormNonce] = useState(0);
-
-  const openAdd = (next: FoodPrefill | null) => {
-    setPrefill(next);
-    setFormNonce((n) => n + 1);
-    setSheet("add");
-  };
-
-  const handleSelectFromLibrary = (item: FoodLibraryItem) => {
-    openAdd({
-      foodName: item.nameHe,
-      category: item.category,
-      imagePath: item.imagePath,
-      sourceFoodId: item.id,
-      quantityText: item.defaultQuantityText,
-    });
-  };
-
-  const closeSheet = () => setSheet("none");
   const handleDelete = (id: string) => removeFoodLog(id);
 
   return (
@@ -68,13 +48,12 @@ export function NutritionView() {
         <ProteinCalculator defaultOpen={false} showArticleLink />
       </section>
 
-      {/* 3 — Quick actions (the compact entry point into the food library) */}
+      {/* 3 — Quick actions (entry points into the full-screen flows) */}
       <section>
         <SectionHeader title="הוספה מהירה" />
         <div className="grid grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            onClick={() => setSheet("picker")}
+          <Link
+            href="/nutrition/library"
             className="tap flex flex-col items-start gap-2 rounded-2xl border border-border bg-surface p-4 text-right shadow-soft transition-[border-color] hover:border-border-strong"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--accent-nutrition-soft)] text-[color:var(--accent-nutrition)]">
@@ -84,11 +63,10 @@ export function NutritionView() {
             <span className="text-[11.5px] leading-snug text-muted">
               בחר מאכל עם תמונה והוסף ליומן
             </span>
-          </button>
+          </Link>
 
-          <button
-            type="button"
-            onClick={() => openAdd(null)}
+          <Link
+            href="/nutrition/add"
             className="tap flex flex-col items-start gap-2 rounded-2xl border border-border bg-surface p-4 text-right shadow-soft transition-[border-color] hover:border-border-strong"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--accent-soft)] text-accent">
@@ -98,7 +76,7 @@ export function NutritionView() {
             <span className="text-[11.5px] leading-snug text-muted">
               רשום מאכל וערכים תזונתיים בעצמך
             </span>
-          </button>
+          </Link>
         </div>
 
         {/* "אחרונים" — backed by real log data; shown only when it exists.
@@ -109,10 +87,9 @@ export function NutritionView() {
             <p className="mb-2 text-[12px] font-semibold text-muted">אחרונים</p>
             <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
               {recents.map((food) => (
-                <button
+                <Link
                   key={food.sourceFoodId ?? food.foodName}
-                  type="button"
-                  onClick={() => openAdd(food)}
+                  href={recentHref(food)}
                   className="tap flex shrink-0 items-center gap-2 rounded-full border border-border bg-surface py-1.5 pe-3 ps-1.5 text-[12.5px] font-semibold text-foreground hover:border-border-strong"
                 >
                   <FoodImage
@@ -124,7 +101,7 @@ export function NutritionView() {
                     className="h-7 w-7 shrink-0 rounded-full"
                   />
                   <span className="max-w-[8rem] truncate">{food.foodName}</span>
-                </button>
+                </Link>
               ))}
             </div>
           </div>
@@ -141,12 +118,16 @@ export function NutritionView() {
             description="בחר מאכל מהמאגר או הוסף ידנית כדי להתחיל לעקוב."
             action={
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <Button size="sm" onClick={() => setSheet("picker")}>
-                  <DatabaseIcon className="h-4 w-4" /> בחר מהמאגר
-                </Button>
-                <Button size="sm" variant="secondary" onClick={() => openAdd(null)}>
-                  <PlusIcon className="h-4 w-4" /> הוסף ידנית
-                </Button>
+                <Link href="/nutrition/library">
+                  <Button size="sm">
+                    <DatabaseIcon className="h-4 w-4" /> בחר מהמאגר
+                  </Button>
+                </Link>
+                <Link href="/nutrition/add">
+                  <Button size="sm" variant="secondary">
+                    <PlusIcon className="h-4 w-4" /> הוסף ידנית
+                  </Button>
+                </Link>
               </div>
             }
           />
@@ -194,31 +175,6 @@ export function NutritionView() {
           </div>
         )}
       </section>
-
-      {/* Food library picker — opens on demand instead of filling the page. */}
-      <Sheet
-        open={sheet === "picker"}
-        onClose={closeSheet}
-        title="מאגר האוכל"
-        description="בחר מאכל כדי למלא את היומן — ואז הוסף כמות וערכים תזונתיים."
-      >
-        <FoodLibrary onSelect={handleSelectFromLibrary} expandable={false} />
-      </Sheet>
-
-      {/* Focused add flow — selected food (or a blank manual entry). */}
-      <Sheet
-        open={sheet === "add"}
-        onClose={closeSheet}
-        title={prefill ? "הוספת מאכל ליומן" : "הוספה ידנית"}
-        description="מלא כמות וערכים תזונתיים, ואז שמור ליומן."
-      >
-        <FoodLogForm
-          key={formNonce}
-          bare
-          prefill={prefill}
-          onSaved={closeSheet}
-        />
-      </Sheet>
     </div>
   );
 }
