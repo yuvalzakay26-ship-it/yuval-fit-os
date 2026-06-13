@@ -20,10 +20,10 @@ mkdirSync(OUT, { recursive: true });
 const issues = [];
 const fail = (m) => issues.push(m);
 
-async function seedAccess(page) {
+async function seedWelcome(page) {
   await page.addInitScript(() => {
     try {
-      localStorage.setItem("yfos:access-granted:v1", "1");
+      localStorage.setItem("yfos:welcome-seen:v1", "1");
     } catch {}
   });
 }
@@ -60,13 +60,13 @@ async function run() {
   });
   page.on("pageerror", (e) => consoleErrors.push("pageerror: " + e.message));
 
-  await seedAccess(page);
+  await seedWelcome(page);
   await page.goto(BASE + "/nutrition", { waitUntil: "networkidle" });
   await page.evaluate(() => {
-    // Start clean but keep the access flag.
-    const keep = localStorage.getItem("yfos:access-granted:v1");
+    // Start clean but keep the welcome flag.
+    const keep = localStorage.getItem("yfos:welcome-seen:v1");
     localStorage.clear();
-    if (keep) localStorage.setItem("yfos:access-granted:v1", keep);
+    if (keep) localStorage.setItem("yfos:welcome-seen:v1", keep);
   });
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(400);

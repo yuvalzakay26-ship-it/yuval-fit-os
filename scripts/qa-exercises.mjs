@@ -7,7 +7,7 @@
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
 
-const BASE = "http://localhost:3199";
+const BASE = process.env.QA_BASE ?? "http://localhost:3199";
 const OUT = ".qa-shots";
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -42,10 +42,10 @@ async function makePage(colorScheme) {
     hasTouch: true,
     colorScheme,
   });
-  // Pre-seed the access gate (Phase 3.5) so QA lands directly on the app.
+  // Pre-seed the welcome flag so QA lands directly on the app.
   await ctx.addInitScript(() => {
     try {
-      localStorage.setItem("yfos:access-granted:v1", "1");
+      localStorage.setItem("yfos:welcome-seen:v1", "1");
     } catch {}
   });
   const page = await ctx.newPage();
