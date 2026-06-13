@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { WorkoutSession } from "@/lib/fitness-types";
-import { MUSCLE_GROUP_LABELS, getExerciseById } from "@/lib/seed-exercises";
+import { getExerciseById } from "@/lib/seed-exercises";
 import { formatHebrewDate } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { BookmarkIcon, CheckIcon, TrashIcon } from "@/components/ui/icons";
+import { MuscleChips } from "./MuscleChips";
 
 function sessionVolume(session: WorkoutSession): number {
   return session.exercises.reduce(
@@ -48,7 +48,7 @@ export function WorkoutHistory({
         const totalSets = session.exercises.reduce((n, e) => n + e.sets.length, 0);
         const volume = Math.round(sessionVolume(session));
         return (
-          <Card key={session.id} className="space-y-3 p-4">
+          <Card key={session.id} className="sheen space-y-3 p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="truncate text-[16px] font-bold text-foreground">
@@ -82,15 +82,7 @@ export function WorkoutHistory({
               </div>
             </div>
 
-            {session.muscleGroups.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {session.muscleGroups.map((m) => (
-                  <Badge key={m} tone="strength">
-                    {MUSCLE_GROUP_LABELS[m]}
-                  </Badge>
-                ))}
-              </div>
-            )}
+            <MuscleChips groups={session.muscleGroups} />
 
             {/* Summary stats */}
             <div className="grid grid-cols-3 gap-2">
