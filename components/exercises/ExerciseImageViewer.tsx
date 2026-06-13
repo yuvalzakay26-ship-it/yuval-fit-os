@@ -3,7 +3,9 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
+import type { ExerciseVideo } from "@/lib/fitness-types";
 import { XIcon } from "@/components/ui/icons";
+import { ExerciseVideoButton } from "./ExerciseVideoButton";
 
 // Fullscreen lightbox for exercise images. Unlike the in-card image (which
 // crops with object-cover), this shows the complete image with object-contain.
@@ -13,12 +15,14 @@ export function ExerciseImageViewer({
   imagePath,
   title,
   subtitle,
+  video,
   open,
   onClose,
 }: {
   imagePath: string;
   title: string;
   subtitle?: string;
+  video?: ExerciseVideo;
   open: boolean;
   onClose: () => void;
 }) {
@@ -57,7 +61,7 @@ export function ExerciseImageViewer({
           bar (e.g. missing the X slightly) from closing via the backdrop. */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex items-center justify-between gap-3 px-4 py-3"
+        className="flex items-center justify-between gap-2.5 px-4 py-3"
       >
         <div className="min-w-0">
           <p className="truncate text-[15px] font-bold leading-tight text-white">
@@ -67,14 +71,17 @@ export function ExerciseImageViewer({
             <p className="truncate text-[12px] text-white/60">{subtitle}</p>
           )}
         </div>
-        <button
-          ref={closeRef}
-          onClick={onClose}
-          aria-label="סגור תמונה"
-          className="tap flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
-        >
-          <XIcon className="h-5 w-5" />
-        </button>
+        <div className="flex shrink-0 items-center gap-2.5">
+          {video && <ExerciseVideoButton video={video} variant="overlay" />}
+          <button
+            ref={closeRef}
+            onClick={onClose}
+            aria-label="סגור תמונה"
+            className="tap flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+          >
+            <XIcon className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       {/* Image area — full image, centered, never cropped or stretched.

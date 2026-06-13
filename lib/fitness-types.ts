@@ -21,6 +21,28 @@ export type Equipment =
 
 export type Difficulty = "beginner" | "intermediate" | "advanced";
 
+/**
+ * Optional external demonstration video for an exercise (Phase 3.22).
+ * We only link out to YouTube — videos are never embedded, hosted, or
+ * downloaded. The primary source is a single channel (ScottHermanFitness)
+ * for consistency; a small set of approved channels acts as fallback.
+ * See `docs/EXERCISE_VIDEO_LINKS.md` for the source policy.
+ */
+export interface ExerciseVideo {
+  provider: "youtube";
+  /** Stable YouTube watch URL (https://www.youtube.com/watch?v=...). */
+  url: string;
+  /** The video title, used as accessible context for the link. */
+  title: string;
+  /** Uploading channel, e.g. "ScottHermanFitness". */
+  channelName: string;
+  /** "primary" = preferred channel; "fallback" = approved alternative. */
+  source: "primary" | "fallback";
+  language: "en" | "he" | "other";
+  /** Date the link was manually verified (YYYY-MM-DD). */
+  verifiedAt: string;
+}
+
 export interface Exercise {
   id: string;
   nameEn: string;
@@ -39,6 +61,11 @@ export interface Exercise {
   imagePath?: string;
   /** Optional video URL reserved for a future phase. */
   videoUrl?: string;
+  /**
+   * Optional verified external demonstration video. Present only on exercises
+   * with a manually confirmed match; absent otherwise (no placeholders).
+   */
+  video?: ExerciseVideo;
   instructions: string[];
   notes?: string;
 }

@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/Badge";
 import { ChevronIcon, ExpandIcon, TrophyIcon } from "@/components/ui/icons";
 import { ExerciseImage } from "./ExerciseImage";
 import { ExerciseImageViewer } from "./ExerciseImageViewer";
+import { ExerciseVideoButton } from "./ExerciseVideoButton";
 
 export function ExerciseCard({
   exercise,
@@ -87,10 +88,16 @@ export function ExerciseCard({
                 imagePath={exercise.imagePath}
                 title={exercise.nameHe}
                 subtitle={exercise.nameEn}
+                video={exercise.video}
                 open={viewerOpen}
                 onClose={() => setViewerOpen(false)}
               />
             </>
+          )}
+          {exercise.video && (
+            <div className="mb-3.5">
+              <ExerciseVideoButton video={exercise.video} />
+            </div>
           )}
           {performance ? (
             <div className="mb-3.5 flex items-center gap-2.5 rounded-2xl bg-[color:var(--accent-soft)] px-3.5 py-2.5">
