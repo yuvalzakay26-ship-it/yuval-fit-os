@@ -53,10 +53,11 @@ public/food/<category>/<slug>.webp
 - `public/food/proteins/` — 19 images (Phase 3.12)
 - `public/food/carbs/` — 19 images (Phase 3.13)
 - `public/food/vegetables/` — 20 images (Phase 3.14)
+- `public/food/fruits/` — 19 images (Phase 3.15)
 
 `<category>` is a `FoodCategory` from `lib/food-library.ts`:
-`proteins`, `carbs`, `vegetables`, `salads`, `israeli-food`, `full-meals`,
-`snacks`, `drinks`, `breakfast`, `dairy`, `other`.
+`proteins`, `carbs`, `vegetables`, `fruits`, `salads`, `israeli-food`,
+`full-meals`, `snacks`, `drinks`, `breakfast`, `dairy`, `other`.
 
 ## Naming rules
 
@@ -260,6 +261,67 @@ Skipped: none.
 > the user enters macros manually per portion. The quick-add flow remains
 > prefill-only for name / image / category / `sourceFoodId`.
 
+## Phase 3.15 — Fruits import
+
+The user added a fifth category folder containing fruit images.
+
+- **Source folder inspected:** `public/food source/פירות — Fruits/`
+  (in-repo, gitignored). Actual folder name on disk: `פירות — Fruits`.
+- **Images found:** **19**, all `.png`, ~1.5–2.4 MB each. No unsupported
+  formats, no duplicates/suspicious names, no oversized outliers, and **no**
+  generic/unclear names (no `ChatGPT Image …`, no bare timestamps) — every
+  filename maps cleanly to a known fruit, so nothing had to be skipped or
+  guessed.
+- **Converted / skipped:** 19 converted PNG → WebP q80; **0 skipped**. The set
+  shrank from ~38 MB to ~1.9 MB (~22–149 KB per image).
+- **Destination created:** `public/food/fruits/` (19 `.webp`).
+- **Category:** key `fruits`, Hebrew label `פירות`. This was a **new**
+  `FoodCategory` — added to the `FoodCategory` union, `FOOD_CATEGORY_LABELS`,
+  the `foodCategoriesInLibrary()` display order, and the exhaustive
+  `GRADIENTS` / `SOLID` placeholder records in
+  `components/nutrition/FoodPlaceholder.tsx` (pink/rose gradient + `bg-rose-500`
+  solid). No theme colors were changed — these are local placeholder fallbacks
+  matching the existing per-category pattern.
+- **Library items added:** **19** entries appended to `FOOD_LIBRARY`.
+
+### Importer change
+
+The source folder name is Hebrew + English (`פירות — Fruits`). `slugify()`
+strips the Hebrew to `fruits`, which is now a valid `FoodCategory`, but `fruits`
+also had to be added to the importer's `VALID_CATEGORIES` set. Three
+`FOLDER_ALIASES` entries were added for explicit, self-documenting mapping
+(matching the proteins/carbs/vegetables phases): `"fruits"`,
+`"פירות — fruits"`, and `"פירות"`.
+
+### Mapping decisions
+
+- `id` mirrors the image slug for stability. None of the 19 fruit slugs collide
+  with existing breakfast/proteins/carbs/vegetables ids, so no
+  category-qualified ids were needed. (The brief flagged `avocado` as a possible
+  collision risk, but avocado is not part of this fruit set — it already lives
+  under `vegetables` and was not duplicated.)
+- Plural vs singular slugs follow the source filenames: `Blueberries.png` →
+  `blueberries` (`אוכמניות`) and `Grapes.png` → `grapes` (`ענבים`) stay plural;
+  `Cherry`/`Raspberry`/`Strawberry` stay singular (`דובדבן`/`פטל`/`תות שדה`).
+- Filename → Hebrew name choices: `apple` → `תפוח`, `banana` → `בננה`,
+  `grapefruit` → `אשכולית`, `kiwi` → `קיווי`, `mango` → `מנגו`,
+  `melon` → `מלון`, `nectarine` → `נקטרינה`, `orange` → `תפוז`,
+  `peach` → `אפרסק`, `pear` → `אגס`, `pineapple` → `אננס`, `plum` → `שזיף`,
+  `pomegranate` → `רימון`, `watermelon` → `אבטיח`.
+
+### Fruits imported (19)
+
+apple, banana, blueberries, cherry, grapefruit, grapes, kiwi, mango, melon,
+nectarine, orange, peach, pear, pineapple, plum, pomegranate, raspberry,
+strawberry, watermelon.
+
+Skipped: none.
+
+> **No nutrition inferred.** As with breakfast, proteins, carbs, and
+> vegetables, all fruit items leave `protein` / `carbs` / `fat` / `calories`
+> **undefined** — the user enters macros manually per portion. The quick-add
+> flow remains prefill-only for name / image / category / `sourceFoodId`.
+
 ## Data model & UI
 
 - `lib/food-library.ts` — `FoodCategory`, `FoodLibraryItem`,
@@ -331,6 +393,19 @@ thumbnail banner, saving writes a `FoodLog` with
 `sourceFoodId=cauliflower` and the user-entered macros, and breakfast + proteins
 + carbs filters still work — no overflow or console error in light **or** dark
 mode.
+
+**Phase 3.15** adds `qa/fruits-food-check.mjs` (Playwright, pre-seeds
+`yfos:welcome-seen:v1 = "1"`), which passes with **0 issues**: the `פירות` chip
+exists, filtering to it shows exactly **19** fruits items with all images
+loaded, search for `אבטיח` narrows to 1, picking it prefills the form +
+thumbnail banner, saving writes a `FoodLog` with
+`imagePath=/food/fruits/watermelon.webp` / `category=fruits` /
+`sourceFoodId=watermelon` and the user-entered macros, and breakfast + proteins
++ carbs + vegetables filters still work — no overflow or console error in light
+**or** dark mode. The existing `qa/food-library-check.mjs`,
+`qa/vegetables-food-check.mjs`, `qa/carbs-food-check.mjs`, and
+`qa/welcome-check.mjs` still pass, and the exercise library still renders all
+**133** images (0 broken) with no console errors across all routes.
 
 ## Scope note
 

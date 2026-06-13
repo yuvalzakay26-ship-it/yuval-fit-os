@@ -14,6 +14,7 @@ export type FoodCategory =
   | "proteins"
   | "carbs"
   | "vegetables"
+  | "fruits"
   | "salads"
   | "israeli-food"
   | "full-meals"
@@ -45,6 +46,7 @@ export const FOOD_CATEGORY_LABELS: Record<FoodCategory, string> = {
   proteins: "חלבונים",
   carbs: "פחמימות ותוספות",
   vegetables: "ירקות",
+  fruits: "פירות",
   salads: "סלטים",
   "israeli-food": "אוכל ישראלי",
   "full-meals": "ארוחות מלאות",
@@ -621,6 +623,144 @@ export const FOOD_LIBRARY: FoodLibraryItem[] = [
     category: "vegetables",
     imagePath: "/food/vegetables/zucchini.webp",
   },
+
+  // Fruits set imported in Phase 3.15. Macros are deliberately omitted — the
+  // user enters them per portion. `id` mirrors the image slug; none of these
+  // slugs collide with existing breakfast/proteins/carbs/vegetables ids. See
+  // docs/FOOD_MEDIA_IMPORT.md.
+  {
+    id: "apple",
+    nameHe: "תפוח",
+    nameEn: "Apple",
+    category: "fruits",
+    imagePath: "/food/fruits/apple.webp",
+  },
+  {
+    id: "banana",
+    nameHe: "בננה",
+    nameEn: "Banana",
+    category: "fruits",
+    imagePath: "/food/fruits/banana.webp",
+  },
+  {
+    id: "blueberries",
+    nameHe: "אוכמניות",
+    nameEn: "Blueberries",
+    category: "fruits",
+    imagePath: "/food/fruits/blueberries.webp",
+  },
+  {
+    id: "cherry",
+    nameHe: "דובדבן",
+    nameEn: "Cherry",
+    category: "fruits",
+    imagePath: "/food/fruits/cherry.webp",
+  },
+  {
+    id: "grapefruit",
+    nameHe: "אשכולית",
+    nameEn: "Grapefruit",
+    category: "fruits",
+    imagePath: "/food/fruits/grapefruit.webp",
+  },
+  {
+    id: "grapes",
+    nameHe: "ענבים",
+    nameEn: "Grapes",
+    category: "fruits",
+    imagePath: "/food/fruits/grapes.webp",
+  },
+  {
+    id: "kiwi",
+    nameHe: "קיווי",
+    nameEn: "Kiwi",
+    category: "fruits",
+    imagePath: "/food/fruits/kiwi.webp",
+  },
+  {
+    id: "mango",
+    nameHe: "מנגו",
+    nameEn: "Mango",
+    category: "fruits",
+    imagePath: "/food/fruits/mango.webp",
+  },
+  {
+    id: "melon",
+    nameHe: "מלון",
+    nameEn: "Melon",
+    category: "fruits",
+    imagePath: "/food/fruits/melon.webp",
+  },
+  {
+    id: "nectarine",
+    nameHe: "נקטרינה",
+    nameEn: "Nectarine",
+    category: "fruits",
+    imagePath: "/food/fruits/nectarine.webp",
+  },
+  {
+    id: "orange",
+    nameHe: "תפוז",
+    nameEn: "Orange",
+    category: "fruits",
+    imagePath: "/food/fruits/orange.webp",
+  },
+  {
+    id: "peach",
+    nameHe: "אפרסק",
+    nameEn: "Peach",
+    category: "fruits",
+    imagePath: "/food/fruits/peach.webp",
+  },
+  {
+    id: "pear",
+    nameHe: "אגס",
+    nameEn: "Pear",
+    category: "fruits",
+    imagePath: "/food/fruits/pear.webp",
+  },
+  {
+    id: "pineapple",
+    nameHe: "אננס",
+    nameEn: "Pineapple",
+    category: "fruits",
+    imagePath: "/food/fruits/pineapple.webp",
+  },
+  {
+    id: "plum",
+    nameHe: "שזיף",
+    nameEn: "Plum",
+    category: "fruits",
+    imagePath: "/food/fruits/plum.webp",
+  },
+  {
+    id: "pomegranate",
+    nameHe: "רימון",
+    nameEn: "Pomegranate",
+    category: "fruits",
+    imagePath: "/food/fruits/pomegranate.webp",
+  },
+  {
+    id: "raspberry",
+    nameHe: "פטל",
+    nameEn: "Raspberry",
+    category: "fruits",
+    imagePath: "/food/fruits/raspberry.webp",
+  },
+  {
+    id: "strawberry",
+    nameHe: "תות שדה",
+    nameEn: "Strawberry",
+    category: "fruits",
+    imagePath: "/food/fruits/strawberry.webp",
+  },
+  {
+    id: "watermelon",
+    nameHe: "אבטיח",
+    nameEn: "Watermelon",
+    category: "fruits",
+    imagePath: "/food/fruits/watermelon.webp",
+  },
 ];
 
 /**
@@ -635,6 +775,7 @@ export function foodCategoriesInLibrary(): FoodCategory[] {
     "carbs",
     "salads",
     "vegetables",
+    "fruits",
     "israeli-food",
     "dairy",
     "snacks",

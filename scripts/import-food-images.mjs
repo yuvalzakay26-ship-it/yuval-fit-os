@@ -23,6 +23,7 @@ const VALID_CATEGORIES = new Set([
   "proteins",
   "carbs",
   "vegetables",
+  "fruits",
   "salads",
   "israeli-food",
   "full-meals",
@@ -51,6 +52,10 @@ const FOLDER_ALIASES = {
   // Hebrew "vegetables" folder shipped in Phase 3.14 ("ירקות — Vegetables").
   "ירקות — vegetables": "vegetables",
   ירקות: "vegetables",
+  fruits: "fruits",
+  // Hebrew "fruits" folder shipped in Phase 3.15 ("פירות — Fruits").
+  "פירות — fruits": "fruits",
+  פירות: "fruits",
   carbs: "carbs",
   "carbs & side dishes": "carbs",
   "carbs and side dishes": "carbs",
