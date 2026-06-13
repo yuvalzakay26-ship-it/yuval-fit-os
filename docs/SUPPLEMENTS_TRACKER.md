@@ -182,6 +182,37 @@ are unchanged.
 **New icons.** `HeartIcon`, `LeafIcon`, `ArchiveIcon` added to the shared stroke
 set; `SupplementGlyph` maps catalogue glyph names to shared icons (no emoji).
 
+## Library flow polish (Phase 3.28)
+
+A UX-flow polish pass over the add flow and starter library. **No backend, AI,
+dosage logic, external API, storage-key, or data-model changes** — see
+[`SUPPLEMENTS_LIBRARY_UX.md`](./SUPPLEMENTS_LIBRARY_UX.md) for the full write-up.
+
+- **Local library search** (`SupplementLibrary`). A search field matches the
+  Hebrew name, English subtitle, neutral category label, and a set of
+  search-only `aliases` on each catalogue item (e.g. `mag` → Magnesium,
+  `אומגה` → Omega 3, `creatine` → קריאטין). Multi-word queries match when every
+  token is found (AND). Search composes with the category tabs. An empty result
+  shows `לא נמצאו תוספים תואמים` + `אפשר להוסיף ידנית בכל רגע.`
+- **Already-tracked state.** Templates whose name already exists in the tracker
+  (active or archived, matched on a normalized Hebrew/English name) show a calm
+  `כבר במעקב` badge in both the full library and the tracker rail. Tapping a
+  tracked template **opens the existing entry to edit** instead of creating a
+  duplicate (`trackedCatalogMap` resolves key → existing id). Picking a template
+  never auto-saves, so duplicates are never created silently.
+- **Selected-template summary.** After a template is picked, a summary card shows
+  its icon, Hebrew name, English subtitle, category, and the reminder
+  `אפשר לערוך הכול לפני שמירה.`, with a one-tap clear (`נקה בחירה`). The manual
+  section header shifts to `פרטים אישיים` so the form reads as personal details.
+- **Save CTA never under the bottom nav.** The `שמור תוסף` CTA is a full-width,
+  prominent button at the end of the flow; the app shell's `pb-32` (~128px)
+  bottom padding plus a safe-area inset keep it clear of the fixed bottom nav
+  (~79px) by ~50px at 360/390px, while the form scrolls naturally. (A viewport
+  sticky bar was intentionally avoided: the page-wrapping `.animate-fade-up`
+  leaves a `transform` that breaks viewport-relative `position: sticky`.)
+- **Template-not-recommendation copy.** The starter rail gained a clarifying line
+  and the library note now reads `המאגר נועד למילוי מהיר בלבד ואינו המלצה רפואית.`
+
 ## Safety copy / boundaries
 
 Surfaced on the full screen and the add/edit form (centralized in
@@ -216,11 +247,22 @@ never recommends what to take, and never frames substances as good/bad.
 
 `scripts/qa-supplements.mjs` (Playwright, mobile viewport, dark + light) covers:
 Today card (empty + populated), full-screen header/helper/safety/empty, the
-add flow (name + category + timing + dosage hint), mark-taken + undo, reload
-persistence, edit (prefill + rename), archive + reactivate, per-day separation,
-and the Settings resets — asserting no horizontal overflow and no console errors.
-Run with a server on `:3321` (`npx next start -p 3321`).
+add flow (name + category + timing + dosage hint), **library search**
+(Hebrew/English/alias + empty-search state), the **selected-template summary**,
+the **save CTA clearing the bottom nav at 360px**, the **already-tracked badge +
+routing to the existing entry**, mark-taken + undo, reload persistence, edit
+(prefill + rename), archive + reactivate, per-day separation, and the Settings
+resets — asserting no horizontal overflow and no console errors. Run with a
+server on `:3321` (`npx next start -p 3321`).
 
 Regression suites confirmed green (exit 0, 0 failures): `qa/welcome-check.mjs`,
-`qa/console-check.mjs`, `scripts/qa-nutrition-smoke.mjs`,
-`scripts/qa-favorites.mjs`, `scripts/qa-saved-values.mjs`, `scripts/qa-water.mjs`.
+`qa/private-access-check.mjs`, `qa/console-check.mjs`, `qa/check360.mjs`,
+`qa/today-dashboard-check.mjs`, `scripts/qa-nutrition-smoke.mjs`,
+`scripts/qa-water.mjs`, `qa/exercise-picker-check.mjs`.
+
+> **Note on `today-dashboard-check`:** its previous "gate-seeding quirk" was a
+> date bug in the QA script, not the app — it seeded date-keyed data with the UTC
+> `toISOString().slice(0,10)` while the app uses the *local* ISO date
+> (`lib/utils` `toISODate`). In timezones ahead of UTC these diverge by a day,
+> so seeded water/supplement-log marks landed on "yesterday" and silently failed.
+> Fixed in this phase by seeding with the app's local-date logic (QA-only change).

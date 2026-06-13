@@ -78,9 +78,30 @@ export const SUPPLEMENT_LIBRARY_HELPER =
   "בחר פריט להתחלה מהירה — השם והקטגוריה ימולאו עבורך, ותמיד אפשר לערוך לפני שמירה.";
 /** Tiny reassurance under the library — reinforces that this is not advice. */
 export const SUPPLEMENT_LIBRARY_NOTE =
-  "רשימת תבניות להוספה מהירה בלבד — לא המלצה מה לקחת.";
+  "המאגר נועד למילוי מהיר בלבד ואינו המלצה רפואית.";
 /** Label for the all-categories tab in the library browser. */
 export const SUPPLEMENT_LIBRARY_ALL = "הכל";
+
+/** Search box placeholder for the starter library. */
+export const SUPPLEMENT_LIBRARY_SEARCH_PLACEHOLDER =
+  "חיפוש תוסף — בעברית או באנגלית";
+/** Empty-search state for the library (title + calm hint). */
+export const SUPPLEMENT_LIBRARY_EMPTY_TITLE = "לא נמצאו תוספים תואמים";
+export const SUPPLEMENT_LIBRARY_EMPTY_HINT = "אפשר להוסיף ידנית בכל רגע.";
+
+/** Badge shown on a library card whose template is already in the tracker. */
+export const SUPPLEMENT_ALREADY_TRACKED = "כבר במעקב";
+/** Tiny line on a tracked card inviting the user to open the existing entry. */
+export const SUPPLEMENT_TRACKED_OPEN = "פתח לעריכה";
+
+/* ----------------------- Selected template summary ---------------------- */
+
+/** Eyebrow label above the chosen-template summary on the add screen. */
+export const SUPPLEMENT_TEMPLATE_SELECTED_LABEL = "תבנית נבחרה";
+/** Reassurance that the chosen template is still fully editable before saving. */
+export const SUPPLEMENT_TEMPLATE_EDITABLE = "אפשר לערוך הכול לפני שמירה.";
+/** Action that clears the chosen template back to a blank manual entry. */
+export const SUPPLEMENT_TEMPLATE_CLEAR = "נקה בחירה";
 
 /** Short progress line shown under the daily completion figure. */
 export function supplementStatusLine(taken: number, active: number): string {

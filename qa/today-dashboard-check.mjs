@@ -45,7 +45,13 @@ async function capture(name, viewport, state, colorScheme = "light") {
   await ctx.close();
 }
 
-const today = new Date().toISOString().slice(0, 10);
+// Use the app's LOCAL ISO date (matches lib/utils `toISODate`), not the UTC
+// `toISOString().slice(0,10)`. In timezones ahead of UTC the two diverge by a
+// day during the early-UTC window, which would seed water/supplement-log dates
+// onto "yesterday" and silently fail the date-keyed assertions below.
+const localISODate = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const today = localISODate();
 
 // Rich data: workout today, food logs, water, supplements (one taken).
 const rich = {

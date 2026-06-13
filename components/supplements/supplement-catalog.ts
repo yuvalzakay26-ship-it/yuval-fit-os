@@ -44,6 +44,12 @@ export interface CatalogSupplement {
    * recommendation. The user can change or clear it.
    */
   timesOfDay?: SupplementTiming[];
+  /**
+   * Extra search-only terms (common spellings / synonyms) so the library search
+   * finds the item from how people actually type. Purely a matching aid — never
+   * shown in the UI, never advice.
+   */
+  aliases?: string[];
 }
 
 /**
@@ -54,28 +60,28 @@ export interface CatalogSupplement {
  */
 export const SUPPLEMENT_CATALOG: CatalogSupplement[] = [
   // Performance / Training
-  { key: "creatine", nameHe: "קריאטין", nameEn: "Creatine", category: "performance", icon: "bolt" },
-  { key: "whey", nameHe: "אבקת חלבון", nameEn: "Whey Protein", category: "protein", icon: "dumbbell" },
-  { key: "electrolytes", nameHe: "אלקטרוליטים", nameEn: "Electrolytes", category: "performance", icon: "droplet" },
-  { key: "pre-workout", nameHe: "פרה-אימון", nameEn: "Pre-Workout", category: "performance", icon: "flame", timesOfDay: ["pre-workout"] },
+  { key: "creatine", nameHe: "קריאטין", nameEn: "Creatine", category: "performance", icon: "bolt", aliases: ["קראטין", "creatin", "monohydrate", "מונוהידראט"] },
+  { key: "whey", nameHe: "אבקת חלבון", nameEn: "Whey Protein", category: "protein", icon: "dumbbell", aliases: ["whey", "protein", "חלבון", "וויי", "ווי", "פרוטאין", "isolate"] },
+  { key: "electrolytes", nameHe: "אלקטרוליטים", nameEn: "Electrolytes", category: "performance", icon: "droplet", aliases: ["electrolyte", "מלחים", "אלקטרוליט"] },
+  { key: "pre-workout", nameHe: "פרה-אימון", nameEn: "Pre-Workout", category: "performance", icon: "flame", timesOfDay: ["pre-workout"], aliases: ["preworkout", "pre workout", "פרה אימון", "לפני אימון"] },
 
   // Vitamins
-  { key: "vitamin-d", nameHe: "ויטמין D", nameEn: "Vitamin D", category: "vitamin", icon: "sun" },
-  { key: "vitamin-c", nameHe: "ויטמין C", nameEn: "Vitamin C", category: "vitamin", icon: "sun" },
-  { key: "vitamin-b12", nameHe: "ויטמין B12", nameEn: "Vitamin B12", category: "vitamin", icon: "sun" },
-  { key: "vitamin-b-complex", nameHe: "ויטמין B קומפלקס", nameEn: "Vitamin B Complex", category: "vitamin", icon: "spark" },
-  { key: "multivitamin", nameHe: "מולטי-ויטמין", nameEn: "Multivitamin", category: "vitamin", icon: "spark" },
+  { key: "vitamin-d", nameHe: "ויטמין D", nameEn: "Vitamin D", category: "vitamin", icon: "sun", aliases: ["ויטמין די", "vitamin d3", "ויטמין d3", "d3"] },
+  { key: "vitamin-c", nameHe: "ויטמין C", nameEn: "Vitamin C", category: "vitamin", icon: "sun", aliases: ["ויטמין סי", "vit c"] },
+  { key: "vitamin-b12", nameHe: "ויטמין B12", nameEn: "Vitamin B12", category: "vitamin", icon: "sun", aliases: ["b12", "ויטמין בי 12", "cobalamin"] },
+  { key: "vitamin-b-complex", nameHe: "ויטמין B קומפלקס", nameEn: "Vitamin B Complex", category: "vitamin", icon: "spark", aliases: ["b complex", "bcomplex", "בי קומפלקס", "ויטמין בי"] },
+  { key: "multivitamin", nameHe: "מולטי-ויטמין", nameEn: "Multivitamin", category: "vitamin", icon: "spark", aliases: ["multi", "מולטי", "multi vitamin"] },
 
   // Minerals
-  { key: "magnesium", nameHe: "מגנזיום", nameEn: "Magnesium", category: "mineral", icon: "spark" },
-  { key: "zinc", nameHe: "אבץ", nameEn: "Zinc", category: "mineral", icon: "spark" },
-  { key: "iron", nameHe: "ברזל", nameEn: "Iron", category: "mineral", icon: "spark" },
-  { key: "calcium", nameHe: "סידן", nameEn: "Calcium", category: "mineral", icon: "spark" },
-  { key: "potassium", nameHe: "אשלגן", nameEn: "Potassium", category: "mineral", icon: "spark" },
+  { key: "magnesium", nameHe: "מגנזיום", nameEn: "Magnesium", category: "mineral", icon: "spark", aliases: ["mag", "מגנזיום", "magnez"] },
+  { key: "zinc", nameHe: "אבץ", nameEn: "Zinc", category: "mineral", icon: "spark", aliases: ["zinc", "אבץ"] },
+  { key: "iron", nameHe: "ברזל", nameEn: "Iron", category: "mineral", icon: "spark", aliases: ["iron", "ferrum"] },
+  { key: "calcium", nameHe: "סידן", nameEn: "Calcium", category: "mineral", icon: "spark", aliases: ["calcium", "סידן"] },
+  { key: "potassium", nameHe: "אשלגן", nameEn: "Potassium", category: "mineral", icon: "spark", aliases: ["potassium", "אשלגן"] },
 
   // General Health
-  { key: "omega-3", nameHe: "אומגה 3", nameEn: "Omega 3", category: "general-health", icon: "heart" },
-  { key: "probiotics", nameHe: "פרוביוטיקה", nameEn: "Probiotics", category: "general-health", icon: "leaf" },
+  { key: "omega-3", nameHe: "אומגה 3", nameEn: "Omega 3", category: "general-health", icon: "heart", aliases: ["omega3", "omega 3", "אומגה", "fish oil", "שמן דגים", "dha", "epa"] },
+  { key: "probiotics", nameHe: "פרוביוטיקה", nameEn: "Probiotics", category: "general-health", icon: "leaf", aliases: ["probiotic", "פרוביוטיקה", "חיידקים"] },
 ];
 
 /** A browse group for the library — a filter tab + the items it contains. */
@@ -146,4 +152,63 @@ export function popularSupplements(): CatalogSupplement[] {
   return POPULAR_SUPPLEMENT_KEYS
     .map((k) => BY_KEY[k])
     .filter((s): s is CatalogSupplement => Boolean(s));
+}
+
+/* ------------------------------- Search -------------------------------- */
+// Local, dependency-free fuzzy-ish matching for the library search box. Matches
+// the Hebrew name, English subtitle, an optional category label, and the
+// search-only aliases. Multi-word queries match when EVERY token is found
+// somewhere (AND), so "vitamin d" and "ויטמין די" both land on Vitamin D.
+
+/** True if `item` matches the free-text `query` (case-insensitive, token-AND). */
+export function supplementMatchesQuery(
+  item: CatalogSupplement,
+  query: string,
+  categoryLabel?: string,
+): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const haystack = [
+    item.nameHe,
+    item.nameEn,
+    categoryLabel ?? "",
+    ...(item.aliases ?? []),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return q.split(/\s+/).every((token) => haystack.includes(token));
+}
+
+/* --------------------------- Already-tracked --------------------------- */
+// Helpers to tell whether a catalogue template is already in the user's tracker,
+// so the library can show a clear "already tracked" state and the add flow can
+// route to the existing entry instead of silently creating a duplicate.
+
+/** Normalize a supplement name for duplicate / already-tracked comparison. */
+export function normalizeSupplementName(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+/**
+ * Map of catalogue `key` → existing supplement `id` for every template the user
+ * already tracks (matched on the normalized Hebrew or English name, active or
+ * archived). Empty when nothing matches.
+ */
+export function trackedCatalogMap(
+  supplements: ReadonlyArray<{ id: string; name: string }>,
+): Map<string, string> {
+  const byName = new Map<string, string>();
+  for (const s of supplements) {
+    const key = normalizeSupplementName(s.name);
+    // First match wins so the oldest entry is the one we route to.
+    if (!byName.has(key)) byName.set(key, s.id);
+  }
+  const map = new Map<string, string>();
+  for (const item of SUPPLEMENT_CATALOG) {
+    const id =
+      byName.get(normalizeSupplementName(item.nameHe)) ??
+      byName.get(normalizeSupplementName(item.nameEn));
+    if (id) map.set(item.key, id);
+  }
+  return map;
 }

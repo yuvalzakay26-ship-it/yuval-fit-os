@@ -4,7 +4,8 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.26 (personal water presets).
+> Last reviewed: Phase 3.28 (supplements library flow polish: search,
+> already-tracked state, selected-template summary, CTA/bottom-nav clearance).
 
 ---
 
@@ -35,7 +36,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | Saved Food Values | User's remembered per-food default macros | `docs/NUTRITION_SAVED_VALUES.md` |
 | Favorite Foods | Quick-access favorites (identity only, no macros) | `docs/NUTRITION_FAVORITES.md` |
 | Water Tracking | Daily hydration log + goal + personal cup/bottle presets | `components/water/*`, `docs/WATER_TRACKING.md`, `docs/WATER_PRESETS.md` |
-| Supplements Tracker | Personal supplement/medication tracking (no advice) | `components/supplements/*`, `docs/SUPPLEMENTS_TRACKER.md` |
+| Supplements Tracker | Personal supplement/medication tracking (no advice); searchable starter-template library with already-tracked state | `components/supplements/*`, `docs/SUPPLEMENTS_TRACKER.md`, `docs/SUPPLEMENTS_LIBRARY_UX.md` |
 | Progress | Totals, weekly counts, protein average, PRs | `components/progress/*`, `lib/analytics.ts` |
 | Settings | Theme, goals, storage status, resets, re-show gates | `components/settings/SettingsView.tsx` |
 | Learn (Knowledge Center) | Card-based Hebrew articles + protein calculator | `app/learn/*`, `lib/knowledge-content.ts`, `lib/protein.ts` |

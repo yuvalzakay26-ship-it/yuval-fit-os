@@ -31,10 +31,12 @@ import {
 } from "@/components/ui/icons";
 import { SupplementCheck } from "./SupplementCheck";
 import { SupplementGlyph } from "./SupplementGlyph";
-import { popularSupplements } from "./supplement-catalog";
+import { popularSupplements, trackedCatalogMap } from "./supplement-catalog";
 import {
+  SUPPLEMENT_ALREADY_TRACKED,
   SUPPLEMENT_CATEGORY_LABELS,
   SUPPLEMENT_HELPER_COPY,
+  SUPPLEMENT_LIBRARY_NOTE,
   SUPPLEMENT_LIBRARY_TITLE,
   SUPPLEMENT_SAFETY_PRIMARY,
   SUPPLEMENT_SAFETY_SECONDARY,
@@ -183,8 +185,14 @@ function SupplementListItem({
  * the template — the user still owns and edits the entry. Templates only;
  * no dosages, no advice. See `supplement-catalog.ts`.
  */
-function StarterLibraryRail() {
+function StarterLibraryRail({
+  supplements,
+}: {
+  supplements: Supplement[];
+}) {
   const popular = popularSupplements();
+  // Templates the user already tracks → route to that entry, badge it "tracked".
+  const trackedMap = trackedCatalogMap(supplements);
   return (
     <section id="supp-library" className="mt-7 scroll-mt-24">
       <SectionHeader
@@ -200,28 +208,61 @@ function StarterLibraryRail() {
           </Link>
         }
       />
+      {/* Make the rail read as a safe starter template library, not advice. */}
+      <p className="-mt-1 mb-3 text-[12px] leading-relaxed text-muted">
+        {SUPPLEMENT_LIBRARY_NOTE}
+      </p>
       <div className="no-scrollbar -mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1">
-        {popular.map((item) => (
-          <Link
-            key={item.key}
-            href={`/nutrition/supplements/add?preset=${encodeURIComponent(item.key)}`}
-            aria-label={`הוספת ${item.nameHe} מהספרייה`}
-            className="tap group flex w-[116px] shrink-0 flex-col gap-2 rounded-2xl border border-border bg-surface p-3 text-right shadow-soft transition-colors hover:border-border-strong"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--accent-supplement-soft)] text-[color:var(--accent-supplement)]">
-              <SupplementGlyph icon={item.icon} className="h-[18px] w-[18px]" />
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-[13.5px] font-bold leading-tight text-foreground">
-                {item.nameHe}
-              </p>
-              <p className="truncate text-[10.5px] text-faint">{item.nameEn}</p>
-            </div>
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[color:var(--accent-supplement)]">
-              <PlusIcon className="h-3 w-3" /> הוסף
-            </span>
-          </Link>
-        ))}
+        {popular.map((item) => {
+          const trackedId = trackedMap.get(item.key);
+          const tracked = Boolean(trackedId);
+          const href = trackedId
+            ? `/nutrition/supplements/add?id=${encodeURIComponent(trackedId)}`
+            : `/nutrition/supplements/add?preset=${encodeURIComponent(item.key)}`;
+          return (
+            <Link
+              key={item.key}
+              href={href}
+              aria-label={
+                tracked
+                  ? `${item.nameHe} — ${SUPPLEMENT_ALREADY_TRACKED}`
+                  : `הוספת ${item.nameHe} מהספרייה`
+              }
+              className={cn(
+                "tap group flex w-[116px] shrink-0 flex-col gap-2 rounded-2xl border bg-surface p-3 text-right shadow-soft transition-colors",
+                tracked
+                  ? "border-[color:var(--accent-supplement)]/40"
+                  : "border-border hover:border-border-strong",
+              )}
+            >
+              <span
+                className={cn(
+                  "flex h-10 w-10 items-center justify-center rounded-xl",
+                  tracked
+                    ? "supplement-gradient text-[color:var(--accent-contrast)] shadow-glow-supplement"
+                    : "bg-[color:var(--accent-supplement-soft)] text-[color:var(--accent-supplement)]",
+                )}
+              >
+                <SupplementGlyph icon={item.icon} className="h-[18px] w-[18px]" />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-[13.5px] font-bold leading-tight text-foreground">
+                  {item.nameHe}
+                </p>
+                <p className="truncate text-[10.5px] text-faint">{item.nameEn}</p>
+              </div>
+              {tracked ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[color:var(--accent-supplement)]">
+                  <CheckIcon className="h-3 w-3" /> {SUPPLEMENT_ALREADY_TRACKED}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[color:var(--accent-supplement)]">
+                  <PlusIcon className="h-3 w-3" /> הוסף
+                </span>
+              )}
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
@@ -407,7 +448,7 @@ export function SupplementsTracker() {
       </section>
 
       {/* Common supplements / starter library. */}
-      <StarterLibraryRail />
+      <StarterLibraryRail supplements={supplements} />
 
       {/* Archived supplements — kept with history, out of the daily list. */}
       {hasArchive && (

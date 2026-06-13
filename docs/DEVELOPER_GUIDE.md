@@ -146,6 +146,14 @@ await page.addInitScript(() => {
 nutrition flow and is the reference pattern. Reuse those exact key strings —
 they are the contract from `lib/welcome.ts` / `lib/private-access.ts`.
 
+**Seed date-keyed data with the LOCAL ISO date, not UTC.** Water logs and
+supplement-logs are keyed/filtered by `lib/utils` `toISODate` (local
+`getFullYear/Month/Date`). Seeding with `new Date().toISOString().slice(0,10)`
+(UTC) silently lands the data on "yesterday" in any timezone ahead of UTC during
+the early-UTC window, so the marks never count for "today". Compute the seed date
+the same way the app does — this was the long-standing `today-dashboard-check`
+"gate-seeding quirk", fixed in Phase 3.28.
+
 ## 7. Adding a feature module safely
 
 1. **Types first** — add domain types to `lib/fitness-types.ts`.

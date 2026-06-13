@@ -83,7 +83,41 @@ for (const scheme of ["dark", "light"]) {
   check(`[${scheme}] preset prefilled name`, (await page.inputValue("#supp-name")) === "קריאטין");
   await page.getByRole("button", { name: "מילוי מהיר: מגנזיום" }).click();
   check(`[${scheme}] template pick prefills name`, (await page.inputValue("#supp-name")) === "מגנזיום");
+  check(`[${scheme}] selected-template summary shows`, await page.getByText("תבנית נבחרה").isVisible());
   check(`[${scheme}] no horizontal overflow on library`, (await noOverflow(page)) === 0);
+
+  /* 2c. Library search — local Hebrew + English + alias matching. */
+  const search = page.getByPlaceholder("חיפוש תוסף — בעברית או באנגלית");
+  await search.fill("mag");
+  check(`[${scheme}] search 'mag' → Magnesium`, await page.getByRole("button", { name: "מילוי מהיר: מגנזיום" }).isVisible());
+  check(`[${scheme}] search 'mag' hides Creatine`, !(await page.getByRole("button", { name: "מילוי מהיר: קריאטין" }).isVisible().catch(() => false)));
+  await search.fill("אומגה");
+  check(`[${scheme}] search 'אומגה' → Omega 3`, await page.getByRole("button", { name: "מילוי מהיר: אומגה 3" }).isVisible());
+  await search.fill("creatine");
+  check(`[${scheme}] search 'creatine' → Creatine`, await page.getByRole("button", { name: "מילוי מהיר: קריאטין" }).isVisible());
+  await search.fill("zzzzzz");
+  check(`[${scheme}] empty-search state`, await page.getByText("לא נמצאו תוספים תואמים").isVisible());
+  await search.fill("");
+
+  /* 2d. Save CTA clears the bottom nav (360px — the tight phone width).
+     Scroll is `behavior:"instant"` because the app uses CSS smooth scrolling,
+     which would otherwise leave the position mid-animation when measured. */
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.evaluate(() => window.scrollTo({ top: 1e7, behavior: "instant" }));
+  await page.waitForTimeout(180);
+  const ctaClears = await page.evaluate(() => {
+    const btn = [...document.querySelectorAll("button")].find(
+      (b) => b.textContent?.trim() === "שמור תוסף",
+    );
+    const nav = document.querySelector("nav");
+    if (!btn || !nav) return false;
+    const b = btn.getBoundingClientRect();
+    const n = nav.getBoundingClientRect();
+    return b.width > 0 && b.height > 0 && b.bottom <= n.top + 1;
+  });
+  check(`[${scheme}] save CTA never under bottom nav (360px)`, ctaClears);
+  check(`[${scheme}] no horizontal overflow at 360px`, (await noOverflow(page)) === 0);
+  await page.setViewportSize({ width: 390, height: 844 });
   // Return to the empty tracker to continue the canonical add flow below.
   await page.goto(SUPPS, { waitUntil: "networkidle" });
 
@@ -101,6 +135,15 @@ for (const scheme of ["dark", "light"]) {
   await page.waitForURL(SUPPS);
   check(`[${scheme}] item appears after save`, await page.getByText("ויטמין D", { exact: true }).first().isVisible());
   check(`[${scheme}] hero shows 0/1`, await page.getByText("0/1").first().isVisible());
+
+  /* 3b. Already-tracked: the library now flags Vitamin D, and tapping its card
+     routes to the existing entry (edit) instead of creating a duplicate. */
+  await page.goto(`${SUPPS}/add`, { waitUntil: "networkidle" });
+  check(`[${scheme}] already-tracked badge in library`, await page.getByText("כבר במעקב").first().isVisible());
+  await page.getByRole("button", { name: /ויטמין D — כבר במעקב/ }).click();
+  await page.waitForURL(/\/nutrition\/supplements\/add\?id=/);
+  check(`[${scheme}] tracked card opens existing for edit`, (await page.inputValue("#supp-name")) === "ויטמין D");
+  await page.goto(SUPPS, { waitUntil: "networkidle" });
 
   /* 4. Mark as taken → 1/1, then undo → 0/1. */
   await page.getByRole("button", { name: "סמן שויטמין D נלקח" }).click();
