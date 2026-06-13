@@ -17,8 +17,10 @@ import { cn, createId } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
-import { PageHeader } from "@/components/ui/PageHeader";
+import { PageHeader, SectionHeader } from "@/components/ui/PageHeader";
 import { ChevronIcon, ShieldIcon, TrashIcon } from "@/components/ui/icons";
+import { SupplementLibrary } from "./SupplementLibrary";
+import { getCatalogSupplement, type CatalogSupplement } from "./supplement-catalog";
 import {
   SUPPLEMENT_CATEGORY_LABELS,
   SUPPLEMENT_CATEGORY_ORDER,
@@ -45,21 +47,51 @@ const EMPTY: FormState = {
   isActive: true,
 };
 
+/** Build the initial form state from a `?preset=` template (add mode only). */
+function presetForm(preset?: string): FormState {
+  const item = getCatalogSupplement(preset);
+  if (!item) return EMPTY;
+  return {
+    name: item.nameHe,
+    category: item.category,
+    dosageText: "",
+    timesOfDay: item.timesOfDay ?? [],
+    isActive: true,
+  };
+}
+
 /**
  * Premium add/edit flow for a single supplement (route
- * `/nutrition/supplements/add`, with `?id=` for edit). All inputs are
- * user-entered — the dosage is free text only and the app never suggests
- * values. Saving returns to the tracker.
+ * `/nutrition/supplements/add`, with `?id=` for edit and `?preset=` for a
+ * quick-add template). When adding, a browsable "common supplements" library
+ * sits above the manual form: tapping a template prefills the fields, which the
+ * user can still edit freely before saving.
+ *
+ * Boundary: every saved value is user-owned. Templates carry only a name + a
+ * neutral category (and, where definitional, a timing tag). The dosage is free
+ * text only and the app never suggests values.
  */
-export function SupplementForm({ supplementId }: { supplementId?: string }) {
+export function SupplementForm({
+  supplementId,
+  preset,
+}: {
+  supplementId?: string;
+  preset?: string;
+}) {
   const router = useRouter();
   const supplements = useSupplements();
   const editing = supplementId
     ? supplements.find((s) => s.id === supplementId)
     : undefined;
   const isEdit = Boolean(editing);
+  // The library is an add-only affordance. Gate on the stable `supplementId`
+  // prop (not the store-derived `editing`) so an edit page never flashes it.
+  const showLibrary = !supplementId;
 
-  const [form, setForm] = useState<FormState>(EMPTY);
+  const [form, setForm] = useState<FormState>(() => presetForm(preset));
+  const [pickedKey, setPickedKey] = useState<string | undefined>(
+    supplementId ? undefined : getCatalogSupplement(preset)?.key,
+  );
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   // localStorage hydrates after first paint, so fill the form from the existing
@@ -79,6 +111,18 @@ export function SupplementForm({ supplementId }: { supplementId?: string }) {
 
   const update = (patch: Partial<FormState>) =>
     setForm((prev) => ({ ...prev, ...patch }));
+
+  // Picking a template prefills name + category (+ a definitional timing tag).
+  // Existing manual timing is preserved when the template carries none.
+  const pickTemplate = (item: CatalogSupplement) => {
+    setPickedKey(item.key);
+    setForm((prev) => ({
+      ...prev,
+      name: item.nameHe,
+      category: item.category,
+      timesOfDay: item.timesOfDay ?? prev.timesOfDay,
+    }));
+  };
 
   const toggleTiming = (t: SupplementTiming) =>
     setForm((prev) => ({
@@ -133,6 +177,27 @@ export function SupplementForm({ supplementId }: { supplementId?: string }) {
         className="mb-4"
       />
 
+      {/* Common-supplements starter library — add mode only. */}
+      {showLibrary && (
+        <Card
+          variant="raised"
+          className="module-supplement sheen relative mb-5 overflow-hidden p-4"
+        >
+          <div
+            className="pointer-events-none absolute -left-12 -top-16 h-40 w-40 rounded-full opacity-50 blur-2xl"
+            style={{ background: "var(--accent-supplement-soft)" }}
+          />
+          <div className="relative">
+            <SupplementLibrary onPick={pickTemplate} selectedKey={pickedKey} />
+          </div>
+        </Card>
+      )}
+
+      <SectionHeader
+        title={showLibrary ? "או הוספה ידנית" : "פרטי התוסף"}
+        accent="var(--accent-supplement)"
+      />
+
       <Card className="sheen p-4">
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Name */}
@@ -141,7 +206,11 @@ export function SupplementForm({ supplementId }: { supplementId?: string }) {
             <Input
               id="supp-name"
               value={form.name}
-              onChange={(e) => update({ name: e.target.value })}
+              onChange={(e) => {
+                update({ name: e.target.value });
+                // A manual rename detaches from the picked template highlight.
+                if (pickedKey) setPickedKey(undefined);
+              }}
               placeholder="לדוגמה: ויטמין D, אומגה 3, מגנזיום"
               autoComplete="off"
             />

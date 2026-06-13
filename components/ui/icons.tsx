@@ -346,6 +346,34 @@ export const CapsuleIcon = (p: IconProps) =>
     p,
   );
 
+// Heart — calm "general health" category glyph (outline only, never clinical).
+export const HeartIcon = (p: IconProps) =>
+  base(
+    <path d="M12 20.5S4 16 4 9.8A4.3 4.3 0 0 1 12 7.5 4.3 4.3 0 0 1 20 9.8c0 6.2-8 10.7-8 10.7Z" />,
+    p,
+  );
+
+// Leaf — used for plant/biome-style items (e.g. probiotics, omega).
+export const LeafIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M5 20c-1-9 5-16 15-16 1 9-5 16-15 16Z" />
+      <path d="M9 16c2.2-2.4 4.6-4.2 8-5.6" />
+    </>,
+    p,
+  );
+
+// Archive box — for the "archived supplements" affordance.
+export const ArchiveIcon = (p: IconProps) =>
+  base(
+    <>
+      <rect x="3.5" y="4" width="17" height="4.2" rx="1.4" />
+      <path d="M5.2 8.2V19a1.5 1.5 0 0 0 1.5 1.5h10.6A1.5 1.5 0 0 0 18.8 19V8.2" />
+      <path d="M10 12h4" />
+    </>,
+    p,
+  );
+
 // Shield with a check — used for the calm, non-alarming safety note.
 export const ShieldIcon = (p: IconProps) =>
   base(

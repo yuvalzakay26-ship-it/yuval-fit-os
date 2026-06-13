@@ -68,6 +68,20 @@ export const SUPPLEMENT_HELPER_COPY =
 export const SUPPLEMENT_DOSAGE_HINT =
   "טקסט חופשי שאתה כותב — האפליקציה לא מציעה מינונים.";
 
+/* ----------------------- Starter library (copy) ----------------------- */
+// The common-supplements library is a set of quick-add *templates* only. Copy
+// here never recommends taking anything — it only describes a faster way to fill
+// the form. The user still owns and edits the actual entry.
+
+export const SUPPLEMENT_LIBRARY_TITLE = "תוספים נפוצים";
+export const SUPPLEMENT_LIBRARY_HELPER =
+  "בחר פריט להתחלה מהירה — השם והקטגוריה ימולאו עבורך, ותמיד אפשר לערוך לפני שמירה.";
+/** Tiny reassurance under the library — reinforces that this is not advice. */
+export const SUPPLEMENT_LIBRARY_NOTE =
+  "רשימת תבניות להוספה מהירה בלבד — לא המלצה מה לקחת.";
+/** Label for the all-categories tab in the library browser. */
+export const SUPPLEMENT_LIBRARY_ALL = "הכל";
+
 /** Short progress line shown under the daily completion figure. */
 export function supplementStatusLine(taken: number, active: number): string {
   if (active === 0) return "אפשר להוסיף פריטים למעקב אישי.";

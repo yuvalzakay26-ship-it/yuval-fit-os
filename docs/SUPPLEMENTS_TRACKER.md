@@ -136,6 +136,52 @@ The global "איפוס כל הנתונים" (reset all) also clears both keys vi
 > See [`UI_POLISH_PHASE_3_21_1.md`](./UI_POLISH_PHASE_3_21_1.md). No logic, data
 > model, storage keys, or safety boundaries changed.
 
+## Premium upgrade + starter library (Phase 3.27)
+
+A presentation + content pass that makes the supplements area feel like a premium
+module and adds a **common-supplements starter library** — *quick-add templates
+only*. No logic, storage keys, data model, or safety boundaries changed.
+
+**Starter catalog (`components/supplements/supplement-catalog.ts`).** A pure-data
+catalogue of 16 common, recognizable supplements grouped into four browse groups
+(`ביצועים ואימון`, `ויטמינים`, `מינרלים`, `בריאות כללית`):
+
+| Group | Items |
+| --- | --- |
+| Performance / Training | Creatine, Whey Protein, Electrolytes, Pre-Workout |
+| Vitamins | Vitamin D, Vitamin C, Vitamin B12, Vitamin B Complex, Multivitamin |
+| Minerals | Magnesium, Zinc, Iron, Calcium, Potassium |
+| General Health | Omega 3, Probiotics |
+
+Each template carries only a Hebrew name, an English recognition subtitle, a
+neutral `category`, and an intentional icon (`SupplementGlyph`). The single
+definitional timing tag is Pre-Workout → `pre-workout`; nothing else prefills a
+time. **No dosages, no medical claims, no inferred advice.** Whey browses under
+"training" but saves with the neutral `protein` category — the browse group can
+differ from the saved category.
+
+**Add/edit flow overhaul (`SupplementForm` + `SupplementLibrary`).** In *add*
+mode a browsable library sits above the manual form: category filter tabs (with
+counts, so their accessible names never collide with the form's exact category
+buttons), a 2-column grid of template cards, and a calm "templates only" note.
+Tapping a card prefills name + category (+ a definitional timing) and flips the
+card to a selected state; **every field stays editable before saving** and the
+manual path is fully intact. A manual rename detaches the picked-template
+highlight. The library is hidden when editing (`?id=`). A new `?preset=<key>`
+deep link prefills the form from a catalogue template (used by the tracker rail).
+
+**Premium tracker (`SupplementsTracker`).** Richer hero: the violet completion
+ring beside a summary line and a three-up stat row (`פעילים` / `סומנו` /
+`נותרו`). A quick-actions row (`תוסף חדש`, `תוספים נפוצים`, and `ארכיון` when an
+archive exists — the latter two are in-page anchors). A horizontal
+**"תוספים נפוצים" starter rail** of popular templates, each deep-linking into the
+add form via `?preset=`. Section headers gain the violet accent dot; the empty
+state points at the library. Active/archived lists, taken-toggles, and reactivate
+are unchanged.
+
+**New icons.** `HeartIcon`, `LeafIcon`, `ArchiveIcon` added to the shared stroke
+set; `SupplementGlyph` maps catalogue glyph names to shared icons (no emoji).
+
 ## Safety copy / boundaries
 
 Surfaced on the full screen and the add/edit form (centralized in

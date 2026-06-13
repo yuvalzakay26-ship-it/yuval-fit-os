@@ -10,5 +10,5 @@ export default async function NutritionSupplementAddPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const sp = await searchParams;
-  return <SupplementForm supplementId={first(sp.id)} />;
+  return <SupplementForm supplementId={first(sp.id)} preset={first(sp.preset)} />;
 }

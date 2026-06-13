@@ -76,6 +76,17 @@ for (const scheme of ["dark", "light"]) {
   check(`[${scheme}] safety note present`, await page.getByText(SAFETY).first().isVisible());
   check(`[${scheme}] empty state present`, await page.getByText(EMPTY).first().isVisible());
 
+  /* 2b. Starter library: preset deep-link prefills, and tapping a template card
+     prefills the manual form — quick-add templates only, fully editable. */
+  await page.goto(`${SUPPS}/add?preset=creatine`, { waitUntil: "networkidle" });
+  check(`[${scheme}] common library present on add`, await page.getByText("תוספים נפוצים").first().isVisible());
+  check(`[${scheme}] preset prefilled name`, (await page.inputValue("#supp-name")) === "קריאטין");
+  await page.getByRole("button", { name: "מילוי מהיר: מגנזיום" }).click();
+  check(`[${scheme}] template pick prefills name`, (await page.inputValue("#supp-name")) === "מגנזיום");
+  check(`[${scheme}] no horizontal overflow on library`, (await noOverflow(page)) === 0);
+  // Return to the empty tracker to continue the canonical add flow below.
+  await page.goto(SUPPS, { waitUntil: "networkidle" });
+
   /* 3. Add a supplement (name + category + timing). */
   await page.getByRole("link", { name: "הוסף תוסף ראשון" }).click();
   await page.waitForURL(/\/nutrition\/supplements\/add/);
