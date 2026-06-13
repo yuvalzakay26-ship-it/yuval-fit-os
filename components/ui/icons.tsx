@@ -293,6 +293,18 @@ export const PillIcon = (p: IconProps) =>
     p,
   );
 
+// Horizontal two-tone capsule — a cleaner, more "supplement-like" mark than the
+// diagonal PillIcon, used for the premium empty-state hero composition. The
+// divider sits across the middle so the capsule reads as two joined halves.
+export const CapsuleIcon = (p: IconProps) =>
+  base(
+    <>
+      <rect x="2.5" y="7.5" width="19" height="9" rx="4.5" />
+      <path d="M12 7.5v9" />
+    </>,
+    p,
+  );
+
 // Shield with a check — used for the calm, non-alarming safety note.
 export const ShieldIcon = (p: IconProps) =>
   base(

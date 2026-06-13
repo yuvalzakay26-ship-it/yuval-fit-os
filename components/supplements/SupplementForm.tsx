@@ -133,7 +133,7 @@ export function SupplementForm({ supplementId }: { supplementId?: string }) {
         className="mb-4"
       />
 
-      <Card className="p-4">
+      <Card className="sheen p-4">
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Name */}
           <div>

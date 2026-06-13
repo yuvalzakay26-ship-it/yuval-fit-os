@@ -26,22 +26,22 @@ export function WaterCard({ title = "מים היום" }: { title?: string }) {
   const handleAdd = (ml: number) => logWater(todayISO(), ml);
 
   return (
-    <Card className="relative overflow-hidden p-4">
+    <Card className="module-water sheen relative overflow-hidden p-4">
       <div
-        className="pointer-events-none absolute -left-10 -top-12 h-32 w-32 rounded-full opacity-50 blur-2xl"
+        className="pointer-events-none absolute -left-10 -top-12 h-32 w-32 rounded-full opacity-60 blur-2xl"
         style={{ background: "var(--accent-water-soft)" }}
       />
       <div className="relative flex items-center gap-4">
         <WaterGauge value={total} goal={goal} size={78} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-faint">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--accent-water)]">
               {title}
             </p>
             <Link
               href="/nutrition/water"
               aria-label="פתח מעקב מים"
-              className="tap -m-1 flex items-center gap-0.5 p-1 text-[12px] font-semibold text-[color:var(--accent-water)]"
+              className="tap -m-1 flex items-center gap-0.5 rounded-full bg-[color:var(--accent-water-soft)] px-2 py-1 text-[12px] font-semibold text-[color:var(--accent-water)]"
             >
               פתח
               <ChevronIcon className="h-3.5 w-3.5 rotate-180" />

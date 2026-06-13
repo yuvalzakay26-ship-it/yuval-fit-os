@@ -33,20 +33,24 @@ export function SupplementCheck({
       aria-pressed={taken}
       aria-label={taken ? `בטל סימון ל${name}` : `סמן ש${name} נלקח`}
       className={cn(
-        "tap flex shrink-0 items-center justify-center rounded-full border-2",
+        "tap relative flex shrink-0 items-center justify-center rounded-full border-2",
         box,
         taken
           ? "supplement-gradient border-transparent text-[color:var(--accent-contrast)] shadow-glow-supplement"
-          : "border-border-strong bg-surface-2 text-faint hover:border-[color:var(--accent-supplement)] hover:text-[color:var(--accent-supplement)]",
+          : "border-border-strong bg-surface-2 text-faint hover:border-[color:var(--accent-supplement)] hover:text-[color:var(--accent-supplement)] hover:bg-[color:var(--accent-supplement-soft)]",
       )}
     >
-      <CheckIcon
-        className={cn(
-          icon,
-          "transition-transform duration-200",
-          taken ? "scale-100" : "scale-0",
-        )}
-      />
+      {taken && (
+        <>
+          {/* One-shot glow ring as the mark lands. */}
+          <span
+            aria-hidden="true"
+            className="animate-glow-pulse pointer-events-none absolute inset-0 rounded-full bg-[color:var(--accent-supplement)]"
+          />
+          {/* Re-keyed so the springy stamp replays on every fresh mark. */}
+          <CheckIcon key="taken" className={cn(icon, "relative animate-check-pop")} />
+        </>
+      )}
     </button>
   );
 }

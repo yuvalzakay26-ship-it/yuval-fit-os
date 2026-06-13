@@ -27,15 +27,25 @@ export function PageHeader({
 export function SectionHeader({
   title,
   action,
+  accent,
   className,
 }: {
   title: string;
   action?: React.ReactNode;
+  /** Optional CSS color for a small leading dot, giving sections module identity. */
+  accent?: string;
   className?: string;
 }) {
   return (
     <div className={cn("mb-3 flex items-center justify-between gap-2", className)}>
-      <h2 className="text-[13px] font-bold uppercase tracking-[0.08em] text-faint">
+      <h2 className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.08em] text-faint">
+        {accent && (
+          <span
+            aria-hidden="true"
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ background: accent }}
+          />
+        )}
         {title}
       </h2>
       {action}

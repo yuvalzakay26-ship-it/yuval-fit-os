@@ -13,12 +13,14 @@ import {
   useSupplements,
 } from "@/lib/fitness-store";
 import type { Supplement } from "@/lib/fitness-types";
-import { todayISO } from "@/lib/utils";
+import { cn, todayISO } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { EmptyState, PageHeader, SectionHeader } from "@/components/ui/PageHeader";
 import {
+  CapsuleIcon,
+  CheckIcon,
   ChevronIcon,
   PencilIcon,
   PillIcon,
@@ -67,8 +69,20 @@ function SupplementListItem({
 }) {
   const times = supplement.schedule?.timesOfDay ?? [];
   return (
-    <Card className="flex items-center gap-3 p-3.5">
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-supplement-soft)] text-[color:var(--accent-supplement)]">
+    <Card
+      className={cn(
+        "sheen flex items-center gap-3 p-3.5 transition-colors",
+        taken && "bg-[color:var(--accent-supplement-soft)]",
+      )}
+    >
+      <span
+        className={cn(
+          "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl transition-colors",
+          taken
+            ? "supplement-gradient text-[color:var(--accent-contrast)] shadow-glow-supplement"
+            : "bg-[color:var(--accent-supplement-soft)] text-[color:var(--accent-supplement)]",
+        )}
+      >
         <PillIcon className="h-5 w-5" />
       </span>
       <Link
@@ -119,6 +133,7 @@ export function SupplementsTracker() {
   const inactive = supplements.filter((s) => !s.isActive);
   const taken = takenSupplementIds(logs, today);
   const summary = supplementDaySummary(supplements, logs, today);
+  const allDone = summary.active > 0 && summary.taken >= summary.active;
 
   const reactivate = (s: Supplement) =>
     saveSupplement({ ...s, isActive: true, updatedAt: new Date().toISOString() });
@@ -140,7 +155,10 @@ export function SupplementsTracker() {
       />
 
       {/* Safety note — calm and responsible, never alarming. */}
-      <Card variant="flat" className="mb-5 flex items-start gap-3 p-3.5">
+      <Card
+        variant="flat"
+        className="mb-5 flex items-start gap-3 border-[color:var(--accent-supplement-soft)] p-3.5"
+      >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:var(--accent-supplement-soft)] text-[color:var(--accent-supplement)]">
           <ShieldIcon className="h-[18px] w-[18px]" />
         </span>
@@ -153,28 +171,38 @@ export function SupplementsTracker() {
 
       {/* Today progress hero — only meaningful once there are active items. */}
       {active.length > 0 && (
-        <Card variant="raised" className="relative overflow-hidden p-6">
+        <Card
+          variant="raised"
+          className="module-supplement sheen relative overflow-hidden p-6"
+        >
           <div
-            className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full opacity-50 blur-2xl"
+            className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full opacity-60 blur-2xl"
             style={{ background: "var(--accent-supplement-soft)" }}
           />
           <div className="relative flex flex-col items-center text-center">
-            <ProgressRing
-              value={summary.taken}
-              goal={summary.active}
-              size={132}
-              stroke={11}
-              gradientId="supplements-hero-ring"
-              from="var(--accent-supplement)"
-              to="var(--accent-supplement)"
-            >
-              <span className="text-[30px] font-extrabold leading-none tabular-nums text-foreground">
-                {summary.taken}/{summary.active}
-              </span>
-              <span className="mt-1 text-[11px] font-semibold text-faint">
-                סומנו היום
-              </span>
-            </ProgressRing>
+            <span className="relative">
+              <ProgressRing
+                value={summary.taken}
+                goal={summary.active}
+                size={132}
+                stroke={11}
+                gradientId="supplements-hero-ring"
+                from="var(--accent-supplement)"
+                to="var(--accent-supplement)"
+              >
+                <span className="text-[30px] font-extrabold leading-none tabular-nums text-foreground">
+                  {summary.taken}/{summary.active}
+                </span>
+                <span className="mt-1 text-[11px] font-semibold text-faint">
+                  סומנו היום
+                </span>
+              </ProgressRing>
+              {allDone && (
+                <span className="absolute end-1 top-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-surface-raised bg-[color:var(--accent-supplement)] text-[color:var(--accent-contrast)] shadow-glow-supplement">
+                  <CheckIcon className="h-4 w-4" />
+                </span>
+              )}
+            </span>
             <p className="mt-4 text-[18px] font-extrabold leading-none text-foreground">
               {summary.taken} מתוך {summary.active} תוספים
             </p>
@@ -200,7 +228,7 @@ export function SupplementsTracker() {
         />
         {active.length === 0 ? (
           <EmptyState
-            icon={<PillIcon className="h-7 w-7" />}
+            icon={<CapsuleIcon className="h-7 w-7" />}
             title="עדיין לא הוגדרו תוספים"
             description="אפשר להוסיף פריטים למעקב אישי — סמן אותם כל יום ושמור על שגרה."
             action={
@@ -231,8 +259,12 @@ export function SupplementsTracker() {
           <SectionHeader title={`בארכיון · ${inactive.length}`} />
           <div className="space-y-2.5">
             {inactive.map((s) => (
-              <Card key={s.id} className="flex items-center gap-3 p-3.5 opacity-80">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-surface-2 text-faint">
+              <Card
+                key={s.id}
+                variant="flat"
+                className="flex items-center gap-3 p-3.5"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-surface text-faint">
                   <PillIcon className="h-[18px] w-[18px]" />
                 </span>
                 <div className="min-w-0 flex-1">

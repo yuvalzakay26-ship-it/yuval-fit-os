@@ -67,9 +67,9 @@ function QuickAction({
 }) {
   return (
     <Link href={href} className="tap block">
-      <Card className="flex h-full flex-col gap-3 p-3.5">
+      <Card className="sheen flex h-full flex-col gap-3 p-3.5">
         <span
-          className={`${QUICK_ACTION_TINTS[tint]} flex h-10 w-10 items-center justify-center rounded-xl text-[color:var(--accent-contrast)]`}
+          className={`${QUICK_ACTION_TINTS[tint]} sheen flex h-10 w-10 items-center justify-center rounded-xl text-[color:var(--accent-contrast)]`}
         >
           {icon}
         </span>
@@ -104,7 +104,7 @@ export function TodayView() {
       </div>
 
       {/* Hero snapshot */}
-      <Card variant="raised" className="relative overflow-hidden p-5">
+      <Card variant="raised" className="sheen relative overflow-hidden p-5">
         <div
           className="pointer-events-none absolute -left-10 -top-12 h-36 w-36 rounded-full opacity-60 blur-2xl"
           style={{ background: "var(--accent-soft)" }}
@@ -159,7 +159,7 @@ export function TodayView() {
 
       {/* Quick actions */}
       <section>
-        <SectionHeader title="פעולות מהירות" />
+        <SectionHeader title="פעולות מהירות" accent="var(--accent)" />
         <div className="grid grid-cols-3 gap-3">
           <QuickAction
             href="/workouts?new=1"
@@ -183,21 +183,21 @@ export function TodayView() {
 
       {/* Hydration */}
       <section>
-        <SectionHeader title="הידרציה" />
+        <SectionHeader title="הידרציה" accent="var(--accent-water)" />
         <WaterCard />
       </section>
 
       {/* Supplements */}
       <section>
-        <SectionHeader title="תוספים" />
+        <SectionHeader title="תוספים" accent="var(--accent-supplement)" />
         <SupplementsCard />
       </section>
 
       {/* Knowledge center */}
       <section>
-        <SectionHeader title="ללמוד ולהתחזק" />
+        <SectionHeader title="ללמוד ולהתחזק" accent="var(--accent-learn)" />
         <Link href="/learn" className="tap block">
-          <Card className="relative flex items-center gap-3 overflow-hidden">
+          <Card className="sheen relative flex items-center gap-3 overflow-hidden">
             <div
               className="pointer-events-none absolute -left-8 -top-10 h-28 w-28 rounded-full opacity-50 blur-2xl"
               style={{ background: "var(--accent-learn-soft)" }}
@@ -218,10 +218,10 @@ export function TodayView() {
 
       {/* Last workout */}
       <section>
-        <SectionHeader title="אימון אחרון" />
+        <SectionHeader title="אימון אחרון" accent="var(--accent-strength)" />
         {lastWorkout ? (
           <Link href="/workouts" className="tap block">
-            <Card className="flex items-center gap-3">
+            <Card className="sheen flex items-center gap-3">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-strength-soft)] text-[color:var(--accent-strength)]">
                 <DumbbellIcon className="h-5 w-5" />
               </span>

@@ -83,9 +83,12 @@ export function WaterTracker() {
       <PageHeader title="מעקב מים" subtitle="כמה מים שתית היום" className="mb-4" />
 
       {/* Hero gauge */}
-      <Card variant="raised" className="relative overflow-hidden p-6">
+      <Card
+        variant="raised"
+        className="module-water sheen relative overflow-hidden p-6"
+      >
         <div
-          className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full opacity-50 blur-2xl"
+          className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full opacity-60 blur-2xl"
           style={{ background: "var(--accent-water-soft)" }}
         />
         <div className="relative flex flex-col items-center text-center">

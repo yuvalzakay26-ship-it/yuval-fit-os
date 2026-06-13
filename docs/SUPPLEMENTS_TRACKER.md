@@ -129,6 +129,13 @@ The global "איפוס כל הנתונים" (reset all) also clears both keys vi
 - Card-based lists, chips for category + timing, calm empty states, and refined
   light-mode colours (no flat gray blocks). No table-like UI, no plain checklist.
 
+> **Phase 3.21.1 polish.** A presentation-only pass refined the Today card
+> (premium empty-state composition with `CapsuleIcon` + shield badge, a calm
+> progress bar, a completion check badge), the full-screen hero (violet glass +
+> sheen, taken-item highlight), and the toggle's springy completion animation.
+> See [`UI_POLISH_PHASE_3_21_1.md`](./UI_POLISH_PHASE_3_21_1.md). No logic, data
+> model, storage keys, or safety boundaries changed.
+
 ## Safety copy / boundaries
 
 Surfaced on the full screen and the add/edit form (centralized in
