@@ -50,6 +50,10 @@ const FOLDER_ALIASES = {
   vegetables: "vegetables",
   carbs: "carbs",
   proteins: "proteins",
+  "main proteins": "proteins",
+  // Hebrew "main proteins" folder shipped in Phase 3.12 ("חלבונים עיקריים — Main Proteins").
+  "חלבונים עיקריים — main proteins": "proteins",
+  "חלבונים עיקריים": "proteins",
   dairy: "dairy",
   other: "other",
 };

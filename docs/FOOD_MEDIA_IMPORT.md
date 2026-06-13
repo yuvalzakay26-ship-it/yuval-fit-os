@@ -50,6 +50,7 @@ public/food/<category>/<slug>.webp
 ```
 
 - `public/food/breakfast/` — 20 images (15 in Phase 3.7, +5 in Phase 3.7.1)
+- `public/food/proteins/` — 19 images (Phase 3.12)
 
 `<category>` is a `FoodCategory` from `lib/food-library.ts`:
 `proteins`, `carbs`, `vegetables`, `salads`, `israeli-food`, `full-meals`,
@@ -91,6 +92,60 @@ cereal-with-milk, cheese-and-vegetable-sandwich, fruit-bowl-with-yogurt,
 whole-wheat-bread-with-peanut-butter.
 
 Skipped: none.
+
+## Phase 3.12 — Proteins import
+
+The user added a second category folder containing main-protein images.
+
+- **Source folder inspected:** `public/food source/חלבונים עיקריים — Main Proteins/`
+  (in-repo, gitignored). Actual folder name on disk: `חלבונים עיקריים — Main Proteins`.
+- **Images found:** **19**, all `.png`, ~1.5–2.4 MB each. No unsupported
+  formats, no duplicates, no oversized outliers, and **no** generic/unclear
+  names (no `ChatGPT Image …`, no bare timestamps) — every filename maps
+  cleanly to a known food, so nothing had to be skipped or guessed.
+- **Converted / skipped:** 19 converted PNG → WebP q80; **0 skipped**. The set
+  shrank from ~38 MB to ~2.4 MB (~30–196 KB per image).
+- **Destination created:** `public/food/proteins/` (19 `.webp`).
+- **Category:** key `proteins`, Hebrew label `חלבונים` (both already existed in
+  `FoodCategory` / `FOOD_CATEGORY_LABELS` — no model change needed).
+- **Library items added:** **19** entries appended to `FOOD_LIBRARY`.
+
+### Importer change
+
+The source folder name is Hebrew + English (`חלבונים עיקריים — Main Proteins`).
+`slugify()` strips the Hebrew to `main-proteins`, which is not a `FoodCategory`,
+so without help it would fall back to `other`. Three `FOLDER_ALIASES` entries
+were added to map it to `proteins`: `"main proteins"`, the full
+`"חלבונים עיקריים — main proteins"`, and `"חלבונים עיקריים"`.
+
+### Mapping decisions
+
+- `id` mirrors the image slug for stability, **except** `boiled-eggs`, which
+  already exists as a breakfast `id`. To keep ids globally unique (they are the
+  React key and `sourceFoodId`), the protein egg item uses
+  `id: "boiled-eggs-proteins"` while its image stays
+  `/food/proteins/boiled-eggs.webp`. Its Hebrew name is still `ביצים קשות`.
+- `cottage-cheese` / `white-cheese` (proteins) are distinct slugs from the
+  breakfast `cottage-cheese-with-vegetables` / `white-cheese-with-vegetables`,
+  so no collision there.
+- Filename → Hebrew name choices: `grilled-chicken-thighs` → `ירכי עוף בגריל`,
+  `seared-tofu` → `טופו צרוב`, `homemade-burger-patty` → `קציצת המבורגר ביתית`,
+  `cooked-chickpeas` → `חומוס מבושל`, `white-fish-fillet` → `פילה דג לבן`.
+
+### Proteins imported (19)
+
+baked-salmon, beef-meatballs, beef-steak, boiled-eggs, chicken-meatballs,
+chicken-schnitzel, cooked-chickpeas, cooked-lentils, cooked-white-beans,
+cottage-cheese, grilled-chicken-breast, grilled-chicken-thighs,
+homemade-burger-patty, seared-tofu, tuna-plate, tuna-salad,
+turkey-breast-slices, white-cheese, white-fish-fillet.
+
+Skipped: none.
+
+> **No nutrition inferred.** As with breakfast, all protein items leave
+> `protein` / `carbs` / `fat` / `calories` **undefined** — the user enters
+> macros manually per portion. The quick-add flow remains prefill-only for
+> name / image / category / `sourceFoodId`.
 
 ## Data model & UI
 

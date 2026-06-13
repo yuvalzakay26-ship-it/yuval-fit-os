@@ -199,6 +199,145 @@ export const FOOD_LIBRARY: FoodLibraryItem[] = [
     category: "breakfast",
     imagePath: "/food/breakfast/yogurt-with-granola-and-fruit.webp",
   },
+
+  // Proteins set imported in Phase 3.12. Macros are deliberately omitted — the
+  // user enters them per portion. `id` mirrors the image slug, except where a
+  // slug already exists in another category (boiled-eggs also lives under
+  // breakfast), in which case the id is category-qualified to stay globally
+  // unique. See docs/FOOD_MEDIA_IMPORT.md.
+  {
+    id: "baked-salmon",
+    nameHe: "סלמון אפוי",
+    nameEn: "Baked Salmon",
+    category: "proteins",
+    imagePath: "/food/proteins/baked-salmon.webp",
+  },
+  {
+    id: "beef-meatballs",
+    nameHe: "קציצות בקר",
+    nameEn: "Beef Meatballs",
+    category: "proteins",
+    imagePath: "/food/proteins/beef-meatballs.webp",
+  },
+  {
+    id: "beef-steak",
+    nameHe: "סטייק בקר",
+    nameEn: "Beef Steak",
+    category: "proteins",
+    imagePath: "/food/proteins/beef-steak.webp",
+  },
+  {
+    id: "boiled-eggs-proteins",
+    nameHe: "ביצים קשות",
+    nameEn: "Boiled Eggs",
+    category: "proteins",
+    imagePath: "/food/proteins/boiled-eggs.webp",
+  },
+  {
+    id: "chicken-meatballs",
+    nameHe: "קציצות עוף",
+    nameEn: "Chicken Meatballs",
+    category: "proteins",
+    imagePath: "/food/proteins/chicken-meatballs.webp",
+  },
+  {
+    id: "chicken-schnitzel",
+    nameHe: "שניצל עוף",
+    nameEn: "Chicken Schnitzel",
+    category: "proteins",
+    imagePath: "/food/proteins/chicken-schnitzel.webp",
+  },
+  {
+    id: "cooked-chickpeas",
+    nameHe: "חומוס מבושל",
+    nameEn: "Cooked Chickpeas",
+    category: "proteins",
+    imagePath: "/food/proteins/cooked-chickpeas.webp",
+  },
+  {
+    id: "cooked-lentils",
+    nameHe: "עדשים מבושלות",
+    nameEn: "Cooked Lentils",
+    category: "proteins",
+    imagePath: "/food/proteins/cooked-lentils.webp",
+  },
+  {
+    id: "cooked-white-beans",
+    nameHe: "שעועית לבנה מבושלת",
+    nameEn: "Cooked White Beans",
+    category: "proteins",
+    imagePath: "/food/proteins/cooked-white-beans.webp",
+  },
+  {
+    id: "cottage-cheese",
+    nameHe: "גבינת קוטג׳",
+    nameEn: "Cottage Cheese",
+    category: "proteins",
+    imagePath: "/food/proteins/cottage-cheese.webp",
+  },
+  {
+    id: "grilled-chicken-breast",
+    nameHe: "חזה עוף בגריל",
+    nameEn: "Grilled Chicken Breast",
+    category: "proteins",
+    imagePath: "/food/proteins/grilled-chicken-breast.webp",
+  },
+  {
+    id: "grilled-chicken-thighs",
+    nameHe: "ירכי עוף בגריל",
+    nameEn: "Grilled Chicken Thighs",
+    category: "proteins",
+    imagePath: "/food/proteins/grilled-chicken-thighs.webp",
+  },
+  {
+    id: "homemade-burger-patty",
+    nameHe: "קציצת המבורגר ביתית",
+    nameEn: "Homemade Burger Patty",
+    category: "proteins",
+    imagePath: "/food/proteins/homemade-burger-patty.webp",
+  },
+  {
+    id: "seared-tofu",
+    nameHe: "טופו צרוב",
+    nameEn: "Seared Tofu",
+    category: "proteins",
+    imagePath: "/food/proteins/seared-tofu.webp",
+  },
+  {
+    id: "tuna-plate",
+    nameHe: "צלחת טונה",
+    nameEn: "Tuna Plate",
+    category: "proteins",
+    imagePath: "/food/proteins/tuna-plate.webp",
+  },
+  {
+    id: "tuna-salad",
+    nameHe: "סלט טונה",
+    nameEn: "Tuna Salad",
+    category: "proteins",
+    imagePath: "/food/proteins/tuna-salad.webp",
+  },
+  {
+    id: "turkey-breast-slices",
+    nameHe: "פרוסות חזה הודו",
+    nameEn: "Turkey Breast Slices",
+    category: "proteins",
+    imagePath: "/food/proteins/turkey-breast-slices.webp",
+  },
+  {
+    id: "white-cheese",
+    nameHe: "גבינה לבנה",
+    nameEn: "White Cheese",
+    category: "proteins",
+    imagePath: "/food/proteins/white-cheese.webp",
+  },
+  {
+    id: "white-fish-fillet",
+    nameHe: "פילה דג לבן",
+    nameEn: "White Fish Fillet",
+    category: "proteins",
+    imagePath: "/food/proteins/white-fish-fillet.webp",
+  },
 ];
 
 /**
