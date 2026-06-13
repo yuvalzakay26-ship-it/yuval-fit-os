@@ -5,12 +5,16 @@ import { DEFAULT_WATER_GOAL_ML, type ThemePreference } from "@/lib/fitness-types
 import {
   clearAllFavoriteFoods,
   clearAllFoodValues,
+  clearAllSupplementLogs,
+  clearAllSupplements,
   resetAll,
   updateSettings,
   useFavoriteFoods,
   useFoodLogs,
   useSavedFoodValues,
   useSettings,
+  useSupplementLogs,
+  useSupplements,
   useWorkouts,
 } from "@/lib/fitness-store";
 import { cn, formatLiters, parseOptionalNumber } from "@/lib/utils";
@@ -25,6 +29,7 @@ import {
   DatabaseIcon,
   DropletIcon,
   MoonIcon,
+  PillIcon,
   SparkIcon,
   SunIcon,
   TrashIcon,
@@ -60,6 +65,8 @@ export function SettingsView() {
   const savedFoodCount = Object.keys(savedFoodValues).length;
   const favoriteFoods = useFavoriteFoods();
   const favoriteCount = Object.keys(favoriteFoods).length;
+  const supplements = useSupplements();
+  const supplementLogs = useSupplementLogs();
   const waterGoalMl = settings.waterGoalMl ?? DEFAULT_WATER_GOAL_ML;
   const [waterLitersInput, setWaterLitersInput] = useState(
     formatLiters(waterGoalMl),
@@ -67,6 +74,8 @@ export function SettingsView() {
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [confirmingClearFoods, setConfirmingClearFoods] = useState(false);
   const [confirmingClearFavs, setConfirmingClearFavs] = useState(false);
+  const [confirmingClearSupps, setConfirmingClearSupps] = useState(false);
+  const [confirmingClearSuppLogs, setConfirmingClearSuppLogs] = useState(false);
 
   const approxKb =
     ((JSON.stringify(workouts).length +
@@ -100,6 +109,16 @@ export function SettingsView() {
   const handleClearFavs = () => {
     clearAllFavoriteFoods();
     setConfirmingClearFavs(false);
+  };
+
+  const handleClearSupps = () => {
+    clearAllSupplements();
+    setConfirmingClearSupps(false);
+  };
+
+  const handleClearSuppLogs = () => {
+    clearAllSupplementLogs();
+    setConfirmingClearSuppLogs(false);
   };
 
   return (
@@ -325,6 +344,73 @@ export function SettingsView() {
               <TrashIcon className="h-[18px] w-[18px]" /> אפס מאכלים מועדפים
             </Button>
           )}
+        </Card>
+      )}
+
+      {/* Supplement data — only surfaced once the user has some */}
+      {(supplements.length > 0 || supplementLogs.length > 0) && (
+        <Card className="space-y-3 p-4">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent-supplement-soft)] text-[color:var(--accent-supplement)]">
+              <PillIcon className="h-[18px] w-[18px]" />
+            </span>
+            <div>
+              <CardLabel>נתוני תוספים</CardLabel>
+              <p className="text-[12px] text-muted">
+                {supplements.length} תוספים · {supplementLogs.length} סימוני ימים
+              </p>
+            </div>
+          </div>
+
+          {/* Reset the supplement list itself */}
+          {supplements.length > 0 &&
+            (confirmingClearSupps ? (
+              <div className="flex gap-2.5">
+                <Button variant="danger" onClick={handleClearSupps} className="flex-1">
+                  <TrashIcon className="h-[18px] w-[18px]" /> כן, אפס תוספים
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setConfirmingClearSupps(false)}
+                >
+                  ביטול
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="secondary"
+                onClick={() => setConfirmingClearSupps(true)}
+              >
+                <TrashIcon className="h-[18px] w-[18px]" /> אפס תוספים
+              </Button>
+            ))}
+
+          {/* Reset only the daily taken-logs, keeping the supplement list */}
+          {supplementLogs.length > 0 &&
+            (confirmingClearSuppLogs ? (
+              <div className="flex gap-2.5">
+                <Button
+                  variant="danger"
+                  onClick={handleClearSuppLogs}
+                  className="flex-1"
+                >
+                  <TrashIcon className="h-[18px] w-[18px]" /> כן, אפס יומן
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setConfirmingClearSuppLogs(false)}
+                >
+                  ביטול
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="secondary"
+                onClick={() => setConfirmingClearSuppLogs(true)}
+              >
+                <TrashIcon className="h-[18px] w-[18px]" /> אפס יומן תוספים
+              </Button>
+            ))}
         </Card>
       )}
 

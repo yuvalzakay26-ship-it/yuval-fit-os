@@ -64,6 +64,14 @@
   --water-from: #5cc8f5;
   --water-to: #0c8ec9;
 
+  /* Supplements (wellness habit) — a refined violet, the one hue not yet used by
+     a feature area (strength blue, energy amber, nutrition green, learn indigo,
+     water cyan). Sits calmly beside the teal brand. */
+  --accent-supplement: #6d4bd1;
+  --accent-supplement-soft: rgba(109, 75, 209, 0.1);
+  --gradient-supplement: linear-gradient(135deg, #8b6ee6 0%, #7857de 50%, #6d4bd1 100%);
+  --shadow-supplement: 0 8px 24px rgba(109, 75, 209, 0.24);
+
   /* Effects */
   --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 16px rgba(16, 24, 40, 0.05);
   --shadow-raised: 0 8px 30px rgba(16, 24, 40, 0.1);
@@ -123,6 +131,13 @@
   --shadow-water: 0 10px 30px rgba(56, 189, 248, 0.3);
   --water-from: #7dd3fc;
   --water-to: #1ea7e6;
+
+  /* Supplements follows the feature-accent convention: aliases to the emerald
+     brand accent in dark mode so the dark theme keeps its single identity. */
+  --accent-supplement: var(--accent);
+  --accent-supplement-soft: var(--accent-soft);
+  --gradient-supplement: var(--gradient-accent);
+  --shadow-supplement: var(--shadow-accent);
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
   --shadow-raised: 0 12px 40px rgba(0, 0, 0, 0.55);
@@ -228,6 +243,9 @@ body {
 .water-gradient {
   background-image: var(--gradient-water);
 }
+.supplement-gradient {
+  background-image: var(--gradient-supplement);
+}
 .brand-text-gradient {
   background-image: var(--gradient-accent);
   -webkit-background-clip: text;
@@ -259,6 +277,9 @@ body {
 }
 .shadow-glow-water {
   box-shadow: var(--shadow-water);
+}
+.shadow-glow-supplement {
+  box-shadow: var(--shadow-supplement);
 }
 
 .no-scrollbar {

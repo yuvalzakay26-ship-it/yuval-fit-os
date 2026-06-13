@@ -7,6 +7,8 @@ import {
   type FoodLog,
   type SavedFoodValue,
   type Settings,
+  type Supplement,
+  type SupplementLog,
   type WaterEntry,
   type WaterLog,
   type WorkoutSession,
@@ -23,6 +25,8 @@ const KEYS = {
   savedFoodValues: "yfos:saved-food-values:v1",
   favoriteFoods: "yfos:favorite-foods:v1",
   waterLogs: "yfos:water-logs:v1",
+  supplements: "yfos:supplements:v1",
+  supplementLogs: "yfos:supplement-logs:v1",
 } as const;
 
 /** Map of `sourceFoodId` → the user's saved default values for that food. */
@@ -286,6 +290,91 @@ export function resetWaterDay(date: string): WaterLog[] {
   );
   writeJSON(KEYS.waterLogs, remaining);
   return getWaterLogs();
+}
+
+/* ---------------------------- Supplements --------------------------- */
+// Personal supplement/medication tracking. localStorage-only, no backend, and
+// crucially NO recommendations: the app never suggests items or dosages — it
+// only records what the user already decided to track. Two keys: the catalogue
+// of supplements and the date-based "taken" logs. At most one log exists per
+// (supplementId, date). Both keys are in STORAGE_KEYS, so the global "reset all
+// data" path clears them automatically. See `docs/SUPPLEMENTS_TRACKER.md`.
+
+export function getSupplements(): Supplement[] {
+  return readJSON<Supplement[]>(KEYS.supplements, []);
+}
+
+export function saveSupplement(supplement: Supplement): Supplement[] {
+  const existing = readJSON<Supplement[]>(KEYS.supplements, []);
+  const index = existing.findIndex((s) => s.id === supplement.id);
+  if (index >= 0) {
+    existing[index] = supplement;
+  } else {
+    existing.push(supplement);
+  }
+  writeJSON(KEYS.supplements, existing);
+  return getSupplements();
+}
+
+/** Remove a supplement and all of its taken-logs so history stays consistent. */
+export function deleteSupplement(id: string): Supplement[] {
+  const remaining = readJSON<Supplement[]>(KEYS.supplements, []).filter(
+    (s) => s.id !== id,
+  );
+  writeJSON(KEYS.supplements, remaining);
+  const logs = readJSON<SupplementLog[]>(KEYS.supplementLogs, []).filter(
+    (l) => l.supplementId !== id,
+  );
+  writeJSON(KEYS.supplementLogs, logs);
+  return getSupplements();
+}
+
+export function getSupplementLogs(): SupplementLog[] {
+  return readJSON<SupplementLog[]>(KEYS.supplementLogs, []);
+}
+
+export function isSupplementTaken(supplementId: string, date: string): boolean {
+  return getSupplementLogs().some(
+    (l) => l.supplementId === supplementId && l.date === date,
+  );
+}
+
+/**
+ * Toggle the taken state of one supplement for one day. Adds a single log when
+ * unmarked, removes any matching log(s) when already marked. Other days are
+ * never touched, so tomorrow always starts fresh.
+ */
+export function toggleSupplementTaken(
+  supplementId: string,
+  date: string,
+): SupplementLog[] {
+  const all = readJSON<SupplementLog[]>(KEYS.supplementLogs, []);
+  const taken = all.some(
+    (l) => l.supplementId === supplementId && l.date === date,
+  );
+  const next = taken
+    ? all.filter((l) => !(l.supplementId === supplementId && l.date === date))
+    : [
+        ...all,
+        {
+          id: createId("suplog"),
+          supplementId,
+          date,
+          takenAt: new Date().toISOString(),
+        },
+      ];
+  writeJSON(KEYS.supplementLogs, next);
+  return getSupplementLogs();
+}
+
+export function clearSupplements(): void {
+  if (!isBrowser()) return;
+  window.localStorage.removeItem(KEYS.supplements);
+}
+
+export function clearSupplementLogs(): void {
+  if (!isBrowser()) return;
+  window.localStorage.removeItem(KEYS.supplementLogs);
 }
 
 /* ------------------------------ Settings ---------------------------- */

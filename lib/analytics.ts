@@ -1,7 +1,14 @@
 // Pure derivations over stored data. No localStorage access here — callers
 // pass in the data so these stay testable and SSR-safe.
 
-import type { FoodLog, SetEntry, WaterLog, WorkoutSession } from "./fitness-types";
+import type {
+  FoodLog,
+  SetEntry,
+  Supplement,
+  SupplementLog,
+  WaterLog,
+  WorkoutSession,
+} from "./fitness-types";
 import { startOfWeekISO, todayISO } from "./utils";
 
 export interface ExercisePerformance {
@@ -183,4 +190,70 @@ export function weeklyWaterAverageMl(logs: WaterLog[]): number | null {
   if (days.length === 0) return null;
   const sum = days.reduce((total, log) => total + log.totalMl, 0);
   return Math.round(sum / days.length);
+}
+
+/* ---------------------------- Supplements --------------------------- */
+// Pure derivations over the supplement catalogue + date-based taken-logs. No
+// recommendations, no medical logic — only counting what the user already
+// tracks. See `docs/SUPPLEMENTS_TRACKER.md`.
+
+/** Active (non-archived) supplements only — these make up the daily list. */
+export function activeSupplements(supplements: Supplement[]): Supplement[] {
+  return supplements.filter((s) => s.isActive);
+}
+
+/** Set of supplement ids marked taken on a given date. */
+export function takenSupplementIds(
+  logs: SupplementLog[],
+  date: string,
+): Set<string> {
+  const taken = new Set<string>();
+  for (const log of logs) {
+    if (log.date === date) taken.add(log.supplementId);
+  }
+  return taken;
+}
+
+export interface SupplementDaySummary {
+  /** Number of active supplements. */
+  active: number;
+  /** How many active supplements are marked taken on the date. */
+  taken: number;
+  /** Active items still unmarked. */
+  remaining: number;
+  /** True when there is at least one active item and all are taken. */
+  allDone: boolean;
+}
+
+/** Today-style completion summary for a single date. */
+export function supplementDaySummary(
+  supplements: Supplement[],
+  logs: SupplementLog[],
+  date: string,
+): SupplementDaySummary {
+  const active = activeSupplements(supplements);
+  const taken = takenSupplementIds(logs, date);
+  const takenCount = active.reduce(
+    (count, s) => (taken.has(s.id) ? count + 1 : count),
+    0,
+  );
+  return {
+    active: active.length,
+    taken: takenCount,
+    remaining: Math.max(0, active.length - takenCount),
+    allDone: active.length > 0 && takenCount === active.length,
+  };
+}
+
+/**
+ * Number of distinct days in the current week with at least one supplement
+ * marked taken. A simple, honest adherence signal — not a chart.
+ */
+export function supplementDaysLoggedThisWeek(logs: SupplementLog[]): number {
+  const weekStart = startOfWeekISO();
+  const days = new Set<string>();
+  for (const log of logs) {
+    if (log.date >= weekStart) days.add(log.date);
+  }
+  return days.size;
 }

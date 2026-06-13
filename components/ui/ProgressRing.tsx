@@ -11,6 +11,9 @@ export function ProgressRing({
   stroke = 7,
   children,
   className,
+  gradientId = "ringGradient",
+  from = "var(--progress-from)",
+  to = "var(--progress-to)",
 }: {
   value: number;
   goal: number;
@@ -18,6 +21,14 @@ export function ProgressRing({
   stroke?: number;
   children?: React.ReactNode;
   className?: string;
+  /**
+   * Unique id for this ring's gradient def. Pass a distinct id when more than
+   * one ring renders on the same screen, so the SVG defs never collide.
+   */
+  gradientId?: string;
+  /** Gradient stops — default to the brand progress colours. */
+  from?: string;
+  to?: string;
 }) {
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -45,14 +56,14 @@ export function ProgressRing({
           fill="none"
           strokeWidth={stroke}
           strokeLinecap="round"
-          stroke="url(#ringGradient)"
+          stroke={`url(#${gradientId})`}
           strokeDasharray={`${dash} ${circumference}`}
           className="transition-[stroke-dasharray] duration-700 ease-out"
         />
         <defs>
-          <linearGradient id="ringGradient" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="var(--progress-from)" />
-            <stop offset="100%" stopColor="var(--progress-to)" />
+          <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={from} />
+            <stop offset="100%" stopColor={to} />
           </linearGradient>
         </defs>
       </svg>

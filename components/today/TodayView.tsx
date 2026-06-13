@@ -16,6 +16,7 @@ import {
   PlusIcon,
 } from "@/components/ui/icons";
 import { WaterCard } from "@/components/water/WaterCard";
+import { SupplementsCard } from "@/components/supplements/SupplementsCard";
 import Link from "next/link";
 
 function MiniStat({
@@ -184,6 +185,12 @@ export function TodayView() {
       <section>
         <SectionHeader title="הידרציה" />
         <WaterCard />
+      </section>
+
+      {/* Supplements */}
+      <section>
+        <SectionHeader title="תוספים" />
+        <SupplementsCard />
       </section>
 
       {/* Knowledge center */}

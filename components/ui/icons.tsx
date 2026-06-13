@@ -274,3 +274,56 @@ export const LockIcon = (p: IconProps) =>
     </>,
     p,
   );
+
+// Capsule pill — the signature supplements affordance. A rounded capsule on a
+// diagonal with a divider line across its middle.
+export const PillIcon = (p: IconProps) =>
+  base(
+    <>
+      <rect
+        x="2.8"
+        y="8.4"
+        width="18.4"
+        height="7.2"
+        rx="3.6"
+        transform="rotate(-45 12 12)"
+      />
+      <path d="m9.5 9.5 5 5" />
+    </>,
+    p,
+  );
+
+// Shield with a check — used for the calm, non-alarming safety note.
+export const ShieldIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M12 3 5 6v5c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6l-7-3Z" />
+      <path d="m9 11.5 2 2 4-4.5" />
+    </>,
+    p,
+  );
+
+// Circular check. Supports a solid fill (like StarIcon) so the "taken" habit
+// state can read as a confident, filled badge.
+export const CheckCircleIcon = ({
+  className,
+  filled = false,
+}: IconProps & { filled?: boolean }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill={filled ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className ?? "h-5 w-5"}
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="8.5" />
+    <path
+      d="m8.4 12 2.6 2.6 4.6-5.2"
+      fill="none"
+      stroke={filled ? "var(--accent-contrast)" : "currentColor"}
+    />
+  </svg>
+);

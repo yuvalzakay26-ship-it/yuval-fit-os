@@ -3,12 +3,20 @@
 import {
   bestWeightPerExercise,
   progressSummary,
+  supplementDaySummary,
+  supplementDaysLoggedThisWeek,
   todaysWaterMl,
   weeklyWaterAverageMl,
 } from "@/lib/analytics";
 import { getExerciseById } from "@/lib/seed-exercises";
-import { useFoodLogs, useWaterLogs, useWorkouts } from "@/lib/fitness-store";
-import { formatHebrewDate, formatLiters } from "@/lib/utils";
+import {
+  useFoodLogs,
+  useSupplementLogs,
+  useSupplements,
+  useWaterLogs,
+  useWorkouts,
+} from "@/lib/fitness-store";
+import { formatHebrewDate, formatLiters, todayISO } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { EmptyState, SectionHeader } from "@/components/ui/PageHeader";
 import {
@@ -18,6 +26,7 @@ import {
   ClockIcon,
   DropletIcon,
   DumbbellIcon,
+  PillIcon,
   TrophyIcon,
 } from "@/components/ui/icons";
 import { StatCard } from "./StatCard";
@@ -26,13 +35,20 @@ export function ProgressView() {
   const workouts = useWorkouts();
   const foodLogs = useFoodLogs();
   const waterLogs = useWaterLogs();
+  const supplements = useSupplements();
+  const supplementLogs = useSupplementLogs();
 
   const summary = progressSummary(workouts, foodLogs);
   const bestWeights = bestWeightPerExercise(workouts);
   const waterToday = todaysWaterMl(waterLogs);
   const waterWeekAvg = weeklyWaterAverageMl(waterLogs);
+  const suppToday = supplementDaySummary(supplements, supplementLogs, todayISO());
+  const suppWeekDays = supplementDaysLoggedThisWeek(supplementLogs);
   const hasData =
-    workouts.length > 0 || foodLogs.length > 0 || waterLogs.length > 0;
+    workouts.length > 0 ||
+    foodLogs.length > 0 ||
+    waterLogs.length > 0 ||
+    supplements.length > 0;
 
   if (!hasData) {
     return (
@@ -115,6 +131,43 @@ export function ProgressView() {
           </Card>
         </div>
       </section>
+
+      {supplements.length > 0 && (
+        <section>
+          <SectionHeader title="תוספים" />
+          <div className="grid grid-cols-2 gap-3">
+            <Card className="space-y-2 p-4">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent-supplement-soft)] text-[color:var(--accent-supplement)]">
+                <PillIcon className="h-[18px] w-[18px]" />
+              </span>
+              <div>
+                <p className="text-[26px] font-extrabold leading-none tabular-nums text-foreground">
+                  {suppToday.taken}
+                  <span className="text-[14px] font-semibold text-muted">
+                    /{suppToday.active}
+                  </span>
+                </p>
+                <p className="mt-1.5 text-[12px] font-medium text-muted">
+                  תוספים היום
+                </p>
+              </div>
+            </Card>
+            <Card className="space-y-2 p-4">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent-supplement-soft)] text-[color:var(--accent-supplement)]">
+                <PillIcon className="h-[18px] w-[18px]" />
+              </span>
+              <div>
+                <p className="text-[26px] font-extrabold leading-none tabular-nums text-foreground">
+                  {suppWeekDays}
+                </p>
+                <p className="mt-1.5 text-[12px] font-medium text-muted">
+                  ימים עם תיעוד השבוע
+                </p>
+              </div>
+            </Card>
+          </div>
+        </section>
+      )}
 
       <section>
         <SectionHeader title="שיא משקל לפי תרגיל" />

@@ -12,6 +12,8 @@ import {
   type FoodLog,
   type SavedFoodValue,
   type Settings,
+  type Supplement,
+  type SupplementLog,
   type WaterLog,
   type WorkoutSession,
   type WorkoutTemplate,
@@ -24,6 +26,8 @@ const EMPTY_TEMPLATES: WorkoutTemplate[] = [];
 const EMPTY_SAVED_VALUES: Record<string, SavedFoodValue> = {};
 const EMPTY_FAVORITES: Record<string, FavoriteFood> = {};
 const EMPTY_WATER_LOGS: WaterLog[] = [];
+const EMPTY_SUPPLEMENTS: Supplement[] = [];
+const EMPTY_SUPPLEMENT_LOGS: SupplementLog[] = [];
 
 let workoutsCache: WorkoutSession[] | null = null;
 let foodLogsCache: FoodLog[] | null = null;
@@ -32,6 +36,8 @@ let templatesCache: WorkoutTemplate[] | null = null;
 let savedValuesCache: Record<string, SavedFoodValue> | null = null;
 let favoritesCache: Record<string, FavoriteFood> | null = null;
 let waterLogsCache: WaterLog[] | null = null;
+let supplementsCache: Supplement[] | null = null;
+let supplementLogsCache: SupplementLog[] | null = null;
 
 const listeners = new Set<() => void>();
 
@@ -47,6 +53,8 @@ function invalidate(): void {
   savedValuesCache = null;
   favoritesCache = null;
   waterLogsCache = null;
+  supplementsCache = null;
+  supplementLogsCache = null;
 }
 
 function subscribe(callback: () => void): () => void {
@@ -100,6 +108,16 @@ function waterLogsSnapshot(): WaterLog[] {
   return waterLogsCache;
 }
 
+function supplementsSnapshot(): Supplement[] {
+  if (!supplementsCache) supplementsCache = storage.getSupplements();
+  return supplementsCache;
+}
+
+function supplementLogsSnapshot(): SupplementLog[] {
+  if (!supplementLogsCache) supplementLogsCache = storage.getSupplementLogs();
+  return supplementLogsCache;
+}
+
 /* -------------------------------- Hooks -------------------------------- */
 
 export function useWorkouts(): WorkoutSession[] {
@@ -135,6 +153,24 @@ export function useFavoriteFoods(): Record<string, FavoriteFood> {
 /** All daily water logs, newest day first. */
 export function useWaterLogs(): WaterLog[] {
   return useSyncExternalStore(subscribe, waterLogsSnapshot, () => EMPTY_WATER_LOGS);
+}
+
+/** The user's supplement catalogue (active + archived). */
+export function useSupplements(): Supplement[] {
+  return useSyncExternalStore(
+    subscribe,
+    supplementsSnapshot,
+    () => EMPTY_SUPPLEMENTS,
+  );
+}
+
+/** All date-based supplement "taken" logs. */
+export function useSupplementLogs(): SupplementLog[] {
+  return useSyncExternalStore(
+    subscribe,
+    supplementLogsSnapshot,
+    () => EMPTY_SUPPLEMENT_LOGS,
+  );
 }
 
 /* ------------------------------ Mutations ------------------------------ */
@@ -228,6 +264,37 @@ export function removeWaterEntry(date: string, entryId: string): void {
 export function resetWaterDay(date: string): void {
   storage.resetWaterDay(date);
   waterLogsCache = storage.getWaterLogs();
+  notify();
+}
+
+export function saveSupplement(supplement: Supplement): void {
+  storage.saveSupplement(supplement);
+  supplementsCache = storage.getSupplements();
+  notify();
+}
+
+export function removeSupplement(id: string): void {
+  storage.deleteSupplement(id);
+  supplementsCache = storage.getSupplements();
+  supplementLogsCache = storage.getSupplementLogs();
+  notify();
+}
+
+export function toggleSupplementTaken(supplementId: string, date: string): void {
+  storage.toggleSupplementTaken(supplementId, date);
+  supplementLogsCache = storage.getSupplementLogs();
+  notify();
+}
+
+export function clearAllSupplements(): void {
+  storage.clearSupplements();
+  supplementsCache = storage.getSupplements();
+  notify();
+}
+
+export function clearAllSupplementLogs(): void {
+  storage.clearSupplementLogs();
+  supplementLogsCache = storage.getSupplementLogs();
   notify();
 }
 

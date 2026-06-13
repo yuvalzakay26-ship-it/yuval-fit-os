@@ -157,6 +157,67 @@ export interface WaterLog {
   entries: WaterEntry[];
 }
 
+/* ----------------------------- Supplements ---------------------------- */
+// Personal supplement/medication tracking. This is a tracking tool ONLY: the app
+// never recommends supplements, never suggests dosages, and carries no medical
+// advice. The user records items they have already decided to track. All
+// strings are neutral and safety-first. localStorage-only. See
+// `docs/SUPPLEMENTS_TRACKER.md`.
+
+/** Neutral, non-judgemental categories — no "natural/unnatural", no drug framing. */
+export type SupplementCategory =
+  | "vitamin"
+  | "mineral"
+  | "protein"
+  | "performance"
+  | "general-health"
+  | "doctor-recommended"
+  | "other";
+
+/** Optional time-of-day tags for when the user takes an item. */
+export type SupplementTiming =
+  | "morning"
+  | "noon"
+  | "evening"
+  | "pre-workout"
+  | "post-workout"
+  | "other";
+
+export interface SupplementSchedule {
+  frequency: "daily" | "weekly" | "custom";
+  /** When in the day the user plans to take it (display/grouping only). */
+  timesOfDay?: SupplementTiming[];
+  notes?: string;
+}
+
+export interface Supplement {
+  id: string;
+  name: string;
+  category: SupplementCategory;
+  /** Free text typed by the user only — never generated or suggested. */
+  dosageText?: string;
+  schedule?: SupplementSchedule;
+  /** Inactive items are archived: kept (with history) but out of the daily list. */
+  isActive: boolean;
+  /** Full ISO timestamp. */
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/**
+ * A single "taken" mark for one supplement on one day. Date-based: today reads
+ * today's date only, tomorrow starts fresh, and past marks stay stored for
+ * future history. There is at most one log per (supplementId, date).
+ */
+export interface SupplementLog {
+  id: string;
+  supplementId: string;
+  /** ISO date string (YYYY-MM-DD). */
+  date: string;
+  /** Full ISO timestamp of when it was marked taken. */
+  takenAt: string;
+}
+
 export type ThemePreference = "light" | "dark" | "system";
 
 export interface Settings {

@@ -23,6 +23,7 @@ import {
   TrashIcon,
 } from "@/components/ui/icons";
 import { WaterCard } from "@/components/water/WaterCard";
+import { SupplementsCard } from "@/components/supplements/SupplementsCard";
 import { FoodImage } from "./FoodImage";
 import { MacroSummary } from "./MacroSummary";
 import { ProteinCalculator } from "./ProteinCalculator";
@@ -68,6 +69,12 @@ export function NutritionView() {
       <section>
         <SectionHeader title="מעקב מים" />
         <WaterCard title="מעקב מים" />
+      </section>
+
+      {/* 2b — Supplements (compact entry point into /nutrition/supplements) */}
+      <section>
+        <SectionHeader title="תוספים" />
+        <SupplementsCard />
       </section>
 
       {/* 3 — Protein goal */}
