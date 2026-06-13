@@ -28,6 +28,7 @@ import {
   ChevronIcon,
   DatabaseIcon,
   DropletIcon,
+  LockIcon,
   MoonIcon,
   PillIcon,
   SparkIcon,
@@ -35,6 +36,7 @@ import {
   TrashIcon,
 } from "@/components/ui/icons";
 import { resetWelcome } from "@/lib/welcome";
+import { resetPrivateAccess } from "@/lib/private-access";
 import Link from "next/link";
 
 const THEME_OPTIONS: Array<{
@@ -422,6 +424,18 @@ export function SettingsView() {
         </p>
         <Button variant="secondary" onClick={() => resetWelcome()}>
           <SparkIcon className="h-[18px] w-[18px]" /> הצג מסך פתיחה
+        </Button>
+      </Card>
+
+      {/* Private-access notice */}
+      <Card className="space-y-3 p-4">
+        <CardLabel>מסך גישה פרטית</CardLabel>
+        <p className="text-[13px] leading-relaxed text-muted">
+          הצגת הודעת הגישה הפרטית מחדש. זוהי הודעה בלבד ללא סיסמה — היא תופיע שוב
+          ממילא בפתיחה הבאה של המערכת.
+        </p>
+        <Button variant="secondary" onClick={() => resetPrivateAccess()}>
+          <LockIcon className="h-[18px] w-[18px]" /> הצג מסך גישה פרטית
         </Button>
       </Card>
 

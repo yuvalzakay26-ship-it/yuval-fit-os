@@ -5,6 +5,8 @@ import { ThemeProvider, THEME_INIT_SCRIPT } from "@/components/ThemeProvider";
 import { AppShell } from "@/components/layout/AppShell";
 import { WelcomeGate } from "@/components/welcome/WelcomeGate";
 import { WELCOME_INIT_SCRIPT } from "@/lib/welcome";
+import { PrivateAccessNotice } from "@/components/access/PrivateAccessNotice";
+import { PRIVATE_ACCESS_INIT_SCRIPT } from "@/lib/private-access";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
 const heebo = Heebo({
@@ -51,12 +53,21 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         {/* Hide the welcome screen before paint for returning users. */}
         <script dangerouslySetInnerHTML={{ __html: WELCOME_INIT_SCRIPT }} />
+        {/* Hide the private-access notice before paint within an accepted session. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: PRIVATE_ACCESS_INIT_SCRIPT }}
+        />
       </head>
       <body className="min-h-dvh">
         <ThemeProvider>
-          <WelcomeGate>
-            <AppShell>{children}</AppShell>
-          </WelcomeGate>
+          {/* Gate order: the private-access notice sits above the welcome screen
+              (higher z-index) so it is seen first; accepting it reveals the
+              welcome screen for new users, then the app. */}
+          <PrivateAccessNotice>
+            <WelcomeGate>
+              <AppShell>{children}</AppShell>
+            </WelcomeGate>
+          </PrivateAccessNotice>
         </ThemeProvider>
         <ServiceWorkerRegister />
       </body>

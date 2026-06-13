@@ -195,6 +195,15 @@ body {
   display: none;
 }
 
+/* Private-access notice: when PRIVATE_ACCESS_INIT_SCRIPT detects the notice was
+   already accepted this session it adds this class before paint, hiding the
+   server-rendered notice overlay so there is no flash on same-session
+   navigations/refreshes. Kept in sync at runtime by accept/reset
+   (lib/private-access.ts), so "show notice again" re-reveals it immediately. */
+.private-access-accepted [data-private-access-gate] {
+  display: none;
+}
+
 /* Smooth, accessible scrolling for the scroll-to-top behaviour. */
 @media (prefers-reduced-motion: no-preference) {
   html {

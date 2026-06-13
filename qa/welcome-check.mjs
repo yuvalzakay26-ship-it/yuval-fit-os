@@ -22,6 +22,15 @@ const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
 const page = await context.newPage();
 
+// Accept the private-access notice up front so this script tests the welcome
+// gate in isolation (the notice is covered by its own QA script). Seeds only the
+// session flag — the welcome flag stays clean so the welcome screen still shows.
+await page.addInitScript(() => {
+  try {
+    sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
+  } catch {}
+});
+
 page.on("console", (m) => {
   if (m.type() === "error" || m.type() === "warning") consoleMsgs.push(`[${m.type()}] ${m.text()}`);
 });

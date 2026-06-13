@@ -10,6 +10,7 @@ export async function seedAndResetNutrition(page, base) {
   await page.addInitScript(() => {
     try {
       localStorage.setItem("yfos:welcome-seen:v1", "1");
+      sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
     } catch {}
   });
   await page.goto(base + "/nutrition", { waitUntil: "networkidle" });
