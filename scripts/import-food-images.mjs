@@ -24,6 +24,7 @@ const VALID_CATEGORIES = new Set([
   "carbs",
   "vegetables",
   "fruits",
+  "fats",
   "salads",
   "israeli-food",
   "full-meals",
@@ -56,6 +57,13 @@ const FOLDER_ALIASES = {
   // Hebrew "fruits" folder shipped in Phase 3.15 ("פירות — Fruits").
   "פירות — fruits": "fruits",
   פירות: "fruits",
+  fats: "fats",
+  "fats & add-ons": "fats",
+  "fats and add-ons": "fats",
+  // Hebrew "fats & add-ons" folder shipped in Phase 3.16
+  // ("שומנים ותוספות בריאות — Fats & Add-ons").
+  "שומנים ותוספות בריאות — fats & add-ons": "fats",
+  "שומנים ותוספות בריאות": "fats",
   carbs: "carbs",
   "carbs & side dishes": "carbs",
   "carbs and side dishes": "carbs",

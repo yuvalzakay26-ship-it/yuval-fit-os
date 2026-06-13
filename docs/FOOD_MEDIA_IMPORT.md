@@ -54,6 +54,7 @@ public/food/<category>/<slug>.webp
 - `public/food/carbs/` — 19 images (Phase 3.13)
 - `public/food/vegetables/` — 20 images (Phase 3.14)
 - `public/food/fruits/` — 19 images (Phase 3.15)
+- `public/food/fats/` — 20 images (Phase 3.16)
 
 `<category>` is a `FoodCategory` from `lib/food-library.ts`:
 `proteins`, `carbs`, `vegetables`, `fruits`, `salads`, `israeli-food`,
@@ -322,6 +323,77 @@ Skipped: none.
 > **undefined** — the user enters macros manually per portion. The quick-add
 > flow remains prefill-only for name / image / category / `sourceFoodId`.
 
+## Phase 3.16 — Fats & add-ons import
+
+The user added a sixth category folder containing fats / healthy add-on images.
+
+- **Source folder inspected:** `public/food source/שומנים ותוספות בריאות — Fats & Add-ons/`
+  (in-repo, gitignored). Actual folder name on disk:
+  `שומנים ותוספות בריאות — Fats & Add-ons`.
+- **Images found:** **20**, all `.png`, ~1.5–2.2 MB each. No unsupported
+  formats, no duplicates/suspicious names, no oversized outliers, and **no**
+  generic/unclear names (no `ChatGPT Image …`, no bare timestamps) — every
+  filename maps cleanly to a known food, so nothing had to be skipped or guessed.
+- **Converted / skipped:** 20 converted PNG → WebP q80; **0 skipped**. The set
+  shrank from ~38 MB to ~1.8 MB (~29–144 KB per image).
+- **Destination created:** `public/food/fats/` (20 `.webp`).
+- **Category:** key `fats`, Hebrew label `שומנים ותוספות בריאות`. This was a
+  **new** `FoodCategory` — added to the `FoodCategory` union,
+  `FOOD_CATEGORY_LABELS`, the `foodCategoriesInLibrary()` display order (placed
+  after `fruits`), and the exhaustive `GRADIENTS` / `SOLID` placeholder records
+  in `components/nutrition/FoodPlaceholder.tsx` (golden yellow/amber gradient +
+  `bg-yellow-600` solid). No theme colors were changed — these are local
+  placeholder fallbacks matching the existing per-category pattern.
+- **Library items added:** **20** entries appended to `FOOD_LIBRARY`.
+
+### Importer change
+
+The source folder name is Hebrew + English
+(`שומנים ותוספות בריאות — Fats & Add-ons`). `slugify()` strips the Hebrew to
+`fats-add-ons`, which is not a `FoodCategory`, so without help it would fall
+back to `other`. `fats` was also added to the importer's `VALID_CATEGORIES` set,
+and five `FOLDER_ALIASES` entries were added for explicit, self-documenting
+mapping: `"fats"`, `"fats & add-ons"`, `"fats and add-ons"`, the full
+`"שומנים ותוספות בריאות — fats & add-ons"`, and `"שומנים ותוספות בריאות"`.
+
+### Mapping decisions
+
+- `id` mirrors the image slug for stability, **except** `avocado`, which already
+  exists as a **vegetables** `id`. To keep ids globally unique (they are the
+  React key and `sourceFoodId`), the fats avocado item uses
+  `id: "avocado-fats"` while its image stays `/food/fats/avocado.webp`. Its
+  Hebrew name is still `אבוקדו`. This is the one collision the brief flagged.
+- No other slug collides with existing breakfast/proteins/carbs/vegetables/
+  fruits ids. In particular, `peanut-butter` (fats) is distinct from the
+  breakfast `whole-wheat-bread-with-peanut-butter`, and `feta-cheese` /
+  `halloumi-cheese` are distinct from the proteins `cottage-cheese` /
+  `white-cheese`, so no other category-qualified ids were needed.
+- Filename → Hebrew name choices: `almond-butter` → `חמאת שקדים`,
+  `almonds` → `שקדים`, `black-olives` → `זיתים שחורים`,
+  `green-olives` → `זיתים ירוקים`, `cashews` → `קשיו`,
+  `chia-seeds` → `זרעי צ׳יה`, `dried-coconut` → `קוקוס מיובש`,
+  `feta-cheese` → `גבינת פטה`, `flax-seeds` → `זרעי פשתן`,
+  `halloumi-cheese` → `גבינת חלומי`,
+  `mixed-nuts-and-seeds` → `אגוזים וזרעים מעורבים`, `olive-oil` → `שמן זית`,
+  `peanut-butter` → `חמאת בוטנים`, `pesto-sauce` → `רוטב פסטו`,
+  `pistachios` → `פיסטוקים`, `pumpkin-seeds` → `גרעיני דלעת`,
+  `sunflower-seeds` → `גרעיני חמנייה`, `tahini` → `טחינה`,
+  `walnuts` → `אגוזי מלך`.
+
+### Fats & add-ons imported (20)
+
+almond-butter, almonds, avocado (id `avocado-fats`), black-olives, cashews,
+chia-seeds, dried-coconut, feta-cheese, flax-seeds, green-olives,
+halloumi-cheese, mixed-nuts-and-seeds, olive-oil, peanut-butter, pesto-sauce,
+pistachios, pumpkin-seeds, sunflower-seeds, tahini, walnuts.
+
+Skipped: none.
+
+> **No nutrition inferred.** As with every prior food phase, all fats items
+> leave `protein` / `carbs` / `fat` / `calories` **undefined** — the user enters
+> macros manually per portion. The quick-add flow remains prefill-only for
+> name / image / category / `sourceFoodId`.
+
 ## Data model & UI
 
 - `lib/food-library.ts` — `FoodCategory`, `FoodLibraryItem`,
@@ -406,6 +478,20 @@ thumbnail banner, saving writes a `FoodLog` with
 `qa/vegetables-food-check.mjs`, `qa/carbs-food-check.mjs`, and
 `qa/welcome-check.mjs` still pass, and the exercise library still renders all
 **133** images (0 broken) with no console errors across all routes.
+
+**Phase 3.16** adds `qa/fats-food-check.mjs` (Playwright, pre-seeds
+`yfos:welcome-seen:v1 = "1"`), which passes with **0 issues**: the
+`שומנים ותוספות בריאות` chip exists, filtering to it shows exactly **20** fats
+items with all images loaded, search for `שמן זית` narrows to 1, picking it
+prefills the form + thumbnail banner, saving writes a `FoodLog` with
+`imagePath=/food/fats/olive-oil.webp` / `category=fats` /
+`sourceFoodId=olive-oil` and the user-entered macros, and breakfast + proteins +
+carbs + vegetables + fruits filters still work — no overflow or console error in
+light **or** dark mode. The existing `qa/food-library-check.mjs`,
+`qa/fruits-food-check.mjs`, `qa/vegetables-food-check.mjs`,
+`qa/carbs-food-check.mjs`, and `qa/welcome-check.mjs` still pass, and the
+exercise library still renders all images (0 broken) via
+`scripts/qa-exercises.mjs`.
 
 ## Scope note
 

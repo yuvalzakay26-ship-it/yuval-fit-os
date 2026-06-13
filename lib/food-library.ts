@@ -15,6 +15,7 @@ export type FoodCategory =
   | "carbs"
   | "vegetables"
   | "fruits"
+  | "fats"
   | "salads"
   | "israeli-food"
   | "full-meals"
@@ -47,6 +48,7 @@ export const FOOD_CATEGORY_LABELS: Record<FoodCategory, string> = {
   carbs: "פחמימות ותוספות",
   vegetables: "ירקות",
   fruits: "פירות",
+  fats: "שומנים ותוספות בריאות",
   salads: "סלטים",
   "israeli-food": "אוכל ישראלי",
   "full-meals": "ארוחות מלאות",
@@ -761,6 +763,152 @@ export const FOOD_LIBRARY: FoodLibraryItem[] = [
     category: "fruits",
     imagePath: "/food/fruits/watermelon.webp",
   },
+
+  // Fats & add-ons set imported in Phase 3.16. Macros are deliberately omitted —
+  // the user enters them per portion. `id` mirrors the image slug, except
+  // `avocado` which already exists as a vegetables `id`; the fats item uses
+  // `id: "avocado-fats"` while its image stays `/food/fats/avocado.webp`. See
+  // docs/FOOD_MEDIA_IMPORT.md.
+  {
+    id: "almond-butter",
+    nameHe: "חמאת שקדים",
+    nameEn: "Almond Butter",
+    category: "fats",
+    imagePath: "/food/fats/almond-butter.webp",
+  },
+  {
+    id: "almonds",
+    nameHe: "שקדים",
+    nameEn: "Almonds",
+    category: "fats",
+    imagePath: "/food/fats/almonds.webp",
+  },
+  {
+    id: "avocado-fats",
+    nameHe: "אבוקדו",
+    nameEn: "Avocado",
+    category: "fats",
+    imagePath: "/food/fats/avocado.webp",
+  },
+  {
+    id: "black-olives",
+    nameHe: "זיתים שחורים",
+    nameEn: "Black Olives",
+    category: "fats",
+    imagePath: "/food/fats/black-olives.webp",
+  },
+  {
+    id: "cashews",
+    nameHe: "קשיו",
+    nameEn: "Cashews",
+    category: "fats",
+    imagePath: "/food/fats/cashews.webp",
+  },
+  {
+    id: "chia-seeds",
+    nameHe: "זרעי צ׳יה",
+    nameEn: "Chia Seeds",
+    category: "fats",
+    imagePath: "/food/fats/chia-seeds.webp",
+  },
+  {
+    id: "dried-coconut",
+    nameHe: "קוקוס מיובש",
+    nameEn: "Dried Coconut",
+    category: "fats",
+    imagePath: "/food/fats/dried-coconut.webp",
+  },
+  {
+    id: "feta-cheese",
+    nameHe: "גבינת פטה",
+    nameEn: "Feta Cheese",
+    category: "fats",
+    imagePath: "/food/fats/feta-cheese.webp",
+  },
+  {
+    id: "flax-seeds",
+    nameHe: "זרעי פשתן",
+    nameEn: "Flax Seeds",
+    category: "fats",
+    imagePath: "/food/fats/flax-seeds.webp",
+  },
+  {
+    id: "green-olives",
+    nameHe: "זיתים ירוקים",
+    nameEn: "Green Olives",
+    category: "fats",
+    imagePath: "/food/fats/green-olives.webp",
+  },
+  {
+    id: "halloumi-cheese",
+    nameHe: "גבינת חלומי",
+    nameEn: "Halloumi Cheese",
+    category: "fats",
+    imagePath: "/food/fats/halloumi-cheese.webp",
+  },
+  {
+    id: "mixed-nuts-and-seeds",
+    nameHe: "אגוזים וזרעים מעורבים",
+    nameEn: "Mixed Nuts and Seeds",
+    category: "fats",
+    imagePath: "/food/fats/mixed-nuts-and-seeds.webp",
+  },
+  {
+    id: "olive-oil",
+    nameHe: "שמן זית",
+    nameEn: "Olive Oil",
+    category: "fats",
+    imagePath: "/food/fats/olive-oil.webp",
+  },
+  {
+    id: "peanut-butter",
+    nameHe: "חמאת בוטנים",
+    nameEn: "Peanut Butter",
+    category: "fats",
+    imagePath: "/food/fats/peanut-butter.webp",
+  },
+  {
+    id: "pesto-sauce",
+    nameHe: "רוטב פסטו",
+    nameEn: "Pesto Sauce",
+    category: "fats",
+    imagePath: "/food/fats/pesto-sauce.webp",
+  },
+  {
+    id: "pistachios",
+    nameHe: "פיסטוקים",
+    nameEn: "Pistachios",
+    category: "fats",
+    imagePath: "/food/fats/pistachios.webp",
+  },
+  {
+    id: "pumpkin-seeds",
+    nameHe: "גרעיני דלעת",
+    nameEn: "Pumpkin Seeds",
+    category: "fats",
+    imagePath: "/food/fats/pumpkin-seeds.webp",
+  },
+  {
+    id: "sunflower-seeds",
+    nameHe: "גרעיני חמנייה",
+    nameEn: "Sunflower Seeds",
+    category: "fats",
+    imagePath: "/food/fats/sunflower-seeds.webp",
+  },
+  {
+    id: "tahini",
+    nameHe: "טחינה",
+    nameEn: "Tahini",
+    category: "fats",
+    imagePath: "/food/fats/tahini.webp",
+  },
+  {
+    id: "walnuts",
+    nameHe: "אגוזי מלך",
+    nameEn: "Walnuts",
+    category: "fats",
+    imagePath: "/food/fats/walnuts.webp",
+  },
 ];
 
 /**
@@ -776,6 +924,7 @@ export function foodCategoriesInLibrary(): FoodCategory[] {
     "salads",
     "vegetables",
     "fruits",
+    "fats",
     "israeli-food",
     "dairy",
     "snacks",
