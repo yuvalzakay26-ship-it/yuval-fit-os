@@ -1,13 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { sumNutrition, todaysFoodLogs } from "@/lib/analytics";
+import { useState } from "react";
+import { recentFoods, sumNutrition, todaysFoodLogs } from "@/lib/analytics";
 import { removeFoodLog, useFoodLogs, useSettings } from "@/lib/fitness-store";
 import type { FoodCategory, FoodLibraryItem } from "@/lib/food-library";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { EmptyState, SectionHeader } from "@/components/ui/PageHeader";
-import { AppleIcon, TrashIcon } from "@/components/ui/icons";
+import { Sheet } from "@/components/ui/Sheet";
+import { AppleIcon, DatabaseIcon, PlusIcon, TrashIcon } from "@/components/ui/icons";
 import { FoodLogForm, type FoodPrefill } from "./FoodLogForm";
 import { FoodLibrary } from "./FoodLibrary";
 import { FoodImage } from "./FoodImage";
@@ -15,80 +17,138 @@ import { MacroSummary } from "./MacroSummary";
 import { ProteinCalculator } from "./ProteinCalculator";
 import { MEAL_TYPE_LABELS } from "./nutrition-labels";
 
+type ActiveSheet = "none" | "picker" | "add";
+
 export function NutritionView() {
   const logs = useFoodLogs();
   const settings = useSettings();
 
   const today = todaysFoodLogs(logs);
   const totals = sumNutrition(today);
+  const recents = recentFoods(logs);
 
-  // The picked library food drives both the form prefill and the library
-  // highlight. `prefillNonce` only changes when a *new* food is picked, so
-  // remounting the form (to apply the prefill) never wipes in-progress manual
-  // edits made after clearing or saving.
-  const [selected, setSelected] = useState<FoodLibraryItem | null>(null);
-  const [prefillNonce, setPrefillNonce] = useState(0);
-  const formRef = useRef<HTMLDivElement>(null);
+  // The add flow opens in a focused bottom sheet so the main page stays short.
+  // `prefill` carries the picked/recent food into the form; `formNonce` forces
+  // the form to remount fresh each time the sheet opens.
+  const [sheet, setSheet] = useState<ActiveSheet>("none");
+  const [prefill, setPrefill] = useState<FoodPrefill | null>(null);
+  const [formNonce, setFormNonce] = useState(0);
 
-  const handleSelect = (item: FoodLibraryItem) => {
-    setSelected(item);
-    setPrefillNonce((n) => n + 1);
-    requestAnimationFrame(() =>
-      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
-    );
+  const openAdd = (next: FoodPrefill | null) => {
+    setPrefill(next);
+    setFormNonce((n) => n + 1);
+    setSheet("add");
   };
 
-  const prefill: FoodPrefill | null = selected
-    ? {
-        foodName: selected.nameHe,
-        category: selected.category,
-        imagePath: selected.imagePath,
-        sourceFoodId: selected.id,
-        quantityText: selected.defaultQuantityText,
-      }
-    : null;
+  const handleSelectFromLibrary = (item: FoodLibraryItem) => {
+    openAdd({
+      foodName: item.nameHe,
+      category: item.category,
+      imagePath: item.imagePath,
+      sourceFoodId: item.id,
+      quantityText: item.defaultQuantityText,
+    });
+  };
 
+  const closeSheet = () => setSheet("none");
   const handleDelete = (id: string) => removeFoodLog(id);
 
   return (
     <div className="space-y-6">
+      {/* 1 — Today's nutrition summary */}
       <MacroSummary
         totals={totals}
         proteinGoal={settings.proteinGoal}
         calorieGoal={settings.calorieGoal}
       />
 
+      {/* 2 — Protein goal */}
       <section>
         <SectionHeader title="יעד חלבון מותאם" />
         <ProteinCalculator defaultOpen={false} showArticleLink />
       </section>
 
+      {/* 3 — Quick actions (the compact entry point into the food library) */}
       <section>
-        <SectionHeader title="מאגר אוכל" />
-        <Card variant="flat" className="p-3.5">
-          <p className="mb-3 text-[12.5px] leading-relaxed text-muted">
-            בחר מאכל כדי למלא את היומן אוטומטית בשם — ואז הוסף כמות וערכים תזונתיים.
-          </p>
-          <FoodLibrary onSelect={handleSelect} selectedId={selected?.id} />
-        </Card>
+        <SectionHeader title="הוספה מהירה" />
+        <div className="grid grid-cols-2 gap-2.5">
+          <button
+            type="button"
+            onClick={() => setSheet("picker")}
+            className="tap flex flex-col items-start gap-2 rounded-2xl border border-border bg-surface p-4 text-right shadow-soft transition-[border-color] hover:border-border-strong"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--accent-nutrition-soft)] text-[color:var(--accent-nutrition)]">
+              <DatabaseIcon className="h-5 w-5" />
+            </span>
+            <span className="text-[14px] font-bold text-foreground">בחר מהמאגר</span>
+            <span className="text-[11.5px] leading-snug text-muted">
+              בחר מאכל עם תמונה והוסף ליומן
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => openAdd(null)}
+            className="tap flex flex-col items-start gap-2 rounded-2xl border border-border bg-surface p-4 text-right shadow-soft transition-[border-color] hover:border-border-strong"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--accent-soft)] text-accent">
+              <PlusIcon className="h-5 w-5" />
+            </span>
+            <span className="text-[14px] font-bold text-foreground">הוסף ידנית</span>
+            <span className="text-[11.5px] leading-snug text-muted">
+              רשום מאכל וערכים תזונתיים בעצמך
+            </span>
+          </button>
+        </div>
+
+        {/* "אחרונים" — backed by real log data; shown only when it exists.
+            Favorites and saved macro values are intentionally not built yet
+            (see docs/NUTRITION_UX.md). */}
+        {recents.length > 0 && (
+          <div className="mt-3">
+            <p className="mb-2 text-[12px] font-semibold text-muted">אחרונים</p>
+            <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+              {recents.map((food) => (
+                <button
+                  key={food.sourceFoodId ?? food.foodName}
+                  type="button"
+                  onClick={() => openAdd(food)}
+                  className="tap flex shrink-0 items-center gap-2 rounded-full border border-border bg-surface py-1.5 pe-3 ps-1.5 text-[12.5px] font-semibold text-foreground hover:border-border-strong"
+                >
+                  <FoodImage
+                    imagePath={food.imagePath}
+                    alt={food.foodName}
+                    category={(food.category || "other") as FoodCategory}
+                    label={food.foodName}
+                    sizes="28px"
+                    className="h-7 w-7 shrink-0 rounded-full"
+                  />
+                  <span className="max-w-[8rem] truncate">{food.foodName}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
-      <section ref={formRef} className="scroll-mt-4">
-        <SectionHeader title="הוספה ליומן" />
-        <FoodLogForm
-          key={prefillNonce}
-          prefill={prefill}
-          onClearPrefill={() => setSelected(null)}
-        />
-      </section>
-
+      {/* 4 — Today's diary */}
       <section>
         <SectionHeader title={`היומן של היום${today.length ? ` · ${today.length}` : ""}`} />
         {today.length === 0 ? (
           <EmptyState
             icon={<AppleIcon className="h-7 w-7" />}
             title="עדיין לא נרשם אוכל היום"
-            description="הוסף פריט כדי לעקוב בעדינות אחר חלבון, פחמימות ושומן — בלי כפייתיות."
+            description="בחר מאכל מהמאגר או הוסף ידנית כדי להתחיל לעקוב."
+            action={
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Button size="sm" onClick={() => setSheet("picker")}>
+                  <DatabaseIcon className="h-4 w-4" /> בחר מהמאגר
+                </Button>
+                <Button size="sm" variant="secondary" onClick={() => openAdd(null)}>
+                  <PlusIcon className="h-4 w-4" /> הוסף ידנית
+                </Button>
+              </div>
+            }
           />
         ) : (
           <div className="space-y-2.5">
@@ -134,6 +194,31 @@ export function NutritionView() {
           </div>
         )}
       </section>
+
+      {/* Food library picker — opens on demand instead of filling the page. */}
+      <Sheet
+        open={sheet === "picker"}
+        onClose={closeSheet}
+        title="מאגר האוכל"
+        description="בחר מאכל כדי למלא את היומן — ואז הוסף כמות וערכים תזונתיים."
+      >
+        <FoodLibrary onSelect={handleSelectFromLibrary} expandable={false} />
+      </Sheet>
+
+      {/* Focused add flow — selected food (or a blank manual entry). */}
+      <Sheet
+        open={sheet === "add"}
+        onClose={closeSheet}
+        title={prefill ? "הוספת מאכל ליומן" : "הוספה ידנית"}
+        description="מלא כמות וערכים תזונתיים, ואז שמור ליומן."
+      >
+        <FoodLogForm
+          key={formNonce}
+          bare
+          prefill={prefill}
+          onSaved={closeSheet}
+        />
+      </Sheet>
     </div>
   );
 }

@@ -1,42 +1,43 @@
-// Phase 3.15 QA — fruits food library.
+// Phase 3.15 / 3.17 QA — fruits food library (new sheet flow).
 //
-// Drives the Nutrition screen at phone width and verifies the new `fruits`
-// category specifically:
-//  - the "פירות" category chip exists
-//  - filtering to it shows exactly 19 fruits items, and all images load
+// Drives the Nutrition screen at phone width and verifies the `fruits` category:
+//  - the "פירות" category chip exists in the picker
+//  - filtering to it shows all fruits items, and all images load
 //  - searching a fruits item (אבטיח / watermelon) narrows the grid
-//  - picking a fruits item prefills the log form (name + thumbnail banner)
+//  - picking a fruits item opens the add sheet prefilled (name + banner)
 //  - saving writes a FoodLog with imagePath + category=fruits + sourceFoodId
 //  - breakfast + proteins + carbs + vegetables filters still work
 //  - no horizontal overflow, no console errors (light + dark)
 //
 // Pre-seeds the welcome flag so the welcome screen doesn't block QA.
 import { chromium } from "@playwright/test";
+import {
+  clickChip,
+  openPicker,
+  pickFood,
+  pickerCardCount,
+  saveLog,
+  seedAndResetNutrition,
+} from "./nutrition-helpers.mjs";
 
 const BASE = process.env.QA_BASE ?? "http://localhost:3100";
 const FRUITS_LABEL = "פירות";
+const EXPECTED = 19;
 
 const issues = [];
 const fail = (m) => issues.push(m);
 
-function sectionCardCount(page) {
-  return page.evaluate(() => {
-    const heading = [...document.querySelectorAll("h2")].find((h) =>
-      h.textContent.includes("מאגר אוכל"),
-    );
-    const section = heading?.closest("section");
-    if (!section) return -1;
-    return section.querySelectorAll('button[aria-label^="הוספת"]').length;
-  });
+function chipExists(page, label) {
+  return page.evaluate(
+    (lbl) => [...document.querySelectorAll("button")].some((b) => b.textContent.trim() === lbl),
+    label,
+  );
 }
 
-async function clickChip(page, label) {
-  await page.evaluate((lbl) => {
-    const btns = [...document.querySelectorAll("button")];
-    const chip = btns.find((b) => b.textContent.trim() === lbl);
-    if (chip) chip.click();
-  }, label);
-  await page.waitForTimeout(300);
+function noOverflow(page) {
+  return page.evaluate(
+    () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
+  );
 }
 
 async function run() {
@@ -54,51 +55,21 @@ async function run() {
   });
   page.on("pageerror", (e) => consoleErrors.push("pageerror: " + e.message));
 
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem("yfos:welcome-seen:v1", "1");
-    } catch {}
-  });
-  await page.goto(BASE + "/nutrition", { waitUntil: "networkidle" });
-  await page.evaluate(() => {
-    const keep = localStorage.getItem("yfos:welcome-seen:v1");
-    localStorage.clear();
-    if (keep) localStorage.setItem("yfos:welcome-seen:v1", keep);
-  });
-  await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(400);
+  await seedAndResetNutrition(page, BASE);
+  await openPicker(page);
 
   /* --------------------- fruits chip exists & filters -------------------- */
-  const chipExists = await page.evaluate(
-    (lbl) => [...document.querySelectorAll("button")].some((b) => b.textContent.trim() === lbl),
-    FRUITS_LABEL,
-  );
-  if (!chipExists) fail(`[fruits] category chip "${FRUITS_LABEL}" not found`);
+  if (!(await chipExists(page, FRUITS_LABEL)))
+    fail(`[fruits] category chip "${FRUITS_LABEL}" not found`);
 
   await clickChip(page, FRUITS_LABEL);
-  const fruitsCount = await sectionCardCount(page);
-  if (fruitsCount < 1) fail(`[fruits] filtering to fruits showed ${fruitsCount} cards`);
-  console.log("fruits cards visible (first page):", fruitsCount);
-
-  // Expand and confirm exactly 19 fruits items, all images load.
-  await page.evaluate(() => {
-    const heading = [...document.querySelectorAll("h2")].find((h) =>
-      h.textContent.includes("מאגר אוכל"),
-    );
-    const section = heading?.closest("section");
-    const more = [...section.querySelectorAll("button")].find((b) =>
-      b.textContent.includes("הצג את כל המאכלים"),
-    );
-    if (more) more.click();
-  });
-  await page.waitForTimeout(500);
-  const fruitsAll = await sectionCardCount(page);
-  if (fruitsAll !== 19) fail(`[fruits] expected 19 fruits items, got ${fruitsAll}`);
+  const fruitsAll = await pickerCardCount(page);
+  if (fruitsAll !== EXPECTED) fail(`[fruits] expected ${EXPECTED} fruits items, got ${fruitsAll}`);
+  console.log("fruits cards visible:", fruitsAll);
 
   await page.waitForTimeout(500);
   const broken = await page.evaluate(() => {
-    let broken = 0,
-      total = 0;
+    let broken = 0, total = 0;
     document.querySelectorAll("img").forEach((img) => {
       if (!img.src.includes("/food/fruits/") && !img.src.includes("_next/image")) return;
       total++;
@@ -107,25 +78,17 @@ async function run() {
     return { broken, total };
   });
   if (broken.broken > 0) fail(`[fruits] ${broken.broken} fruits images failed to load`);
-
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-  );
-  if (overflow) fail("[fruits] horizontal overflow with fruits filter");
+  if (!(await noOverflow(page))) fail("[fruits] horizontal overflow with fruits filter");
 
   /* ------------------------------ Search -------------------------------- */
-  // Reset to "all", search a fruits-only term (watermelon / אבטיח).
   await clickChip(page, "הכל");
   await page.fill('input[aria-label="חיפוש במאגר האוכל"]', "אבטיח");
   await page.waitForTimeout(400);
-  const searchCount = await sectionCardCount(page);
+  const searchCount = await pickerCardCount(page);
   if (searchCount !== 1) fail(`[search] expected 1 result for 'אבטיח', got ${searchCount}`);
 
-  /* --------------------- Pick a fruits food -> prefill ------------------- */
-  await page.click('button[aria-label="הוספת אבטיח ליומן"]');
-  await page.waitForTimeout(400);
-  await page.fill('input[aria-label="חיפוש במאגר האוכל"]', "");
-  await page.waitForTimeout(200);
+  /* --------------------- Pick a fruits food -> add sheet ----------------- */
+  await pickFood(page, "אבטיח");
   const nameVal = await page.inputValue("#food-name");
   if (nameVal !== "אבטיח") fail(`[prefill] form name expected 'אבטיח', got '${nameVal}'`);
   const banner = await page.evaluate(() => document.body.textContent.includes("נבחר מהמאגר"));
@@ -136,8 +99,7 @@ async function run() {
   await page.fill("#fat", "0");
   await page.fill("#calories", "30");
   await page.fill("#quantity", "מנה");
-  await page.getByRole("button", { name: "הוספה ליומן" }).click();
-  await page.waitForTimeout(500);
+  await saveLog(page);
 
   const saved = await page.evaluate(() => {
     const logs = JSON.parse(localStorage.getItem("yfos:foodLogs") || "[]");
@@ -162,28 +124,23 @@ async function run() {
   if (saved.carbs !== 8) fail(`[save] carbs macro expected 8, got ${saved.carbs}`);
 
   /* ------ breakfast + proteins + carbs + vegetables filters still work ---- */
+  await openPicker(page);
   await clickChip(page, "ארוחת בוקר");
-  const bCount = await sectionCardCount(page);
-  if (bCount < 1) fail(`[breakfast] filter showed ${bCount} cards`);
+  if ((await pickerCardCount(page)) < 1) fail("[breakfast] filter showed 0 cards");
   await clickChip(page, "חלבונים");
-  const pCount = await sectionCardCount(page);
-  if (pCount < 1) fail(`[proteins] filter showed ${pCount} cards`);
+  if ((await pickerCardCount(page)) < 1) fail("[proteins] filter showed 0 cards");
   await clickChip(page, "פחמימות ותוספות");
-  const cCount = await sectionCardCount(page);
-  if (cCount < 1) fail(`[carbs] filter showed ${cCount} cards`);
+  if ((await pickerCardCount(page)) < 1) fail("[carbs] filter showed 0 cards");
   await clickChip(page, "ירקות");
-  const vCount = await sectionCardCount(page);
-  if (vCount < 1) fail(`[vegetables] filter showed ${vCount} cards`);
+  if ((await pickerCardCount(page)) < 1) fail("[vegetables] filter showed 0 cards");
 
   /* ------------------------------- Dark mode ----------------------------- */
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto(BASE + "/nutrition", { waitUntil: "networkidle" });
   await page.waitForTimeout(300);
+  await openPicker(page);
   await clickChip(page, FRUITS_LABEL);
-  const darkOverflow = await page.evaluate(
-    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-  );
-  if (darkOverflow) fail("[fruits] horizontal overflow in dark mode");
+  if (!(await noOverflow(page))) fail("[fruits] horizontal overflow in dark mode");
 
   await browser.close();
 

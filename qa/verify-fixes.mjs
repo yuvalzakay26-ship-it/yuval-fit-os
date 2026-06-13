@@ -1,9 +1,15 @@
 import { chromium } from "@playwright/test";
-const BASE = "http://localhost:3000";
+import { openManualAdd, saveLog } from "./nutrition-helpers.mjs";
+const BASE = process.env.QA_BASE ?? "http://localhost:3000";
 const OUT = "qa/screens";
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
 const page = await ctx.newPage();
+await page.addInitScript(() => {
+  try {
+    localStorage.setItem("yfos:welcome-seen:v1", "1");
+  } catch {}
+});
 
 // Build a workout (creates history) + builder view with new tap targets.
 await page.goto(BASE + "/workouts?new=1", { waitUntil: "networkidle" });
@@ -20,12 +26,12 @@ await page.getByRole("button", { name: "שמירת אימון" }).click();
 await page.waitForTimeout(400);
 await page.screenshot({ path: `${OUT}/verify-history.png`, fullPage: false });
 
-// Nutrition delete tap target.
+// Nutrition delete tap target (add via the manual add sheet first).
 await page.goto(BASE + "/nutrition", { waitUntil: "networkidle" });
+await openManualAdd(page);
 await page.fill("#food-name", "ביצים");
 await page.fill("#protein", "12");
-await page.getByRole("button", { name: "הוספה ליומן" }).click();
-await page.waitForTimeout(300);
+await saveLog(page);
 await page.screenshot({ path: `${OUT}/verify-nutrition.png`, fullPage: false });
 
 await browser.close();

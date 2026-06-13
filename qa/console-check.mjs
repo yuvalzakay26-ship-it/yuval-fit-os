@@ -1,11 +1,16 @@
 import { chromium } from "@playwright/test";
 
-const BASE = "http://localhost:3000";
+const BASE = process.env.QA_BASE ?? "http://localhost:3000";
 const ROUTES = ["/", "/workouts", "/exercises", "/nutrition", "/progress", "/settings"];
 
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
 const page = await context.newPage();
+await page.addInitScript(() => {
+  try {
+    localStorage.setItem("yfos:welcome-seen:v1", "1");
+  } catch {}
+});
 
 const msgs = [];
 page.on("console", (m) => {

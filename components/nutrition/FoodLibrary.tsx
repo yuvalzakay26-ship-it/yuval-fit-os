@@ -17,10 +17,17 @@ const INITIAL_VISIBLE = 6;
 export function FoodLibrary({
   onSelect,
   selectedId,
+  expandable = true,
 }: {
   onSelect: (item: FoodLibraryItem) => void;
   /** Id of the currently-selected food, for a subtle "selected" highlight. */
   selectedId?: string;
+  /**
+   * When true (default, inline preview), only the first few foods show with a
+   * "show all" toggle. Set false inside the scrollable picker sheet to render
+   * every result directly — the sheet handles scrolling.
+   */
+  expandable?: boolean;
 }) {
   const categories = useMemo(() => foodCategoriesInLibrary(), []);
   const [filter, setFilter] = useState<FoodCategory | "all">("all");
@@ -28,8 +35,9 @@ export function FoodLibrary({
   const [expanded, setExpanded] = useState(false);
 
   const results = useMemo(() => filterFoods(filter, query), [filter, query]);
-  const visible = expanded ? results : results.slice(0, INITIAL_VISIBLE);
-  const hasMore = results.length > INITIAL_VISIBLE;
+  const collapsed = expandable && !expanded;
+  const visible = collapsed ? results.slice(0, INITIAL_VISIBLE) : results;
+  const hasMore = expandable && results.length > INITIAL_VISIBLE;
 
   // Only show the category row when there is more than one category to pick.
   const showChips = categories.length > 1;

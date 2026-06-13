@@ -115,6 +115,41 @@ export function todaysFoodLogs(foodLogs: FoodLog[]): FoodLog[] {
   return foodLogs.filter((log) => log.date === today);
 }
 
+/** A previously-logged food surfaced for one-tap re-logging ("אחרונים"). */
+export interface RecentFood {
+  foodName: string;
+  category?: string;
+  imagePath?: string;
+  sourceFoodId?: string;
+  quantityText?: string;
+}
+
+/**
+ * Most-recently logged foods, de-duplicated. Derived purely from existing food
+ * logs — no new data model. Macros are intentionally NOT carried over: the user
+ * re-enters portion values each time, so nothing is ever inferred.
+ */
+export function recentFoods(foodLogs: FoodLog[], limit = 8): RecentFood[] {
+  // foodLogs arrive newest-date-first from storage. Dedupe by library id when
+  // present, otherwise by food name, keeping the first (most recent) seen.
+  const seen = new Set<string>();
+  const recents: RecentFood[] = [];
+  for (const log of foodLogs) {
+    const key = log.sourceFoodId ?? log.foodName.trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    recents.push({
+      foodName: log.foodName,
+      category: log.category,
+      imagePath: log.imagePath,
+      sourceFoodId: log.sourceFoodId,
+      quantityText: log.quantityText || undefined,
+    });
+    if (recents.length >= limit) break;
+  }
+  return recents;
+}
+
 export function todaysWorkout(workouts: WorkoutSession[]): WorkoutSession | null {
   const today = todayISO();
   return workouts.find((w) => w.date === today) ?? null;

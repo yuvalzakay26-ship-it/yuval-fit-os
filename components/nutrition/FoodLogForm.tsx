@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { FoodLog, MealType } from "@/lib/fitness-types";
-import type { FoodCategory } from "@/lib/food-library";
+import { FOOD_CATEGORY_LABELS, type FoodCategory } from "@/lib/food-library";
 import { addFoodLog } from "@/lib/fitness-store";
 import { cn, createId, parseOptionalNumber, todayISO } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
@@ -56,11 +56,14 @@ export function FoodLogForm({
   prefill,
   onSaved,
   onClearPrefill,
+  bare = false,
 }: {
   prefill?: FoodPrefill | null;
   onSaved?: () => void;
   /** Called when the user clears the picked food (or after a save). */
   onClearPrefill?: () => void;
+  /** Drop the Card wrapper when the form already lives inside a sheet/panel. */
+  bare?: boolean;
 }) {
   // Parent remounts this form (via `key`) whenever a new food is picked, so the
   // initializer reliably reflects the latest prefill.
@@ -99,9 +102,8 @@ export function FoodLogForm({
     onClearPrefill?.();
   };
 
-  return (
-    <Card className="p-4">
-      <form onSubmit={handleSubmit} className="space-y-4">
+  const formEl = (
+    <form onSubmit={handleSubmit} className="space-y-4">
         {form.imagePath && (
           <div className="flex items-center gap-3 rounded-2xl bg-[color:var(--accent-nutrition-soft)] p-2.5">
             <FoodImage
@@ -119,6 +121,11 @@ export function FoodLogForm({
               <p className="truncate text-[14px] font-bold text-foreground">
                 {form.foodName}
               </p>
+              {form.category && FOOD_CATEGORY_LABELS[form.category as FoodCategory] && (
+                <p className="truncate text-[11.5px] text-muted">
+                  {FOOD_CATEGORY_LABELS[form.category as FoodCategory]}
+                </p>
+              )}
             </div>
             <button
               type="button"
@@ -204,9 +211,11 @@ export function FoodLogForm({
         </div>
 
         <Button type="submit" disabled={!canSave} size="lg" className="w-full">
-          <PlusIcon className="h-5 w-5" /> הוספה ליומן
+          <PlusIcon className="h-5 w-5" /> הוסף ליומן
         </Button>
       </form>
-    </Card>
   );
+
+  if (bare) return formEl;
+  return <Card className="p-4">{formEl}</Card>;
 }

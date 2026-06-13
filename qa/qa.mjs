@@ -3,8 +3,9 @@
 // workout/food flows, and captures light+dark screenshots.
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
+import { openManualAdd, saveLog } from "./nutrition-helpers.mjs";
 
-const BASE = "http://localhost:3000";
+const BASE = process.env.QA_BASE ?? "http://localhost:3000";
 const OUT = "qa/screens";
 mkdirSync(OUT, { recursive: true });
 
@@ -61,7 +62,14 @@ async function run() {
   });
   const page = await context.newPage();
 
-  // Start clean.
+  // Keep the welcome screen out of the way on every navigation.
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem("yfos:welcome-seen:v1", "1");
+    } catch {}
+  });
+
+  // Start clean (but the init script re-seeds the welcome flag on next load).
   await page.goto(BASE + "/", { waitUntil: "networkidle" });
   await page.evaluate(() => localStorage.clear());
 
@@ -110,7 +118,9 @@ async function run() {
   }
 
   /* ----------------------------- Flow: food ------------------------------ */
+  // Manual add now opens a focused sheet via the "הוסף ידנית" quick action.
   await page.goto(BASE + "/nutrition", { waitUntil: "networkidle" });
+  await openManualAdd(page);
   await page.fill("#food-name", "חזה עוף בגריל");
   await page.fill("#quantity", "200 גרם");
   await page.getByRole("button", { name: "ארוחת צהריים" }).click();
@@ -118,16 +128,15 @@ async function run() {
   await page.fill("#carbs", "0");
   await page.fill("#fat", "6");
   await page.fill("#calories", "250");
-  await page.getByRole("button", { name: "הוספה ליומן" }).click();
-  await page.waitForTimeout(300);
+  await saveLog(page);
   // Add a second item.
+  await openManualAdd(page);
   await page.fill("#food-name", "אורז מלא");
   await page.fill("#protein", "8");
   await page.fill("#carbs", "60");
   await page.fill("#fat", "2");
   await page.fill("#calories", "300");
-  await page.getByRole("button", { name: "הוספה ליומן" }).click();
-  await page.waitForTimeout(300);
+  await saveLog(page);
   await page.screenshot({ path: `${OUT}/flow-nutrition-390-light.png`, fullPage: true });
   const nutText = await page.textContent("body");
   if (!nutText.includes("חזה עוף בגריל")) issues.push("[flow] food log not visible after save");

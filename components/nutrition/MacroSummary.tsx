@@ -43,8 +43,13 @@ function GoalBar({
     <div>
       <div className="mb-1.5 flex items-center justify-between text-[12px]">
         <span className="font-medium text-muted">{label}</span>
+        {/* "מתוך" (out of) instead of "/" so the value→goal order reads
+            correctly in RTL — a bare "X / Y" flips visually to "Y / X". */}
         <span className="font-bold tabular-nums text-foreground">
-          {Math.round(value)} <span className="text-faint">/ {goal} {unit}</span>
+          {Math.round(value)}{" "}
+          <span className="font-medium text-faint">
+            מתוך {goal} {unit}
+          </span>
         </span>
       </div>
       <div className="h-2.5 overflow-hidden rounded-full bg-surface-2">
@@ -98,10 +103,10 @@ export function MacroSummary({
       {(proteinGoal || calorieGoal) && (
         <div className="space-y-3 border-t border-border pt-4">
           {proteinGoal ? (
-            <GoalBar label="יעד חלבון" value={totals.protein} goal={proteinGoal} unit="ג" />
+            <GoalBar label="יעד חלבון" value={totals.protein} goal={proteinGoal} unit="גרם" />
           ) : null}
           {calorieGoal ? (
-            <GoalBar label="יעד קלוריות" value={totals.calories} goal={calorieGoal} unit="" />
+            <GoalBar label="יעד קלוריות" value={totals.calories} goal={calorieGoal} unit="קלוריות" />
           ) : null}
         </div>
       )}

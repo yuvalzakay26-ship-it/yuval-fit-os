@@ -1,17 +1,26 @@
-// Phase 3.7 QA — visual food library + quick-add prefill.
+// Phase 3.7 / 3.17 QA — visual food library + quick-add prefill, new sheet flow.
 //
 // Drives the Nutrition screen at a phone width and verifies:
-//  - the food library renders real <img> cards
+//  - the quick-action entry points render ("בחר מהמאגר" / "הוסף ידנית")
+//  - the food library opens in a picker sheet with real <img> cards
 //  - category filter / search narrow the grid
-//  - picking a food prefills the log form (name + "from library" thumbnail)
+//  - picking a food opens the add sheet prefilled (name + "from library" banner)
 //  - saving the picked food creates a log row that shows a thumbnail
-//  - manual logging (no image) still works
+//  - manual logging (no image) still works via "הוסף ידנית"
 //  - totals still come from the manually-entered macros
 //  - no horizontal overflow, no console errors, light + dark
 //
-// Pre-seeds the access flag so the gate doesn't block QA.
+// Pre-seeds the welcome flag so the welcome screen doesn't block QA.
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
+import {
+  openManualAdd,
+  openPicker,
+  pickFood,
+  pickerCardCount,
+  saveLog,
+  seedAndResetNutrition,
+} from "./nutrition-helpers.mjs";
 
 const BASE = process.env.QA_BASE ?? "http://localhost:3100";
 const OUT = "qa/screens";
@@ -19,14 +28,6 @@ mkdirSync(OUT, { recursive: true });
 
 const issues = [];
 const fail = (m) => issues.push(m);
-
-async function seedWelcome(page) {
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem("yfos:welcome-seen:v1", "1");
-    } catch {}
-  });
-}
 
 async function checkOverflow(page, label) {
   const data = await page.evaluate(() => {
@@ -60,32 +61,25 @@ async function run() {
   });
   page.on("pageerror", (e) => consoleErrors.push("pageerror: " + e.message));
 
-  await seedWelcome(page);
-  await page.goto(BASE + "/nutrition", { waitUntil: "networkidle" });
-  await page.evaluate(() => {
-    // Start clean but keep the welcome flag.
-    const keep = localStorage.getItem("yfos:welcome-seen:v1");
-    localStorage.clear();
-    if (keep) localStorage.setItem("yfos:welcome-seen:v1", keep);
+  await seedAndResetNutrition(page, BASE);
+
+  /* --------------------- Quick actions are the entry point --------------- */
+  const hasQuickActions = await page.evaluate(() => {
+    const txt = document.body.textContent || "";
+    return txt.includes("בחר מהמאגר") && txt.includes("הוסף ידנית");
   });
-  await page.reload({ waitUntil: "networkidle" });
-  await page.waitForTimeout(400);
+  if (!hasQuickActions) fail("[quick-actions] missing 'בחר מהמאגר' / 'הוסף ידנית'");
+  await checkOverflow(page, "nutrition light (main)");
 
   /* --------------------------- Library renders --------------------------- */
-  const libImgs = await page.evaluate(() => {
-    const heading = [...document.querySelectorAll("h2")].find((h) =>
-      h.textContent.includes("מאגר אוכל"),
-    );
-    if (!heading) return { found: false, imgs: 0 };
-    const section = heading.closest("section");
-    const imgs = section ? section.querySelectorAll("img").length : 0;
-    return { found: true, imgs };
-  });
-  if (!libImgs.found) fail("[library] 'מאגר אוכל' section not found");
-  if (libImgs.imgs < 1) fail(`[library] no food images rendered (got ${libImgs.imgs})`);
-  console.log("library images visible:", libImgs.imgs);
+  await openPicker(page);
+  const libImgs = await page.evaluate(
+    () => document.querySelectorAll('button[aria-label^="הוספת"] img').length,
+  );
+  if (libImgs < 1) fail(`[library] no food images rendered (got ${libImgs})`);
+  console.log("library images visible:", libImgs);
 
-  // All food <img> should actually load (naturalWidth > 0).
+  // Food <img> should actually load (naturalWidth > 0).
   await page.waitForTimeout(600);
   const broken = await page.evaluate(() => {
     let broken = 0, total = 0;
@@ -98,27 +92,16 @@ async function run() {
   });
   if (broken.broken > 0) fail(`[library] ${broken.broken}/${broken.total} food images failed to load`);
 
-  await checkOverflow(page, "nutrition light (library)");
+  await checkOverflow(page, "nutrition light (picker open)");
 
   /* ------------------------------ Search -------------------------------- */
   await page.fill('input[aria-label="חיפוש במאגר האוכל"]', "שקשוקה");
   await page.waitForTimeout(300);
-  const afterSearch = await page.evaluate(() => {
-    const heading = [...document.querySelectorAll("h2")].find((h) =>
-      h.textContent.includes("מאגר אוכל"),
-    );
-    const section = heading.closest("section");
-    const cards = section.querySelectorAll('button[aria-label^="הוספת"]');
-    return cards.length;
-  });
+  const afterSearch = await pickerCardCount(page);
   if (afterSearch !== 1) fail(`[search] expected 1 result for 'שקשוקה', got ${afterSearch}`);
 
-  /* -------------------- Pick a food -> form prefilled -------------------- */
-  // Pick while the search filter keeps Shakshuka (item #10) visible, then clear.
-  await page.click('button[aria-label="הוספת שקשוקה ליומן"]');
-  await page.waitForTimeout(400);
-  await page.fill('input[aria-label="חיפוש במאגר האוכל"]', "");
-  await page.waitForTimeout(200);
+  /* -------------------- Pick a food -> add sheet prefilled --------------- */
+  await pickFood(page, "שקשוקה");
   const nameVal = await page.inputValue("#food-name");
   if (nameVal !== "שקשוקה") fail(`[prefill] form name expected 'שקשוקה', got '${nameVal}'`);
   const banner = await page.evaluate(() =>
@@ -132,8 +115,7 @@ async function run() {
   await page.fill("#fat", "30");
   await page.fill("#calories", "400");
   await page.fill("#quantity", "מנה");
-  await page.getByRole("button", { name: "הוספה ליומן" }).click();
-  await page.waitForTimeout(500);
+  await saveLog(page);
 
   const afterSave = await page.evaluate(() => {
     const logs = JSON.parse(localStorage.getItem("yfos:foodLogs") || "[]");
@@ -157,19 +139,19 @@ async function run() {
     const heading = [...document.querySelectorAll("h2")].find((h) =>
       h.textContent.includes("היומן של היום"),
     );
-    const section = heading.closest("section");
+    const section = heading?.closest("section");
     return section ? section.querySelectorAll("img").length : 0;
   });
   if (rowThumb < 1) fail("[save] today's log row has no thumbnail");
 
   /* ------------------- Manual logging still works (no image) ------------- */
+  await openManualAdd(page);
   await page.fill("#food-name", "אורז מלא");
   await page.fill("#protein", "8");
   await page.fill("#carbs", "60");
   await page.fill("#fat", "2");
   await page.fill("#calories", "300");
-  await page.getByRole("button", { name: "הוספה ליומן" }).click();
-  await page.waitForTimeout(400);
+  await saveLog(page);
   const manual = await page.evaluate(() => {
     const logs = JSON.parse(localStorage.getItem("yfos:foodLogs") || "[]");
     const rice = logs.find((l) => l.foodName === "אורז מלא");
@@ -190,6 +172,8 @@ async function run() {
   await page.goto(BASE + "/nutrition", { waitUntil: "networkidle" });
   await page.waitForTimeout(400);
   await checkOverflow(page, "nutrition dark");
+  await openPicker(page);
+  await checkOverflow(page, "nutrition dark (picker open)");
   await page.screenshot({ path: `${OUT}/food-library-390-dark.png`, fullPage: true });
 
   await browser.close();
