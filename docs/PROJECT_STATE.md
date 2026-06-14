@@ -4,13 +4,20 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (Today quick start & priority-action upgrade: Today
+> Last reviewed: Phase 3.xx (Active workout exercise reorder: the workout builder
+> can now reorder its exercises via an explicit **reorder mode** — drag handle +
+> up/down buttons — without losing any set data. Order is just the `entries`
+> array order; reordering relocates the whole entry, so kg/reps/completed stay
+> attached and the `עכשיו` current-exercise badge recalculates. No schema /
+> storage / save-payload / routes changes. See
+> [`ACTIVE_WORKOUT_REORDER.md`](ACTIVE_WORKOUT_REORDER.md).
+> Prior: Today quick start & priority-action upgrade: Today
 > now leads with a deterministic `הפעולה הבאה שלך` next-action card and an
 > optional-aware daily completion summary — supplements no longer make the day
 > feel incomplete when none are configured. Pure read-only derivation in the new
 > `lib/today.ts`; no storage/data-model/routes/logic changes, no AI, no
 > recommendations, not Personal Path. See [`TODAY_QUICK_START.md`](TODAY_QUICK_START.md).
-> Prior: active workout session premium UX upgrade — the workout builder is now a
+> Earlier: active workout session premium UX upgrade — the workout builder is now a
 > focused "live" session (identity-coloured hero, muscle-aware exercise cards,
 > "עכשיו" highlight, premium "סיים ושמור אימון" CTA; presentation only). See
 > [`ACTIVE_WORKOUT_SESSION_UX.md`](ACTIVE_WORKOUT_SESSION_UX.md). Earlier:
@@ -42,7 +49,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | --- | --- | --- |
 | Today dashboard | Daily command center: greeting, completion ring, deterministic next-action card, status strip, module cards (workout, macros, water, supplements). Optional-aware (supplements never block the day) | `components/today/TodayView.tsx`, `lib/today.ts`, `docs/TODAY_QUICK_START.md` |
 | System Hub ("מרכז מערכת") | Premium `/more` hub gathering all secondary tools into module-coloured categories (pure navigation) | `components/more/SystemHubView.tsx`, `docs/NAVIGATION_SYSTEM_HUB.md` |
-| Workouts | Log sessions, build from templates, view history; the active session (builder) is a premium muscle-aware "live workout" experience | `components/workouts/*`, `docs/ACTIVE_WORKOUT_SESSION_UX.md` |
+| Workouts | Log sessions, build from templates, view history; the active session (builder) is a premium muscle-aware "live workout" experience with an explicit exercise reorder mode (drag + up/down, no data loss) | `components/workouts/*`, `docs/ACTIVE_WORKOUT_SESSION_UX.md`, `docs/ACTIVE_WORKOUT_REORDER.md` |
 | Exercise Library | 133 exercises, images, instructions, external demo videos | `components/exercises/*`, `lib/seed-exercises.ts` |
 | Nutrition | Daily food logs + macro totals | `components/nutrition/NutritionView.tsx` |
 | Food Library | Visual catalogue of foods to log from | `components/nutrition/FoodLibrary*`, `lib/food-library.ts` |

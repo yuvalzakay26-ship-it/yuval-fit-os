@@ -70,6 +70,24 @@ export const SettingsIcon = (p: IconProps) =>
 export const ArrowUpIcon = (p: IconProps) =>
   base(<path d="M12 19V5M6 11l6-6 6 6" />, p);
 
+export const ArrowDownIcon = (p: IconProps) =>
+  base(<path d="M12 5v14M6 13l6 6 6-6" />, p);
+
+// Drag handle — two stacked rows of dots, the universal "grab to reorder" grip.
+// Used only inside the active-workout reorder mode.
+export const GripIcon = (p: IconProps) =>
+  base(
+    <>
+      <circle cx="9" cy="6" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="6" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="12" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="12" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="18" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="18" r="1.1" fill="currentColor" stroke="none" />
+    </>,
+    p,
+  );
+
 export const PlusIcon = (p: IconProps) => base(<path d="M12 5v14M5 12h14" />, p);
 
 export const TrashIcon = (p: IconProps) =>

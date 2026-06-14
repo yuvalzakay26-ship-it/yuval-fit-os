@@ -19,13 +19,50 @@ import { identityLabel, workoutIdentity } from "@/lib/workout-theme";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
-import { CheckIcon, PlusIcon, SearchIcon, TrashIcon } from "@/components/ui/icons";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  CheckIcon,
+  GripIcon,
+  PlusIcon,
+  SearchIcon,
+  TrashIcon,
+} from "@/components/ui/icons";
 import { ExerciseImage } from "@/components/exercises/ExerciseImage";
 import { MuscleChips } from "./MuscleChips";
 import { ExercisePicker } from "./ExercisePicker";
 
 function emptySet(setNumber: number): SetEntry {
   return { setNumber, weightKg: 0, reps: 0, completed: false };
+}
+
+/**
+ * Move one exercise entry from `fromIndex` to `toIndex`, returning a new array.
+ *
+ * The active-workout order is stored purely as the order of the `entries`
+ * array, so reordering is just relocating an entry inside it. The *entire*
+ * entry object is preserved — its sets, kg/reps, completed flags, exercise id,
+ * everything — so no set data is ever lost or reset when reordering. Out-of-range
+ * indices and no-op moves return the original array unchanged.
+ */
+export function moveWorkoutEntry<T>(
+  entries: T[],
+  fromIndex: number,
+  toIndex: number,
+): T[] {
+  if (
+    fromIndex === toIndex ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= entries.length ||
+    toIndex >= entries.length
+  ) {
+    return entries;
+  }
+  const next = entries.slice();
+  const [moved] = next.splice(fromIndex, 1);
+  next.splice(toIndex, 0, moved);
+  return next;
 }
 
 /** Prefill data for the builder (from a template or a duplicated workout). */
@@ -49,6 +86,12 @@ export function WorkoutBuilder({
     initial?.entries ?? [],
   );
   const [pickerOpen, setPickerOpen] = useState(false);
+  // Reorder mode is a deliberate, explicit state (not always-on dragging) so
+  // normal scrolling and set-input interactions never fight a drag gesture on
+  // mobile. Entered via the "סדר תרגילים" pill, exited via "סיום סידור".
+  const [reordering, setReordering] = useState(false);
+  // Index of the row currently being dragged (pointer DnD), or null.
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   const usedIds = useMemo(() => new Set(entries.map((e) => e.exerciseId)), [entries]);
 
@@ -78,6 +121,11 @@ export function WorkoutBuilder({
 
   const removeExercise = (exerciseId: string) =>
     setEntries((prev) => prev.filter((e) => e.exerciseId !== exerciseId));
+
+  // Reorder by array position. The whole entry object travels with the move, so
+  // its sets / kg / reps / completed values stay attached to the right exercise.
+  const moveEntry = (fromIndex: number, toIndex: number) =>
+    setEntries((prev) => moveWorkoutEntry(prev, fromIndex, toIndex));
 
   const addSet = (exerciseId: string) =>
     setEntries((prev) =>
@@ -253,8 +301,49 @@ export function WorkoutBuilder({
         </div>
       </Card>
 
-      {/* ===== Exercise cards ===== */}
-      {entries.map((entry) => {
+      {/* ===== Reorder control =====
+          A small secondary pill above the exercise list, sitting next to the
+          exercise count — never competing with the main finish CTA. Only useful
+          with 2+ exercises. Toggles a dedicated reorder mode (see below) rather
+          than making every card draggable all the time, so normal scrolling and
+          set-input taps are never hijacked by a stray drag on mobile. */}
+      {entries.length >= 2 && (
+        <div className="flex items-center justify-between gap-2 px-0.5 pt-1">
+          <span className="text-[12.5px] font-bold text-muted">
+            <span className="tabular-nums">{entries.length}</span> תרגילים
+          </span>
+          <button
+            type="button"
+            onClick={() => setReordering((v) => !v)}
+            aria-pressed={reordering}
+            className={cn(
+              "tap inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-bold transition-colors",
+              reordering
+                ? "border-transparent bg-foreground text-background shadow-soft"
+                : "border-border-strong bg-surface-2 text-foreground hover:bg-surface",
+            )}
+          >
+            <GripIcon className="h-4 w-4" />
+            {reordering ? "סיום סידור" : "סדר תרגילים"}
+          </button>
+        </div>
+      )}
+
+      {/* ===== Exercise list =====
+          In reorder mode the full editing cards are swapped for a calm, compact
+          sortable list — both drag-and-drop (pointer) and up/down buttons
+          (mobile-stable + keyboard/accessible). All data lives in `entries`, so
+          reordering the array never touches a single kg/reps/completed value;
+          the cards return in the new order with everything intact. */}
+      {reordering && entries.length >= 2 ? (
+        <ReorderList
+          entries={entries}
+          dragIndex={dragIndex}
+          onDragIndex={setDragIndex}
+          onMove={moveEntry}
+        />
+      ) : (
+        entries.map((entry) => {
         const exercise = getExerciseById(entry.exerciseId);
         if (!exercise) return null;
         const previous = lastPerformance(workouts, entry.exerciseId);
@@ -428,9 +517,13 @@ export function WorkoutBuilder({
             </div>
           </div>
         );
-      })}
+        })
+      )}
 
-      {/* ===== Add exercise — opens the full-screen visual picker. ===== */}
+      {/* ===== Add exercise — opens the full-screen visual picker. =====
+          Hidden while reordering to keep that mode focused and calm; it returns
+          the moment the user taps "סיום סידור". */}
+      {!reordering && (
       <button
         type="button"
         onClick={() => setPickerOpen(true)}
@@ -449,6 +542,7 @@ export function WorkoutBuilder({
         </span>
         <SearchIcon className="h-[18px] w-[18px] shrink-0 text-faint" />
       </button>
+      )}
 
       {/* ===== Finish / save =====
           The identity custom properties (--mg*) only exist where they are
@@ -510,6 +604,140 @@ export function WorkoutBuilder({
           recentIds={recentIds}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * The active-workout reorder mode: a compact, calm sortable list of the
+ * exercises. Two stable ways to reorder, no destructive controls:
+ *  - **Drag** via the grip handle (pointer / mouse) — live reordering as you
+ *    drag over another row.
+ *  - **Up / down** buttons — rock-solid on touch and fully keyboard/AT
+ *    accessible, with named labels.
+ * It renders order only; every kg/reps/completed value stays in `entries` and is
+ * never touched here — moving a row just relocates its entry in the array.
+ */
+function ReorderList({
+  entries,
+  dragIndex,
+  onDragIndex,
+  onMove,
+}: {
+  entries: WorkoutExerciseEntry[];
+  dragIndex: number | null;
+  onDragIndex: (index: number | null) => void;
+  onMove: (fromIndex: number, toIndex: number) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="px-0.5 text-[12px] font-medium text-muted">
+        גרור כדי לשנות את סדר התרגילים
+      </p>
+      <ul className="space-y-2">
+        {entries.map((entry, index) => {
+          const exercise = getExerciseById(entry.exerciseId);
+          if (!exercise) return null;
+          const exIdentity = workoutIdentity([exercise.muscleGroup]);
+          const doneSets = entry.sets.filter((s) => s.completed).length;
+          const dragging = dragIndex === index;
+          const isFirst = index === 0;
+          const isLast = index === entries.length - 1;
+
+          return (
+            <li
+              key={entry.exerciseId}
+              draggable
+              onDragStart={() => onDragIndex(index)}
+              onDragOver={(e) => {
+                // Allow dropping and reorder live as the pointer passes a row.
+                e.preventDefault();
+                if (dragIndex === null || dragIndex === index) return;
+                onMove(dragIndex, index);
+                onDragIndex(index);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                onDragIndex(null);
+              }}
+              onDragEnd={() => onDragIndex(null)}
+              style={exIdentity.style}
+              className={cn(
+                "module-mg flex items-center gap-2 rounded-2xl border bg-surface-2 p-2.5 transition-shadow",
+                dragging
+                  ? "border-[color:var(--mg)] shadow-glow-mg"
+                  : "border-border",
+              )}
+            >
+              {/* Grip handle — the drag affordance (pointer devices). */}
+              <span
+                className="flex h-10 w-6 shrink-0 cursor-grab items-center justify-center rounded-lg text-faint active:cursor-grabbing"
+                aria-hidden="true"
+              >
+                <GripIcon className="h-5 w-5" />
+              </span>
+
+              <ExerciseImage
+                imagePath={exercise.imagePath}
+                alt={exercise.nameHe}
+                muscleGroup={exercise.muscleGroup}
+                imageKey={exercise.imageKey}
+                sizes="44px"
+                className="h-11 w-11 shrink-0"
+              />
+
+              <div className="min-w-0 flex-1">
+                <span
+                  className="block text-[9.5px] font-bold uppercase tracking-[0.06em]"
+                  style={{ color: "var(--mg)" }}
+                >
+                  {MUSCLE_GROUP_LABELS[exercise.muscleGroup]}
+                </span>
+                <p className="truncate text-[14px] font-bold leading-tight text-foreground">
+                  {exercise.nameHe}
+                </p>
+                <p className="mt-0.5 text-[11px] text-faint">
+                  <span className="tabular-nums">{entry.sets.length}</span> סטים
+                  {doneSets > 0 && (
+                    <>
+                      {" · "}
+                      <span className="tabular-nums">{doneSets}</span> בוצעו
+                    </>
+                  )}
+                </p>
+              </div>
+
+              {/* Up / down — mobile-stable + keyboard/AT accessible. */}
+              <div className="flex shrink-0 flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => onMove(index, index - 1)}
+                  disabled={isFirst}
+                  aria-label={`העבר את ${exercise.nameHe} למעלה`}
+                  className={cn(
+                    "tap flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-foreground transition-colors hover:bg-[color:var(--mg-soft)]",
+                    isFirst && "opacity-35",
+                  )}
+                >
+                  <ArrowUpIcon className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onMove(index, index + 1)}
+                  disabled={isLast}
+                  aria-label={`העבר את ${exercise.nameHe} למטה`}
+                  className={cn(
+                    "tap flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-foreground transition-colors hover:bg-[color:var(--mg-soft)]",
+                    isLast && "opacity-35",
+                  )}
+                >
+                  <ArrowDownIcon className="h-4 w-4" />
+                </button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
