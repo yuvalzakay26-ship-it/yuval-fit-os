@@ -161,6 +161,8 @@ export function WaterTracker() {
         />
         {entries.length === 0 ? (
           <EmptyState
+            accent="var(--accent-water)"
+            accentSoft="var(--accent-water-soft)"
             icon={<DropletIcon className="h-7 w-7" />}
             title="עדיין לא נרשמו מים היום"
             description={WATER_HELPER_COPY}

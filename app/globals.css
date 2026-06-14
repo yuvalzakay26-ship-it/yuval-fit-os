@@ -40,7 +40,8 @@
   /* Feature accents — a controlled secondary palette so light mode isn't
      one uniform teal. Each area gets one hue: strength (workouts) deep blue,
      energy (progress/PRs) burnt amber, nutrition fresh green, learn indigo.
-     In dark mode all of these alias back to the emerald brand accent. */
+     Each keeps its own dark-tuned variant in `.dark` (see below) so the app
+     stays module-distinct in dark instead of collapsing to one emerald wash. */
   --accent-strength: #2456a8;
   --accent-strength-soft: rgba(36, 86, 168, 0.1);
   --gradient-strength: linear-gradient(135deg, #3f7ad1 0%, #2d63b8 50%, #2456a8 100%);
@@ -165,27 +166,36 @@
   --progress-from: #1ad99b;
   --progress-to: #0ca678;
 
-  /* Dark mode keeps its single emerald identity: every feature accent
-     resolves to the brand accent so retoned components render unchanged. */
-  --accent-strength: var(--accent);
-  --accent-strength-soft: var(--accent-soft);
-  --gradient-strength: var(--gradient-accent);
-  --shadow-strength: var(--shadow-accent);
+  /* Dark mode keeps each feature area's own identity (it used to collapse every
+     accent to the emerald brand, which made the whole app read as one green
+     wash). Each accent gets a dark-surface-tuned variant: brighter and a touch
+     desaturated so it stays legible as text/icon on near-black, with controlled
+     soft fills and glows — colourful and premium, never neon or monochrome. The
+     emerald brand still leads primary buttons app-wide; modules colour around it.
+     Strength (workouts) → sky blue, echoing the muscle-group blue lead. */
+  --accent-strength: #6ea8fe;
+  --accent-strength-soft: rgba(110, 168, 254, 0.15);
+  --gradient-strength: linear-gradient(135deg, #8bb8ff 0%, #5b9af8 50%, #3f7ad1 100%);
+  --shadow-strength: 0 10px 30px rgba(91, 154, 248, 0.3);
 
-  --accent-energy: var(--accent);
-  --accent-energy-soft: var(--accent-soft);
-  --gradient-energy: var(--gradient-accent);
-  --shadow-energy: var(--shadow-accent);
+  /* Energy (progress / PRs) → warm amber, the screen's motivating counter-hue. */
+  --accent-energy: #f9a94d;
+  --accent-energy-soft: rgba(249, 169, 77, 0.15);
+  --gradient-energy: linear-gradient(135deg, #fbbf24 0%, #f59336 50%, #ea7a1e 100%);
+  --shadow-energy: 0 10px 30px rgba(245, 150, 40, 0.28);
 
-  --accent-nutrition: var(--accent);
-  --accent-nutrition-soft: var(--accent-soft);
-  --gradient-nutrition: var(--gradient-accent);
-  --shadow-nutrition: var(--shadow-accent);
+  /* Nutrition (food) → a fresh grass green, kept yellower/limier than the teal
+     brand emerald so food reads as its own green rather than the brand accent. */
+  --accent-nutrition: #56d96a;
+  --accent-nutrition-soft: rgba(86, 217, 106, 0.15);
+  --gradient-nutrition: linear-gradient(135deg, #86efac 0%, #4ade80 50%, #22c55e 100%);
+  --shadow-nutrition: 0 10px 30px rgba(74, 222, 128, 0.28);
 
-  --accent-learn: var(--accent);
-  --accent-learn-soft: var(--accent-soft);
-  --gradient-learn: var(--gradient-accent);
-  --shadow-learn: var(--shadow-accent);
+  /* Learn (knowledge) → calm indigo-periwinkle, cooler than supplement violet. */
+  --accent-learn: #8b9bff;
+  --accent-learn-soft: rgba(139, 155, 255, 0.16);
+  --gradient-learn: linear-gradient(135deg, #a5b4fc 0%, #818cf8 50%, #6366f1 100%);
+  --shadow-learn: 0 10px 30px rgba(129, 140, 248, 0.3);
 
   /* Water keeps a true (brighter) blue in dark mode — water reads as water, and
      a cyan-blue still sits comfortably beside the emerald accent. */
@@ -196,12 +206,12 @@
   --water-from: #7dd3fc;
   --water-to: #1ea7e6;
 
-  /* Supplements follows the feature-accent convention: aliases to the emerald
-     brand accent in dark mode so the dark theme keeps its single identity. */
-  --accent-supplement: var(--accent);
-  --accent-supplement-soft: var(--accent-soft);
-  --gradient-supplement: var(--gradient-accent);
-  --shadow-supplement: var(--shadow-accent);
+  /* Supplements → a premium violet-purple, the wellness module's own energy and
+     clearly distinct from the calmer learn indigo. */
+  --accent-supplement: #c084fc;
+  --accent-supplement-soft: rgba(192, 132, 252, 0.16);
+  --gradient-supplement: linear-gradient(135deg, #d8b4fe 0%, #c084fc 50%, #a855f7 100%);
+  --shadow-supplement: 0 10px 30px rgba(192, 132, 252, 0.3);
 
   /* Workout muscle-group palette, tuned for the near-black surface: brighter,
      slightly desaturated accents that stay legible as text/icon on dark, with
@@ -438,8 +448,8 @@ body {
 
 /* Module tints — a whisper of the feature hue washed across a card so light
    mode reads as distinct modules rather than a stack of identical white blocks.
-   Layered over the card's own background; in dark mode the supplement soft
-   aliases to the emerald brand, water keeps its cyan. */
+   Layered over the card's own background; each module keeps its own dark-tuned
+   soft fill in dark mode too, so the wash stays module-coloured (not emerald). */
 .module-water {
   background-image: linear-gradient(160deg, var(--accent-water-soft) 0%, transparent 55%);
 }

@@ -186,6 +186,8 @@ export function NutritionView() {
         <SectionHeader title={`היומן של היום${today.length ? ` · ${today.length}` : ""}`} />
         {today.length === 0 ? (
           <EmptyState
+            accent="var(--accent-nutrition)"
+            accentSoft="var(--accent-nutrition-soft)"
             icon={<AppleIcon className="h-7 w-7" />}
             title="עדיין לא נרשם אוכל היום"
             description="בחר מאכל מהמאגר או הוסף ידנית כדי להתחיל לעקוב."

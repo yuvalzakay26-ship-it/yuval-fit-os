@@ -53,6 +53,8 @@ export function ProgressView() {
   if (!hasData) {
     return (
       <EmptyState
+        accent="var(--accent-energy)"
+        accentSoft="var(--accent-energy-soft)"
         icon={<ChartIcon className="h-7 w-7" />}
         title="אין עדיין נתונים להצגה"
         description="תעד אימונים וארוחות וההתקדמות שלך תופיע כאן — שבוע אחרי שבוע."
@@ -173,6 +175,8 @@ export function ProgressView() {
         <SectionHeader title="שיא משקל לפי תרגיל" />
         {bestEntries.length === 0 ? (
           <EmptyState
+            accent="var(--accent-energy)"
+            accentSoft="var(--accent-energy-soft)"
             icon={<TrophyIcon className="h-7 w-7" />}
             title="אין עדיין נתוני משקל"
             description="תעד סטים עם משקל כדי לראות שיאים אישיים."

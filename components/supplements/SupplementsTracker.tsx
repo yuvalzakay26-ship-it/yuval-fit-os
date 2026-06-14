@@ -422,6 +422,8 @@ export function SupplementsTracker() {
         />
         {active.length === 0 ? (
           <EmptyState
+            accent="var(--accent-supplement)"
+            accentSoft="var(--accent-supplement-soft)"
             icon={<CapsuleIcon className="h-7 w-7" />}
             title="עדיין לא הוגדרו תוספים"
             description="אפשר להוסיף פריטים למעקב אישי — או להתחיל מהר מתוך ספריית התוספים הנפוצים למטה."

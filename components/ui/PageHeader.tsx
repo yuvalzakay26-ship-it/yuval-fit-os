@@ -58,16 +58,30 @@ export function EmptyState({
   title,
   description,
   action,
+  accent,
+  accentSoft,
 }: {
   icon?: React.ReactNode;
   title: string;
   description?: string;
   action?: React.ReactNode;
+  /** Optional module accent for the icon badge so an empty state keeps its
+   *  module identity (e.g. water cyan, supplement violet) instead of always
+   *  rendering the brand accent — which read as repeated green in dark mode. */
+  accent?: string;
+  accentSoft?: string;
 }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border-strong bg-surface/40 px-6 py-12 text-center">
       {icon && (
-        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[color:var(--accent-soft)] text-accent">
+        <div
+          className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[color:var(--accent-soft)] text-accent"
+          style={
+            accent
+              ? { background: accentSoft ?? accent, color: accent }
+              : undefined
+          }
+        >
           {icon}
         </div>
       )}
