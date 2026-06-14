@@ -5,6 +5,8 @@ import type { WorkoutTemplate } from "@/lib/fitness-types";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { DumbbellIcon, ListIcon, PencilIcon, PlayIcon, TrashIcon } from "@/components/ui/icons";
+import { MUSCLE_GROUP_LABELS } from "@/lib/seed-exercises";
+import { identityLabel, workoutIdentity } from "@/lib/workout-theme";
 import { MuscleChips } from "./MuscleChips";
 
 export function TemplateCard({
@@ -19,21 +21,38 @@ export function TemplateCard({
   onDelete: () => void;
 }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // The card's whole visual identity (icon, glow, tint, CTA) derives from the
+  // template's dominant muscle groups — no two muscle mixes look alike.
+  const identity = workoutIdentity(template.muscleGroups);
+  const eyebrow = identityLabel(identity, MUSCLE_GROUP_LABELS);
 
   return (
-    <Card className="module-strength sheen relative overflow-hidden p-4">
-      {/* Soft corner glow gives the card depth and module identity. */}
+    <Card
+      style={identity.style}
+      className="module-mg-duo sheen relative overflow-hidden p-4"
+    >
+      {/* Twin corner glows give the card depth and its blended identity. */}
       <div
-        className="pointer-events-none absolute -end-10 -top-12 h-28 w-28 rounded-full opacity-50 blur-2xl"
-        style={{ background: "var(--accent-strength-soft)" }}
+        className="pointer-events-none absolute -end-10 -top-12 h-28 w-28 rounded-full opacity-60 blur-2xl"
+        style={{ background: "var(--mg-soft)" }}
+      />
+      <div
+        className="pointer-events-none absolute -start-12 bottom-0 h-24 w-24 rounded-full opacity-50 blur-2xl"
+        style={{ background: "var(--mg-2-soft)" }}
       />
       <div className="relative space-y-3.5">
         <div className="flex items-start gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-strength-soft)] text-[color:var(--accent-strength)]">
+          <span className="mg-gradient shadow-glow-mg sheen flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-[color:var(--accent-contrast)]">
             <DumbbellIcon className="h-[22px] w-[22px]" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[16px] font-bold leading-tight text-foreground">
+            <p
+              className="text-[10.5px] font-bold uppercase tracking-wide"
+              style={{ color: "var(--mg)" }}
+            >
+              {eyebrow}
+            </p>
+            <p className="mt-0.5 truncate text-[16px] font-bold leading-tight text-foreground">
               {template.title}
             </p>
             <p className="mt-1 inline-flex items-center gap-1.5 text-[12px] font-medium text-muted">
@@ -80,7 +99,7 @@ export function TemplateCard({
         ) : (
           <Button
             size="md"
-            className="strength-gradient shadow-glow-strength sheen w-full text-[15px]"
+            className="mg-gradient shadow-glow-mg sheen w-full text-[15px]"
             onClick={onStart}
           >
             <PlayIcon className="h-[18px] w-[18px]" /> התחל אימון

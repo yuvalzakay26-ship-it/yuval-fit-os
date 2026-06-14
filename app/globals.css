@@ -79,6 +79,63 @@
   --gradient-supplement: linear-gradient(135deg, #8b6ee6 0%, #7857de 50%, #6d4bd1 100%);
   --shadow-supplement: 0 8px 24px rgba(109, 75, 209, 0.24);
 
+  /* Workout muscle-group identity palette — one premium hue per muscle group so
+     every workout template/session card carries its own visual identity instead
+     of a single uniform strength blue. A card sets the generic --mg-* custom
+     properties inline (via lib/workout-theme.ts) to one group's values, then the
+     .mg-gradient / .shadow-glow-mg / .module-mg consumer classes paint from them.
+     Light values live here; tuned (brighter, dark-surface-friendly) values live
+     in `.dark`, so identity reads premium in both themes. Spread around the wheel
+     for maximum distinctness: chest red, biceps orange, core amber, glutes
+     emerald, legs teal, back blue, shoulders violet, triceps magenta, plus a
+     blended violet "mixed" identity for full-body cards. */
+  --mg-chest: #d23f34;
+  --mg-chest-soft: rgba(210, 63, 52, 0.1);
+  --mg-chest-grad: linear-gradient(135deg, #f2685a 0%, #e0493c 50%, #d23f34 100%);
+  --mg-chest-shadow: 0 8px 24px rgba(210, 63, 52, 0.24);
+
+  --mg-back: #2456a8;
+  --mg-back-soft: rgba(36, 86, 168, 0.1);
+  --mg-back-grad: linear-gradient(135deg, #3f7ad1 0%, #2d63b8 50%, #2456a8 100%);
+  --mg-back-shadow: 0 8px 24px rgba(36, 86, 168, 0.24);
+
+  --mg-shoulders: #7c3aed;
+  --mg-shoulders-soft: rgba(124, 58, 237, 0.1);
+  --mg-shoulders-grad: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%);
+  --mg-shoulders-shadow: 0 8px 24px rgba(124, 58, 237, 0.24);
+
+  --mg-biceps: #c2620c;
+  --mg-biceps-soft: rgba(194, 98, 12, 0.1);
+  --mg-biceps-grad: linear-gradient(135deg, #f59e3c 0%, #e87d1c 50%, #c2620c 100%);
+  --mg-biceps-shadow: 0 8px 24px rgba(194, 98, 12, 0.24);
+
+  --mg-triceps: #c0257e;
+  --mg-triceps-soft: rgba(192, 37, 126, 0.1);
+  --mg-triceps-grad: linear-gradient(135deg, #f472b6 0%, #e0489a 50%, #c0257e 100%);
+  --mg-triceps-shadow: 0 8px 24px rgba(192, 37, 126, 0.24);
+
+  --mg-legs: #0d8a82;
+  --mg-legs-soft: rgba(13, 148, 136, 0.1);
+  --mg-legs-grad: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 50%, #0d9488 100%);
+  --mg-legs-shadow: 0 8px 24px rgba(13, 148, 136, 0.24);
+
+  --mg-core: #a16207;
+  --mg-core-soft: rgba(202, 138, 4, 0.12);
+  --mg-core-grad: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+  --mg-core-shadow: 0 8px 24px rgba(202, 138, 4, 0.24);
+
+  --mg-glutes: #059669;
+  --mg-glutes-soft: rgba(5, 150, 105, 0.1);
+  --mg-glutes-grad: linear-gradient(135deg, #34d399 0%, #10b981 50%, #059669 100%);
+  --mg-glutes-shadow: 0 8px 24px rgba(5, 150, 105, 0.24);
+
+  /* Mixed / full-body — a blended premium identity (indigo → violet → magenta),
+     deliberately not monochrome blue, so a full-body card feels exotic. */
+  --mg-mixed: #6d4bd1;
+  --mg-mixed-soft: rgba(109, 75, 209, 0.1);
+  --mg-mixed-grad: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d6489a 100%);
+  --mg-mixed-shadow: 0 8px 24px rgba(109, 75, 209, 0.24);
+
   /* Effects */
   --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 16px rgba(16, 24, 40, 0.05);
   --shadow-raised: 0 8px 30px rgba(16, 24, 40, 0.1);
@@ -145,6 +202,55 @@
   --accent-supplement-soft: var(--accent-soft);
   --gradient-supplement: var(--gradient-accent);
   --shadow-supplement: var(--shadow-accent);
+
+  /* Workout muscle-group palette, tuned for the near-black surface: brighter,
+     slightly desaturated accents that stay legible as text/icon on dark, with
+     soft fills a touch stronger. The workouts screen intentionally keeps its
+     colour identity in dark mode (the rest of the dark theme stays emerald). */
+  --mg-chest: #ff7a6e;
+  --mg-chest-soft: rgba(255, 122, 110, 0.15);
+  --mg-chest-grad: linear-gradient(135deg, #ff8c7a 0%, #f4685a 50%, #e8503f 100%);
+  --mg-chest-shadow: 0 10px 30px rgba(255, 90, 75, 0.3);
+
+  --mg-back: #6ea8fe;
+  --mg-back-soft: rgba(110, 168, 254, 0.16);
+  --mg-back-grad: linear-gradient(135deg, #8bb8ff 0%, #5b9af8 50%, #3f7ad1 100%);
+  --mg-back-shadow: 0 10px 30px rgba(91, 154, 248, 0.3);
+
+  --mg-shoulders: #b794ff;
+  --mg-shoulders-soft: rgba(183, 148, 255, 0.16);
+  --mg-shoulders-grad: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 50%, #8b5cf6 100%);
+  --mg-shoulders-shadow: 0 10px 30px rgba(167, 139, 250, 0.3);
+
+  --mg-biceps: #f59e42;
+  --mg-biceps-soft: rgba(245, 158, 66, 0.15);
+  --mg-biceps-grad: linear-gradient(135deg, #ffb35c 0%, #f59336 50%, #e07a1e 100%);
+  --mg-biceps-shadow: 0 10px 30px rgba(245, 150, 40, 0.3);
+
+  --mg-triceps: #f472b6;
+  --mg-triceps-soft: rgba(244, 114, 182, 0.16);
+  --mg-triceps-grad: linear-gradient(135deg, #f9a8d4 0%, #f472b6 50%, #e0489a 100%);
+  --mg-triceps-shadow: 0 10px 30px rgba(244, 114, 182, 0.3);
+
+  --mg-legs: #2dd4bf;
+  --mg-legs-soft: rgba(45, 212, 191, 0.15);
+  --mg-legs-grad: linear-gradient(135deg, #5eead4 0%, #2dd4bf 50%, #14b8a6 100%);
+  --mg-legs-shadow: 0 10px 30px rgba(45, 212, 191, 0.3);
+
+  --mg-core: #fbbf24;
+  --mg-core-soft: rgba(251, 191, 36, 0.15);
+  --mg-core-grad: linear-gradient(135deg, #fcd34d 0%, #fbbf24 50%, #f59e0b 100%);
+  --mg-core-shadow: 0 10px 30px rgba(251, 191, 36, 0.28);
+
+  --mg-glutes: #34d399;
+  --mg-glutes-soft: rgba(52, 211, 153, 0.15);
+  --mg-glutes-grad: linear-gradient(135deg, #6ee7b7 0%, #34d399 50%, #10b981 100%);
+  --mg-glutes-shadow: 0 10px 30px rgba(52, 211, 153, 0.3);
+
+  --mg-mixed: #a5a0ff;
+  --mg-mixed-soft: rgba(139, 124, 255, 0.16);
+  --mg-mixed-grad: linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #e879c4 100%);
+  --mg-mixed-shadow: 0 10px 30px rgba(139, 124, 246, 0.32);
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.35);
   --shadow-raised: 0 12px 40px rgba(0, 0, 0, 0.55);
@@ -351,6 +457,27 @@ body {
 }
 .module-energy {
   background-image: linear-gradient(160deg, var(--accent-energy-soft) 0%, transparent 55%);
+}
+
+/* Generic muscle-group consumers — they read the --mg-* custom properties a card
+   sets inline (see lib/workout-theme.ts), so a single set of classes paints any
+   of the nine workout identities. The card chooses the hue; these draw it. */
+.mg-gradient {
+  background-image: var(--mg-grad);
+}
+.shadow-glow-mg {
+  box-shadow: var(--mg-shadow);
+}
+.module-mg {
+  background-image: linear-gradient(160deg, var(--mg-soft) 0%, transparent 55%);
+}
+/* A richer two-hue wash for cards with a distinct secondary accent: the primary
+   hue leads from the top corner, the secondary warms the opposite bottom corner.
+   Falls back gracefully to a single hue when --mg-2-soft equals --mg-soft. */
+.module-mg-duo {
+  background-image:
+    linear-gradient(155deg, var(--mg-soft) 0%, transparent 50%),
+    linear-gradient(330deg, var(--mg-2-soft) 0%, transparent 42%);
 }
 
 .no-scrollbar {

@@ -112,14 +112,21 @@ export function WorkoutsView() {
         />
       ) : (
         <>
-          {/* Command center — the workouts hub at a glance + the primary CTA. */}
+          {/* Command center — the workouts hub at a glance + the primary CTA.
+              Layered glows (strength blue lead + a warm energy counter-glow) and
+              a deeper gradient wash give the hero richer, more alive depth while
+              it still clearly belongs to the workouts module. */}
           <Card
             variant="raised"
             className="module-strength sheen relative overflow-hidden p-5"
           >
             <div
-              className="pointer-events-none absolute -start-10 -top-12 h-36 w-36 rounded-full opacity-60 blur-2xl"
+              className="pointer-events-none absolute -start-10 -top-14 h-40 w-40 rounded-full opacity-70 blur-2xl"
               style={{ background: "var(--accent-strength-soft)" }}
+            />
+            <div
+              className="pointer-events-none absolute -end-12 -bottom-12 h-36 w-36 rounded-full opacity-50 blur-2xl"
+              style={{ background: "var(--accent-energy-soft)" }}
             />
             <div className="relative">
               <div className="flex items-center gap-3">
@@ -137,16 +144,26 @@ export function WorkoutsView() {
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-2.5">
-                <div className="rounded-2xl border border-border bg-surface-2 px-3.5 py-2.5">
-                  <p className="text-[18px] font-extrabold tabular-nums leading-none text-foreground">
+                <div className="relative overflow-hidden rounded-2xl border border-border bg-surface-2 px-3.5 py-2.5">
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-y-0 start-0 w-1 rounded-full"
+                    style={{ background: "var(--gradient-strength)" }}
+                  />
+                  <p className="text-[18px] font-extrabold tabular-nums leading-none text-[color:var(--accent-strength)]">
                     {templates.length}
                   </p>
                   <p className="mt-1 text-[11px] font-medium text-faint">
                     תבניות מוכנות
                   </p>
                 </div>
-                <div className="rounded-2xl border border-border bg-surface-2 px-3.5 py-2.5">
-                  <p className="text-[18px] font-extrabold tabular-nums leading-none text-foreground">
+                <div className="relative overflow-hidden rounded-2xl border border-border bg-surface-2 px-3.5 py-2.5">
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-y-0 start-0 w-1 rounded-full"
+                    style={{ background: "var(--gradient-energy)" }}
+                  />
+                  <p className="text-[18px] font-extrabold tabular-nums leading-none text-[color:var(--accent-energy)]">
                     {workouts.length}
                   </p>
                   <p className="mt-1 text-[11px] font-medium text-faint">
@@ -179,11 +196,15 @@ export function WorkoutsView() {
               }
             />
             {templates.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-border-strong bg-surface/50 px-6 py-8 text-center">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--accent-strength-soft)] text-[color:var(--accent-strength)]">
+              <div className="module-strength sheen relative flex flex-col items-center gap-3 overflow-hidden rounded-3xl border border-dashed border-border-strong bg-surface/50 px-6 py-8 text-center">
+                <div
+                  className="pointer-events-none absolute -end-10 -top-10 h-28 w-28 rounded-full opacity-50 blur-2xl"
+                  style={{ background: "var(--accent-strength-soft)" }}
+                />
+                <span className="strength-gradient shadow-glow-strength sheen relative flex h-12 w-12 items-center justify-center rounded-2xl text-[color:var(--accent-contrast)]">
                   <ListIcon className="h-6 w-6" />
                 </span>
-                <div>
+                <div className="relative">
                   <p className="text-[14.5px] font-bold text-foreground">
                     אין תבניות עדיין
                   </p>
@@ -194,6 +215,7 @@ export function WorkoutsView() {
                 <Button
                   size="sm"
                   variant="secondary"
+                  className="relative"
                   onClick={() => setEditingTemplate("new")}
                 >
                   <PlusIcon className="h-4 w-4" /> צור תבנית ראשונה
@@ -239,6 +261,10 @@ export function WorkoutsView() {
             <div
               className="pointer-events-none absolute -start-12 -top-16 h-44 w-44 rounded-full opacity-60 blur-2xl"
               style={{ background: "var(--accent-strength-soft)" }}
+            />
+            <div
+              className="pointer-events-none absolute -end-14 -bottom-14 h-40 w-40 rounded-full opacity-50 blur-2xl"
+              style={{ background: "var(--accent-energy-soft)" }}
             />
             <div className="relative flex flex-col items-center">
               <span className="strength-gradient sheen flex h-16 w-16 items-center justify-center rounded-3xl text-[color:var(--accent-contrast)] shadow-glow-strength">
