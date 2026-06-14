@@ -133,6 +133,7 @@ Useful entry points:
 | `scripts/qa-saved-values.mjs`, `scripts/qa-favorites.mjs` | Saved values, favorites |
 | `scripts/qa-water.mjs`, `scripts/qa-supplements.mjs` | Water, supplements |
 | `scripts/qa-water-presets.mjs` | Personal water presets (`:3326`) |
+| `scripts/qa-navigation.mjs` | Bottom nav shape, `/more` System Hub links, active-tab state, 360/390 overflow (`:3331`) |
 
 ### Seeding the gates in QA
 
@@ -172,8 +173,11 @@ the same way the app does — this was the long-standing `today-dashboard-check`
 4. **UI** in a new `components/<feature>/` folder; reuse `components/ui/`
    primitives and existing CSS utilities in `app/globals.css` rather than new
    global styles.
-5. **Route** under `app/` if it needs its own screen; add to
-   `components/layout/nav-items.ts` only if it belongs in the bottom nav.
+5. **Route** under `app/` if it needs its own screen. The bottom nav
+   (`components/layout/nav-items.ts`) is reserved for the five daily tabs — do
+   **not** grow it. Surface secondary tools as a card in the System Hub
+   (`components/more/SystemHubView.tsx`) instead, linking to an existing route.
+   See [`NAVIGATION_SYSTEM_HUB.md`](NAVIGATION_SYSTEM_HUB.md).
 6. **Reset & docs** — wire a reset path, document the new key in
    `PROJECT_STATE.md §4`, and add a feature doc under `docs/`.
 7. **Respect the boundaries** in `PROJECT_STATE.md §8` — no backend/auth/AI, no

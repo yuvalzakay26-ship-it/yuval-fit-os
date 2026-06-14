@@ -18,8 +18,14 @@ a PWA-style web app that can later become a native app via Capacitor.
 
 ## Screens
 
-`Today` · `Workouts` · `Exercises` · `Nutrition` (incl. Food Library, Water,
-Supplements) · `Progress` · `Settings` · `Learn`
+`Today` · `Workouts` · `Nutrition` (incl. Food Library, Water, Supplements) ·
+`Progress` · `More` (System Hub) · `Exercises` · `Settings` · `Learn`
+
+The bottom navigation keeps five daily tabs — **Today, Workouts, Nutrition,
+Progress, More** — and the **More** tab opens the System Hub (`/more`, מרכז
+מערכת), a premium hub that gathers all secondary tools (Exercises, Food Library,
+Water, Supplements, Learn, Settings, Backup, Lock) into module-coloured
+categories. See [docs/NAVIGATION_SYSTEM_HUB.md](docs/NAVIGATION_SYSTEM_HUB.md).
 
 Three gates wrap the app, in order: a per-session `Private Access` notice
 (informational only), an `Admin Access Code` gate (a **client-side** code gate —
@@ -30,7 +36,7 @@ module + route map.
 
 The Learn screen (`/learn`, מרכז ידע) holds short card-based educational
 articles and a daily protein goal calculator (g/kg/day). It is reachable from
-Today, Nutrition and Settings rather than the bottom nav.
+Today, Nutrition, Settings and the System Hub rather than the bottom nav.
 
 Fixed bottom navigation, light/dark/system themes (saved locally), and a
 scroll-to-top button that appears on scroll and clears the bottom nav.

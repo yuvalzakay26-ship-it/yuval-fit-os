@@ -144,6 +144,19 @@ export const ClockIcon = (p: IconProps) =>
 
 export const ChevronIcon = (p: IconProps) => base(<path d="m9 6 6 6-6 6" />, p);
 
+// Four rounded tiles — the "more / system hub" affordance for the bottom nav.
+// Reads as an app grid / launcher rather than a generic menu.
+export const GridIcon = (p: IconProps) =>
+  base(
+    <>
+      <rect x="4" y="4" width="6.5" height="6.5" rx="1.9" />
+      <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.9" />
+      <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.9" />
+      <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.9" />
+    </>,
+    p,
+  );
+
 export const AutoThemeIcon = (p: IconProps) =>
   base(
     <>

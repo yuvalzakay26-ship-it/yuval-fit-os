@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV_ITEMS } from "./nav-items";
+import { NAV_ITEMS, type NavItem } from "./nav-items";
 import { cn } from "@/lib/utils";
 
-function isActive(pathname: string, href: string): boolean {
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(`${href}/`);
+function matchesPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+function isActive(pathname: string, item: NavItem): boolean {
+  if (item.href === "/") return pathname === "/";
+  if (matchesPrefix(pathname, item.href)) return true;
+  // Secondary/system routes surfaced via the System Hub light up the More tab.
+  return (item.match ?? []).some((prefix) => matchesPrefix(pathname, prefix));
 }
 
 export function BottomNav() {
@@ -21,7 +27,7 @@ export function BottomNav() {
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-around px-1.5 py-1.5">
         {NAV_ITEMS.map((item) => {
-          const active = isActive(pathname, item.href);
+          const active = isActive(pathname, item);
           const Icon = item.icon;
           return (
             <li key={item.href} className="flex-1">
