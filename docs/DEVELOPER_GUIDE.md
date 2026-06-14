@@ -40,6 +40,7 @@ lib/
   storage.ts            the ONLY localStorage access for app data (STORAGE_KEYS)
   fitness-store.ts      reactive hooks over storage (useSyncExternalStore)
   analytics.ts          pure derivations (totals, summaries, PRs) — no storage
+  today.ts              Today daily-completion + deterministic next-action (pure)
   welcome.ts            welcome gate state + init script
   private-access.ts     private-access gate state + init script
   admin-access.ts       admin access-code gate state + init script
@@ -129,7 +130,7 @@ Useful entry points:
 | `qa/private-access-check.mjs` | Private Access Notice gate behavior |
 | `qa/admin-access-check.mjs` | Admin access-code gate: wrong/correct code, persistence, Settings lock |
 | `qa/welcome-check.mjs` | Welcome screen + persistence + reset |
-| `qa/today-dashboard-check.mjs` | Today dashboard |
+| `qa/today-dashboard-check.mjs` | Today dashboard: completion ratio (`0/3` empty, `3/4` rich), next-action card, optional supplements, 360/390 + dark |
 | `qa/food-library-check.mjs`, `qa/*-food-check.mjs` | Food library + per-category data |
 | `qa/templates-check.mjs` | Workout templates |
 | `qa/learn-check.mjs` | Knowledge Center |

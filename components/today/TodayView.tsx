@@ -18,6 +18,7 @@ import {
   useWorkouts,
 } from "@/lib/fitness-store";
 import { DEFAULT_WATER_GOAL_ML } from "@/lib/fitness-types";
+import { dailyOverview, type NextAction } from "@/lib/today";
 import { formatHebrewDate, hebrewGreeting, todayISO } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/PageHeader";
@@ -35,20 +36,30 @@ import {
   PlayIcon,
   PlusIcon,
   PlusWaterIcon,
+  SparkIcon,
 } from "@/components/ui/icons";
 import { WaterCard } from "@/components/water/WaterCard";
 import { SupplementsCard } from "@/components/supplements/SupplementsCard";
 
 /* ----------------------------- Daily copy ----------------------------- */
 // Calm, motivating, non-medical. Drives the hero's headline from how many of
-// the four daily habits already have activity today.
+// the required daily actions are already complete today.
 
-function dayHeadline(inMotion: number, total: number): string {
-  if (inMotion >= total) return "כל ההרגלים בתנועה היום 🎉";
-  if (inMotion === 0) return "היום מתחיל — בחר פעולה אחת כדי להתחיל";
-  if (inMotion === total - 1) return "כמעט שם — נשאר הרגל אחד להשלים";
+function dayHeadline(completed: number, total: number): string {
+  if (completed >= total) return "כל הפעולות הושלמו היום 🎉";
+  if (completed === 0) return "היום מתחיל — בחר פעולה אחת כדי להתחיל";
+  if (completed === total - 1) return "כמעט שם — נשארה פעולה אחת להשלים";
   return "התחלה טובה — בוא נשמור על המומנטום";
 }
+
+/** Module gradient + glow utility per action tone. */
+const TONE_TINTS = {
+  strength: "strength-gradient shadow-glow-strength",
+  nutrition: "nutrition-gradient shadow-glow-nutrition",
+  water: "water-gradient shadow-glow-water",
+  supplement: "supplement-gradient shadow-glow-supplement",
+  energy: "energy-gradient shadow-glow-energy",
+} as const;
 
 /* ----------------------------- Status strip ---------------------------- */
 
@@ -96,14 +107,76 @@ function StatusCell({ stat }: { stat: HabitStat }) {
   );
 }
 
-/* ----------------------------- Quick action ---------------------------- */
+/* ----------------------------- Next action ----------------------------- */
+// The single, most-prominent "do this next" card. Driven entirely by the
+// deterministic `dailyOverview` helper — no AI, no personalization, no advice.
 
-const QUICK_ACTION_TINTS = {
-  strength: "strength-gradient shadow-glow-strength",
-  nutrition: "nutrition-gradient shadow-glow-nutrition",
-  water: "water-gradient shadow-glow-water",
-  supplement: "supplement-gradient shadow-glow-supplement",
-} as const;
+const NEXT_ACTION_ICON: Record<NextAction["key"], React.ReactNode> = {
+  water: <DropletIcon className="h-6 w-6" />,
+  nutrition: <AppleIcon className="h-6 w-6" />,
+  workout: <DumbbellIcon className="h-6 w-6" />,
+  supplement: <PillIcon className="h-6 w-6" />,
+  progress: <ChartIcon className="h-6 w-6" />,
+};
+
+function NextActionCard({ action }: { action: NextAction }) {
+  return (
+    <Card variant="raised" className="sheen relative overflow-hidden p-5">
+      <div
+        className="pointer-events-none absolute -left-12 -top-14 h-40 w-40 rounded-full opacity-50 blur-2xl"
+        style={{ background: `var(--accent-${action.tone}-soft)` }}
+      />
+      <div className="relative">
+        <div className="flex items-center gap-2">
+          <span
+            className="flex h-5 w-5 items-center justify-center rounded-full"
+            style={{
+              background: `var(--accent-${action.tone}-soft)`,
+              color: `var(--accent-${action.tone})`,
+            }}
+          >
+            <SparkIcon className="h-3 w-3" />
+          </span>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-faint">
+            הפעולה הבאה שלך
+          </p>
+          {action.optional && (
+            <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-bold text-faint">
+              אופציונלי
+            </span>
+          )}
+        </div>
+
+        <div className="mt-3 flex items-center gap-4">
+          <span
+            className={`${TONE_TINTS[action.tone]} sheen flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-[color:var(--accent-contrast)]`}
+          >
+            {NEXT_ACTION_ICON[action.key]}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[18px] font-extrabold leading-tight text-foreground">
+              {action.title}
+            </p>
+            <p className="mt-1 text-[13px] leading-relaxed text-muted">
+              {action.description}
+            </p>
+          </div>
+        </div>
+
+        <Link href={action.href} className="tap mt-4 block">
+          <div
+            className={`${TONE_TINTS[action.tone]} sheen flex items-center justify-center gap-1.5 rounded-2xl px-4 py-3 text-[15px] font-bold text-[color:var(--accent-contrast)]`}
+          >
+            {action.ctaLabel}
+            <ChevronIcon className="h-4 w-4 rotate-180" />
+          </div>
+        </Link>
+      </div>
+    </Card>
+  );
+}
+
+/* ----------------------------- Quick action ---------------------------- */
 
 function QuickAction({
   href,
@@ -114,13 +187,13 @@ function QuickAction({
   href: string;
   label: string;
   icon: React.ReactNode;
-  tint: keyof typeof QUICK_ACTION_TINTS;
+  tint: keyof typeof TONE_TINTS;
 }) {
   return (
     <Link href={href} className="tap block">
       <Card className="sheen flex h-full flex-col items-center gap-2 p-3 text-center">
         <span
-          className={`${QUICK_ACTION_TINTS[tint]} sheen flex h-11 w-11 items-center justify-center rounded-2xl text-[color:var(--accent-contrast)]`}
+          className={`${TONE_TINTS[tint]} sheen flex h-11 w-11 items-center justify-center rounded-2xl text-[color:var(--accent-contrast)]`}
         >
           {icon}
         </span>
@@ -165,7 +238,23 @@ export function TodayView() {
   const supp = supplementDaySummary(supplements, supplementLogs, today);
   const hasSupplements = activeSupplements(supplements).length > 0;
 
-  // Daily habit roll-up — "in motion" = any activity logged today.
+  // Daily completion + next action — deterministic, supplements treated as
+  // optional (they never count toward the required total when not configured).
+  const { completion, nextAction } = dailyOverview({
+    workouts,
+    foodLogs,
+    waterLogs,
+    supplements,
+    supplementLogs,
+    settings,
+  });
+  const completed = completion.completed;
+  const total = completion.total;
+  const allDone = completion.allDone;
+
+  // Status strip — the four pillars at a glance. Supplements stay visible but
+  // read as "אופציונלי" (not incomplete) when nothing is configured.
+  const suppDone = hasSupplements && supp.allDone;
   const habits: HabitStat[] = [
     {
       key: "workout",
@@ -202,16 +291,23 @@ export function TodayView() {
     {
       key: "supplements",
       label: "תוספים",
-      value: hasSupplements ? `${supp.taken}/${supp.active}` : "—",
-      done: supp.taken > 0,
+      value: hasSupplements ? `${supp.taken}/${supp.active}` : "אופציונלי",
+      done: suppDone,
       href: "/nutrition/supplements",
       icon: <PillIcon className="h-[18px] w-[18px]" />,
       tone: "supplement",
     },
   ];
 
-  const inMotion = habits.filter((h) => h.done).length;
-  const allDone = inMotion === habits.length;
+  // The hero bar reflects only the required pillars (3, or 4 when supplements
+  // are configured) so an unconfigured supplement never reads as "missing".
+  const barTones: Record<string, HabitStat["tone"]> = {
+    water: "water",
+    nutrition: "nutrition",
+    workout: "strength",
+    supplement: "supplement",
+  };
+  const barPillars = completion.pillars.filter((p) => !p.optional);
 
   return (
     <div className="space-y-6">
@@ -233,15 +329,13 @@ export function TodayView() {
         />
         <div className="relative flex items-center gap-5">
           <span className="relative shrink-0">
-            <ProgressRing value={inMotion} goal={habits.length} size={92} stroke={9}>
+            <ProgressRing value={completed} goal={total} size={92} stroke={9}>
               <span className="text-[24px] font-extrabold leading-none text-foreground">
-                {inMotion}
-                <span className="text-[15px] font-bold text-faint">
-                  /{habits.length}
-                </span>
+                {completed}
+                <span className="text-[15px] font-bold text-faint">/{total}</span>
               </span>
               <span className="mt-0.5 text-[10px] font-semibold text-faint">
-                הרגלים
+                הושלמו
               </span>
             </ProgressRing>
             {allDone && (
@@ -255,23 +349,23 @@ export function TodayView() {
 
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-faint">
-              סטטוס יומי
+              התקדמות היום
             </p>
             <p className="mt-1 text-[17px] font-extrabold leading-tight text-foreground">
-              {inMotion} מתוך {habits.length} הרגלים בתנועה
+              {completed} מתוך {total} פעולות הושלמו
             </p>
             <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
-              {dayHeadline(inMotion, habits.length)}
+              {dayHeadline(completed, total)}
             </p>
-            {/* Four-segment habit bar. */}
+            {/* Segment bar — one segment per required pillar. */}
             <div className="mt-3 flex gap-1.5" aria-hidden="true">
-              {habits.map((h) => (
+              {barPillars.map((p) => (
                 <span
-                  key={h.key}
+                  key={p.key}
                   className="h-1.5 flex-1 rounded-full transition-colors duration-500"
                   style={{
-                    background: h.done
-                      ? `var(--accent-${h.tone})`
+                    background: p.done
+                      ? `var(--accent-${barTones[p.key]})`
                       : "var(--border-strong)",
                   }}
                 />
@@ -280,6 +374,9 @@ export function TodayView() {
           </div>
         </div>
       </Card>
+
+      {/* Next action — the single most important step right now */}
+      <NextActionCard action={nextAction} />
 
       {/* Daily status strip */}
       <section>

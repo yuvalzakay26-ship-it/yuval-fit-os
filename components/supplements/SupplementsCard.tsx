@@ -89,14 +89,19 @@ export function SupplementsCard() {
         />
         <div className="relative flex flex-col items-center text-center">
           <SupplementHeroMark />
-          <p className="mt-4 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--accent-supplement)]">
-            תוספים היום
-          </p>
+          <div className="mt-4 flex items-center gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--accent-supplement)]">
+              תוספים היום
+            </p>
+            <span className="rounded-full bg-[color:var(--accent-supplement-soft)] px-2 py-0.5 text-[10px] font-bold text-[color:var(--accent-supplement)]">
+              אופציונלי
+            </span>
+          </div>
           <p className="mt-1 text-[16px] font-extrabold leading-tight text-foreground">
             עדיין לא הוגדרו תוספים
           </p>
           <p className="mt-1.5 max-w-[17rem] text-[12.5px] leading-relaxed text-muted">
-            אפשר להוסיף פריטים למעקב אישי ולסמן מה נלקח היום.
+            תוספים הם אופציונליים — אפשר להגדיר רק אם זה רלוונטי לך.
           </p>
           <Link
             href="/nutrition/supplements/add"

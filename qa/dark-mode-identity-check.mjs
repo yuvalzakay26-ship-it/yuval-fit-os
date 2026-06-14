@@ -39,6 +39,10 @@ async function run() {
     localStorage.setItem("yfos:welcome-seen:v1", "1");
     sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
     localStorage.setItem("yfos:admin-access-granted:v1", "1");
+    // The theme lives in settings (the old media-query "system" mode was
+    // removed), so dark mode must be opted in explicitly for this check to
+    // exercise the real dark identity rather than the default light theme.
+    localStorage.setItem("yfos:settings", JSON.stringify({ theme: "dark" }));
   });
   await page.reload({ waitUntil: "networkidle" });
 

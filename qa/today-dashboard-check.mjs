@@ -25,15 +25,42 @@ async function capture(name, viewport, state, colorScheme = "light") {
   await page.waitForTimeout(400);
   if (name === "rich-360") {
     const text = await page.evaluate(() => document.body.innerText);
-    // All four habits active → hero should report 4/4 in motion.
-    if (!text.includes("4 מתוך 4 הרגלים בתנועה")) {
-      errors.push(`[${name}] expected 4/4 habits in motion`);
+    // Water + nutrition + workout done, supplements configured but only 1/2
+    // marked → 3 of 4 required actions complete.
+    if (!text.includes("3 מתוך 4 פעולות הושלמו")) {
+      errors.push(`[${name}] expected 3/4 actions complete`);
     }
     if (!text.includes("1.5 ליטר")) {
       errors.push(`[${name}] water total not reflected`);
     }
     if (!text.includes("1 מתוך 2 סומנו")) {
       errors.push(`[${name}] supplement taken count not reflected`);
+    }
+    // The next-action card is present and points at the only open step
+    // (the optional supplements, since the three core habits are done).
+    if (!text.includes("הפעולה הבאה שלך")) {
+      errors.push(`[${name}] next-action card missing`);
+    }
+    if (!text.includes("סמן את התוספים של היום")) {
+      errors.push(`[${name}] expected supplement next action`);
+    }
+  }
+  if (name === "empty-360") {
+    const text = await page.evaluate(() => document.body.innerText);
+    // Fresh day → 0 of 3 (supplements optional, excluded from the total).
+    if (!text.includes("0 מתוך 3 פעולות הושלמו")) {
+      errors.push(`[${name}] expected 0/3 for a fresh day`);
+    }
+    // Next action guides the new user to the very first step: water.
+    if (!text.includes("הפעולה הבאה שלך")) {
+      errors.push(`[${name}] next-action card missing`);
+    }
+    if (!text.includes("שתה כוס מים ראשונה")) {
+      errors.push(`[${name}] expected water as the first next action`);
+    }
+    // Supplements read as optional, not incomplete.
+    if (!text.includes("אופציונלי")) {
+      errors.push(`[${name}] supplements not marked optional`);
     }
   }
   // Horizontal overflow check.

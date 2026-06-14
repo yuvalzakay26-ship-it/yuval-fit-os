@@ -4,15 +4,18 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (active workout session premium UX upgrade: the
-> workout builder is now a focused "live" session — identity-coloured hero with
-> stats + progress, muscle-aware exercise cards, current-exercise "עכשיו"
-> highlight, upgraded set tracker, premium "סיים ושמור אימון" CTA. Presentation
-> only — storage, schema, save payload and routes unchanged. See
-> [`ACTIVE_WORKOUT_SESSION_UX.md`](ACTIVE_WORKOUT_SESSION_UX.md). Prior: navigation
-> & System Hub upgrade — Exercises moved out of the bottom nav into the premium
-> `/more` "מרכז מערכת" hub; bottom nav is Today / Workouts / Nutrition / Progress
-> / More).
+> Last reviewed: Phase 3.xx (Today quick start & priority-action upgrade: Today
+> now leads with a deterministic `הפעולה הבאה שלך` next-action card and an
+> optional-aware daily completion summary — supplements no longer make the day
+> feel incomplete when none are configured. Pure read-only derivation in the new
+> `lib/today.ts`; no storage/data-model/routes/logic changes, no AI, no
+> recommendations, not Personal Path. See [`TODAY_QUICK_START.md`](TODAY_QUICK_START.md).
+> Prior: active workout session premium UX upgrade — the workout builder is now a
+> focused "live" session (identity-coloured hero, muscle-aware exercise cards,
+> "עכשיו" highlight, premium "סיים ושמור אימון" CTA; presentation only). See
+> [`ACTIVE_WORKOUT_SESSION_UX.md`](ACTIVE_WORKOUT_SESSION_UX.md). Earlier:
+> navigation & System Hub upgrade — Exercises moved into the premium `/more`
+> "מרכז מערכת" hub; bottom nav is Today / Workouts / Nutrition / Progress / More.)
 
 ---
 
@@ -37,7 +40,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 
 | Module | Purpose | Key code |
 | --- | --- | --- |
-| Today dashboard | At-a-glance daily summary (greeting, workout, macros, water, supplements) | `components/today/TodayView.tsx` |
+| Today dashboard | Daily command center: greeting, completion ring, deterministic next-action card, status strip, module cards (workout, macros, water, supplements). Optional-aware (supplements never block the day) | `components/today/TodayView.tsx`, `lib/today.ts`, `docs/TODAY_QUICK_START.md` |
 | System Hub ("מרכז מערכת") | Premium `/more` hub gathering all secondary tools into module-coloured categories (pure navigation) | `components/more/SystemHubView.tsx`, `docs/NAVIGATION_SYSTEM_HUB.md` |
 | Workouts | Log sessions, build from templates, view history; the active session (builder) is a premium muscle-aware "live workout" experience | `components/workouts/*`, `docs/ACTIVE_WORKOUT_SESSION_UX.md` |
 | Exercise Library | 133 exercises, images, instructions, external demo videos | `components/exercises/*`, `lib/seed-exercises.ts` |
@@ -161,8 +164,9 @@ deliberately do **not** touch user data. Keep these concerns separate.
   `useSyncExternalStore`, caching snapshots and invalidating on mutation — no
   `setState`-in-effect, no hydration mismatch (server snapshots are stable
   constants; the real client value swaps in after mount).
-- **Pure derivations (`lib/analytics.ts`)** never touch storage — callers pass data
-  in, so they stay testable and SSR-safe.
+- **Pure derivations (`lib/analytics.ts`, `lib/today.ts`)** never touch storage —
+  callers pass data in, so they stay testable and SSR-safe. `lib/today.ts` adds
+  the Today daily-completion + deterministic next-action logic (no AI/advice).
 - **Gates (`lib/welcome.ts`, `lib/private-access.ts`, `lib/admin-access.ts`)**
   mirror that same `useSyncExternalStore` shape and expose pre-paint init
   scripts. The admin gate fails **closed** (storage hiccup keeps it up); the
