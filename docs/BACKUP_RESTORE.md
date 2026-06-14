@@ -65,7 +65,7 @@ each friendly field to a real storage key imported from `lib/storage.ts` /
 | `waterLogs` | `yfos:water-logs:v1` |
 | `supplements` | `yfos:supplements:v1` |
 | `supplementLogs` | `yfos:supplement-logs:v1` |
-| `gymVisits` | `yfos:gym-visits:v1` |
+| `gymVisits` | `yfos:gym-visits:v1` (visits may carry an optional, additive `workouts?` snapshot) |
 | `activeGymVisit` | `yfos:active-gym-visit:v1` |
 | `activeWorkoutDraft` | `yfos:active-workout-draft:v1` (only when meaningful) |
 
@@ -108,6 +108,12 @@ For each module the backup *includes*: a value overwrites the key, `null` clears
 it. Modules absent from the backup are left untouched, as are all excluded
 gate/meta keys. This is a full "replace existing Fit OS data" — documented to the
 user — not a silent merge.
+
+Module values are stored and restored **opaquely** (the whole parsed value per
+key), so additive, optional fields inside a module need no backup changes. The
+gym-visit `workouts?` snapshot is exactly this case: older backups (visits without
+it) and newer ones (visits with it) both restore cleanly, the preview counts
+visits identically, and **`backupVersion` stays `1`** — no migration, no bump.
 
 ## Validation & safety
 

@@ -19,6 +19,8 @@
 
 import { useSyncExternalStore } from "react";
 import { createId, startOfWeekISO, toISODate } from "./utils";
+import { getWorkouts } from "./storage";
+import type { MuscleGroup, WorkoutSession } from "./fitness-types";
 
 /** Saved gym-visit history (newest first). */
 export const GYM_VISITS_KEY = "yfos:gym-visits:v1";
@@ -32,6 +34,27 @@ export const ACTIVE_GYM_VISIT_KEY = "yfos:active-gym-visit:v1";
  */
 export const FORGOT_CHECKOUT_MS = 6 * 60 * 60 * 1000;
 
+/**
+ * A lightweight, read-only snapshot of a workout that was saved *during* a gym
+ * visit's window — captured at check-out for history/display only. This is NOT a
+ * link back into workout history and never mutates it: it is a frozen copy of a
+ * few display fields so a saved visit can show "what was trained" even if the
+ * original workout is later edited or deleted. Optional everywhere — old visits
+ * (and visits with no workout that day) simply omit it. See `docs/GYM_CHECK_IN.md`.
+ */
+export interface GymVisitWorkoutSnapshot {
+  /** Id of the source `WorkoutSession` (provenance only; never read back). */
+  workoutId: string;
+  /** The workout title at the moment of check-out, e.g. "גב + יד קדמית". */
+  title: string;
+  /** The workout's local date (YYYY-MM-DD); workouts are day-level, not timed. */
+  savedAt?: string;
+  /** Muscle groups trained, for a compact secondary label. */
+  muscleGroups?: MuscleGroup[];
+  /** Number of exercises in the workout. */
+  exerciseCount?: number;
+}
+
 /** A finished, saved gym visit (lives in history). */
 export interface GymVisit {
   id: string;
@@ -43,6 +66,12 @@ export interface GymVisit {
   durationMs: number;
   createdAt: string;
   updatedAt?: string;
+  /**
+   * Snapshots of workouts saved during this visit's window, captured at
+   * check-out. Optional and additive: absent on old visits and on visits where
+   * no workout was logged that day — the UI shows "לא קושר אימון לביקור הזה".
+   */
+  workouts?: GymVisitWorkoutSnapshot[];
 }
 
 /** The current open visit — only `startedAt`; the timer is derived from it. */
@@ -147,22 +176,62 @@ export function startGymVisit(now: Date = new Date()): ActiveGymVisit {
 }
 
 /**
+ * Build read-only snapshots of every workout whose local date falls inside a
+ * visit's window. Workout history is *day-level* (`WorkoutSession.date` is a
+ * `YYYY-MM-DD` with no time), so "during this visit" is matched by local day:
+ * any workout dated between the check-in day and the check-out day inclusive.
+ * Pure (data in → snapshots out) and never mutates workout history.
+ */
+export function snapshotWorkoutsForWindow(
+  workouts: WorkoutSession[],
+  startedAt: string,
+  endedAt: string,
+): GymVisitWorkoutSnapshot[] {
+  const startDay = toISODate(new Date(startedAt));
+  const endDay = toISODate(new Date(endedAt));
+  return workouts
+    .filter(
+      (w) =>
+        w &&
+        typeof w.date === "string" &&
+        w.date >= startDay &&
+        w.date <= endDay,
+    )
+    .map((w) => ({
+      workoutId: w.id,
+      title: typeof w.title === "string" && w.title.trim() ? w.title : "אימון",
+      savedAt: w.date,
+      muscleGroups: Array.isArray(w.muscleGroups) ? w.muscleGroups : [],
+      exerciseCount: Array.isArray(w.exercises) ? w.exercises.length : 0,
+    }));
+}
+
+/**
  * Check out. Closes the active visit into a saved {@link GymVisit} (carrying its
  * id and `startedAt`), clears the active slot, and returns the saved visit. A
  * no-op returning `null` when nothing is open. `durationMs` is clamped to ≥ 0 so
- * a clock skew can never store a negative stay.
+ * a clock skew can never store a negative stay. Any workouts saved during the
+ * visit's window are attached as read-only snapshots (display only; workout
+ * history is never read back or altered). `workouts` defaults to the live
+ * workout history but can be injected for testing/SSR safety.
  */
-export function finishGymVisit(now: Date = new Date()): GymVisit | null {
+export function finishGymVisit(
+  now: Date = new Date(),
+  workouts: WorkoutSession[] = getWorkouts(),
+): GymVisit | null {
   const active = getActiveGymVisit();
   if (!active) return null;
   const endedAt = now.toISOString();
   const durationMs = Math.max(0, now.getTime() - new Date(active.startedAt).getTime());
+  const linked = snapshotWorkoutsForWindow(workouts, active.startedAt, endedAt);
   const visit: GymVisit = {
     id: active.id,
     startedAt: active.startedAt,
     endedAt,
     durationMs,
     createdAt: active.createdAt ?? active.startedAt,
+    // Only attach when something was trained — keeps "no workout" visits clean.
+    ...(linked.length > 0 ? { workouts: linked } : {}),
   };
   const visits = getGymVisits();
   visits.unshift(visit);
@@ -240,6 +309,37 @@ export function getGymVisitStats(
   };
 }
 
+/**
+ * True when at least one *saved* (completed) visit started on the local day of
+ * `now`. Drives the same-day re-entry confirmation — after a visit was already
+ * finished today, a fresh check-in asks "another visit?" before creating one.
+ * Pure over the passed list; the active (open) visit is intentionally not
+ * counted (that case is handled by the active-visit guard instead).
+ */
+export function hasCompletedVisitToday(
+  visits: GymVisit[],
+  now: Date = new Date(),
+): boolean {
+  const today = toISODate(now);
+  return visits.some((v) => toISODate(new Date(v.startedAt)) === today);
+}
+
+/**
+ * Summarize a visit's linked-workout snapshots for display: how many, the first
+ * title, and all titles. Safe on old/empty visits (returns `count: 0`). The UI
+ * turns this into "אימון: <title>" / "אימונים: N" / "לא קושר אימון לביקור הזה".
+ */
+export function visitWorkoutSummary(visit: GymVisit): {
+  count: number;
+  primaryTitle: string | null;
+  titles: string[];
+} {
+  const list = Array.isArray(visit.workouts) ? visit.workouts : [];
+  const titles = list
+    .map((w) => (w && typeof w.title === "string" && w.title.trim() ? w.title.trim() : "אימון"));
+  return { count: titles.length, primaryTitle: titles[0] ?? null, titles };
+}
+
 /* ------------------------------ Formatting ------------------------------ */
 
 /**
@@ -252,6 +352,20 @@ export function formatDuration(ms: number): string {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   return `${hours}:${String(minutes).padStart(2, "0")}`;
+}
+
+/**
+ * Worded compact duration in Hebrew, e.g. 5_700_000 → "1ש 35ד", 2_700_000 →
+ * "45ד". Used in the richer visit-detail rows where "1ש 35ד" reads more clearly
+ * than the bare "1:35". Under a minute reads as "0ד".
+ */
+export function formatDurationWords(ms: number): string {
+  const totalMinutes = Math.max(0, Math.floor(ms / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours > 0 && minutes > 0) return `${hours}ש ${minutes}ד`;
+  if (hours > 0) return `${hours}ש`;
+  return `${minutes}ד`;
 }
 
 /**

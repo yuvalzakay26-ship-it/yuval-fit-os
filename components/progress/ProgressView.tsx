@@ -23,6 +23,7 @@ import {
   formatDuration,
   getGymVisitStats,
   useGymVisits,
+  visitWorkoutSummary,
 } from "@/lib/gym-attendance";
 import {
   useFoodLogs,
@@ -489,6 +490,18 @@ export function ProgressView() {
                 <p className="mt-1.5 text-[12px] font-medium text-muted">
                   ביקור אחרון
                 </p>
+                {gymStats.lastVisit &&
+                  (() => {
+                    const { count, primaryTitle } = visitWorkoutSummary(
+                      gymStats.lastVisit,
+                    );
+                    if (count === 0) return null;
+                    return (
+                      <p className="mt-0.5 truncate text-[11px] text-faint">
+                        {count === 1 ? `אימון: ${primaryTitle}` : `${count} אימונים`}
+                      </p>
+                    );
+                  })()}
               </div>
             </Card>
           </div>

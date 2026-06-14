@@ -194,8 +194,17 @@ const wire = (page, tag) => {
     (await page.evaluate((k) => localStorage.getItem(k), ACTIVE_KEY)) === null,
   );
   check(
-    "[checkout] history row shows duration (1:30 שעות)",
-    await page.getByText("1:30 שעות").first().isVisible(),
+    "[checkout] history row shows worded duration (1ש 30ד)",
+    await page.getByText("1ש 30ד").first().isVisible(),
+  );
+  check(
+    "[checkout] history row shows entry + exit labels",
+    (await page.getByText("כניסה").first().isVisible()) &&
+      (await page.getByText("יציאה").first().isVisible()),
+  );
+  check(
+    "[checkout] no-linked-workout copy shown (no workout that day)",
+    await page.getByText("לא קושר אימון לביקור הזה").first().isVisible(),
   );
   await ctx.close();
 }
@@ -321,17 +330,25 @@ const wire = (page, tag) => {
     "[today] gym section present",
     await page.getByText("נוכחות במכון").first().isVisible(),
   );
-  await page.getByRole("button", { name: "נכנסתי" }).click();
+  check(
+    "[today] prominent idle status copy shown",
+    await page.getByText("עדיין לא נכנסת למכון היום").first().isVisible(),
+  );
+  await page.getByRole("button", { name: "נכנסתי למכון" }).click();
   await page.waitForTimeout(150);
   check(
-    "[today] active timer appears on Today",
-    await page.getByText("אתה במכון").first().isVisible(),
+    "[today] active live state appears on Today",
+    await page.getByText("אתה במכון עכשיו").first().isVisible(),
+  );
+  check(
+    "[today] active timer (HH:MM:SS) visible",
+    await page.getByText(/^\d{2}:\d{2}:\d{2}$/).first().isVisible(),
   );
   check(
     "[today] active visit stored",
     (await page.evaluate((k) => localStorage.getItem(k), ACTIVE_KEY)) !== null,
   );
-  await page.getByRole("button", { name: "סיים שהייה" }).click();
+  await page.getByRole("button", { name: "סיים שהייה במכון" }).click();
   await page.waitForTimeout(150);
   check(
     "[today] check-out cleared active",
@@ -462,6 +479,212 @@ const wire = (page, tag) => {
   check("[backup] gym visits restored", after.visits === 1);
   check("[backup] active gym visit restored", after.active === true);
   check("[backup] workout history unchanged", after.workouts === workoutsBefore);
+  await ctx.close();
+}
+
+/* ===================================================================== *
+ * 11. Same-day re-entry guard: completed visit today → confirm before    *
+ *     starting another; cancel does nothing, confirm starts a 2nd visit. *
+ * ===================================================================== */
+{
+  const ctx = await newCtx();
+  const page = await ctx.newPage();
+  wire(page, "reentry");
+  // One completed visit earlier *today* (so it counts as "visited today").
+  await ctx.addInitScript((k) => {
+    try {
+      const s = new Date(Date.now() - 4 * 3600000).toISOString();
+      const e = new Date(Date.now() - 3 * 3600000).toISOString();
+      localStorage.setItem(
+        k,
+        JSON.stringify([
+          { id: "today1", startedAt: s, endedAt: e, durationMs: 3600000, createdAt: s },
+        ]),
+      );
+    } catch {}
+  }, VISITS_KEY);
+  await page.goto(`${BASE}/gym`, { waitUntil: "networkidle" });
+
+  check(
+    "[reentry] idle card shows 'already visited today' copy",
+    await page.getByText("כבר נשמר ביקור במכון היום").first().isVisible(),
+  );
+  // Click check-in → confirmation dialog appears (no visit started yet).
+  await page.getByRole("button", { name: "נכנסתי למכון" }).click();
+  check(
+    "[reentry] confirmation dialog appears",
+    await page
+      .getByRole("dialog", { name: "כבר נשמר ביקור במכון היום" })
+      .isVisible(),
+  );
+  await page
+    .getByRole("dialog", { name: "כבר נשמר ביקור במכון היום" })
+    .getByRole("button", { name: "ביטול" })
+    .click();
+  await page.waitForTimeout(150);
+  check(
+    "[reentry] cancel does NOT create an active visit",
+    (await page.evaluate((k) => localStorage.getItem(k), ACTIVE_KEY)) === null,
+  );
+
+  // Click again and confirm → a second visit is started.
+  await page.getByRole("button", { name: "נכנסתי למכון" }).click();
+  await page
+    .getByRole("dialog", { name: "כבר נשמר ביקור במכון היום" })
+    .getByRole("button", { name: "כן, התחל ביקור נוסף" })
+    .click();
+  await page.waitForTimeout(150);
+  check(
+    "[reentry] confirm starts a second (active) visit",
+    (await page.evaluate((k) => localStorage.getItem(k), ACTIVE_KEY)) !== null,
+  );
+  // Finish it → history now holds two visits for the day.
+  await page.getByRole("button", { name: "סיים שהייה במכון" }).click();
+  await page
+    .getByRole("dialog", { name: "לסיים את השהייה במכון?" })
+    .getByRole("button", { name: "סיים שהייה" })
+    .click();
+  await page.waitForTimeout(150);
+  check(
+    "[reentry] two visits in history after confirmed re-entry",
+    (await page.evaluate((k) => JSON.parse(localStorage.getItem(k) || "[]").length, VISITS_KEY)) === 2,
+  );
+  await ctx.close();
+}
+
+/* ===================================================================== *
+ * 12. Active-visit guard: while a visit is open there is no check-in —   *
+ *     only check-out (no second active visit can be created).           *
+ * ===================================================================== */
+{
+  const ctx = await newCtx();
+  const page = await ctx.newPage();
+  wire(page, "active-guard");
+  await ctx.addInitScript((k) => {
+    try {
+      const s = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+      localStorage.setItem(k, JSON.stringify({ id: "open1", startedAt: s, createdAt: s }));
+    } catch {}
+  }, ACTIVE_KEY);
+  await page.goto(`${BASE}/gym`, { waitUntil: "networkidle" });
+  check(
+    "[active-guard] no check-in button while active",
+    (await page.getByRole("button", { name: "נכנסתי למכון" }).count()) === 0,
+  );
+  check(
+    "[active-guard] check-out button shown instead",
+    await page.getByRole("button", { name: "סיים שהייה במכון" }).isVisible(),
+  );
+  const id = await page.evaluate((k) => {
+    try {
+      return JSON.parse(localStorage.getItem(k) || "null")?.id;
+    } catch {
+      return null;
+    }
+  }, ACTIVE_KEY);
+  check("[active-guard] still the same single active visit", id === "open1");
+  await ctx.close();
+}
+
+/* ===================================================================== *
+ * 13. Workout linking: a workout saved during the visit window is        *
+ *     snapshotted onto the visit at check-out (display-only).            *
+ * ===================================================================== */
+{
+  const ctx = await newCtx();
+  const page = await ctx.newPage();
+  wire(page, "link");
+  await ctx.addInitScript(
+    ([ak]) => {
+      try {
+        const d = new Date();
+        const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const s = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+        localStorage.setItem(ak, JSON.stringify({ id: "v_link", startedAt: s, createdAt: s }));
+        // A workout logged "today" (during the visit window). Workout history is
+        // day-level, so same-day = inside the window.
+        localStorage.setItem(
+          "yfos:workouts",
+          JSON.stringify([
+            {
+              id: "w_link",
+              date: today,
+              title: "גב + יד קדמית",
+              muscleGroups: ["back", "biceps"],
+              exercises: [{ exerciseId: "x", sets: [] }],
+            },
+          ]),
+        );
+      } catch {}
+    },
+    [ACTIVE_KEY],
+  );
+  await page.goto(`${BASE}/gym`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "סיים שהייה במכון" }).click();
+  await page
+    .getByRole("dialog", { name: "לסיים את השהייה במכון?" })
+    .getByRole("button", { name: "סיים שהייה" })
+    .click();
+  await page.waitForTimeout(150);
+  check(
+    "[link] history row shows linked workout title",
+    await page.getByText("גב + יד קדמית").first().isVisible(),
+  );
+  const saved = await page.evaluate((k) => {
+    try {
+      return JSON.parse(localStorage.getItem(k) || "[]");
+    } catch {
+      return [];
+    }
+  }, VISITS_KEY);
+  check(
+    "[link] saved visit carries a workout snapshot",
+    saved[0]?.workouts?.length === 1 && saved[0].workouts[0].title === "גב + יד קדמית",
+  );
+  check(
+    "[link] workout history left intact (1 workout, unchanged title)",
+    (await page.evaluate(() => {
+      try {
+        const ws = JSON.parse(localStorage.getItem("yfos:workouts") || "[]");
+        return ws.length === 1 && ws[0].title === "גב + יד קדמית";
+      } catch {
+        return false;
+      }
+    })),
+  );
+  await ctx.close();
+}
+
+/* ===================================================================== *
+ * 14. Old-data compatibility: a visit with no `workouts` field loads     *
+ *     fine and shows the no-linked-workout copy (no crash).             *
+ * ===================================================================== */
+{
+  const ctx = await newCtx();
+  const page = await ctx.newPage();
+  wire(page, "old-data");
+  await ctx.addInitScript((k) => {
+    try {
+      const s = new Date(Date.now() - 28 * 3600000).toISOString();
+      const e = new Date(Date.now() - 27 * 3600000).toISOString();
+      // First-version shape: NO `workouts` field at all.
+      localStorage.setItem(
+        k,
+        JSON.stringify([
+          { id: "old1", startedAt: s, endedAt: e, durationMs: 3600000, createdAt: s },
+        ]),
+      );
+    } catch {}
+  }, VISITS_KEY);
+  await page.goto(`${BASE}/gym`, { waitUntil: "networkidle" });
+  check(
+    "[old-data] old visit renders (date visible)",
+    (await page.getByText("משך שהייה").first().isVisible()),
+  );
+  check(
+    "[old-data] no-linked-workout copy for old visit",
+    await page.getByText("לא קושר אימון לביקור הזה").first().isVisible(),
+  );
   await ctx.close();
 }
 

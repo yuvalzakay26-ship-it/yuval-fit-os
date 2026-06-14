@@ -13,11 +13,14 @@ import {
   finishGymVisit,
   formatClock,
   formatDuration,
+  formatDurationWords,
   formatTimer,
   getGymVisitStats,
+  hasCompletedVisitToday,
   startGymVisit,
   useActiveGymVisit,
   useGymVisits,
+  visitWorkoutSummary,
   type GymVisit,
 } from "@/lib/gym-attendance";
 import { formatHebrewDate } from "@/lib/utils";
@@ -31,6 +34,7 @@ import {
   ClockIcon,
   DoorEnterIcon,
   DoorExitIcon,
+  DumbbellIcon,
   StopwatchIcon,
   TrashIcon,
   WarningIcon,
@@ -42,12 +46,25 @@ import { useNow } from "./useNow";
 function IdleCard({
   lastVisit,
   visitsThisWeek,
+  visitedToday,
   onCheckIn,
 }: {
   lastVisit: GymVisit | null;
   visitsThisWeek: number;
+  visitedToday: boolean;
   onCheckIn: () => void;
 }) {
+  const title = visitedToday
+    ? "כבר נשמר ביקור במכון היום"
+    : "עדיין לא נכנסת למכון היום";
+  const context =
+    visitsThisWeek > 0
+      ? `${visitsThisWeek} ביקורים השבוע`
+      : lastVisit
+        ? `ביקור אחרון · ${formatDuration(lastVisit.durationMs)} שעות · ${formatHebrewDate(
+            lastVisit.startedAt.slice(0, 10),
+          )}`
+        : "סמן כניסה כדי למדוד זמן שהייה במכון";
   return (
     <Card
       variant="raised"
@@ -63,18 +80,10 @@ function IdleCard({
             <DoorEnterIcon className="h-6 w-6" />
           </span>
           <div className="min-w-0">
-            <p className="text-[18px] font-extrabold leading-tight text-foreground">
-              מוכן להתאמן?
+            <p className="text-[17px] font-extrabold leading-tight text-foreground">
+              {title}
             </p>
-            <p className="mt-0.5 text-[12.5px] text-muted">
-              {visitsThisWeek > 0
-                ? `${visitsThisWeek} ביקורים השבוע`
-                : lastVisit
-                  ? `ביקור אחרון · ${formatHebrewDate(
-                      lastVisit.startedAt.slice(0, 10),
-                    )}`
-                  : "סמן כניסה כדי למדוד זמן שהייה במכון"}
-            </p>
+            <p className="mt-0.5 text-[12.5px] text-muted">{context}</p>
           </div>
         </div>
         <Button
@@ -119,6 +128,37 @@ function StatTile({
 
 /* ------------------------------ History row ----------------------------- */
 
+/** The linked-workout line for a saved visit (display-only snapshot). */
+function VisitWorkoutLine({ visit }: { visit: GymVisit }) {
+  const { count, primaryTitle, titles } = visitWorkoutSummary(visit);
+  if (count === 0) {
+    return (
+      <p className="mt-1 text-[12px] italic leading-snug text-faint">
+        לא קושר אימון לביקור הזה
+      </p>
+    );
+  }
+  return (
+    <p className="mt-1 flex items-start gap-1.5 text-[12.5px] leading-snug text-muted">
+      <DumbbellIcon className="mt-px h-3.5 w-3.5 shrink-0 text-[color:var(--accent-strength)]" />
+      <span className="min-w-0">
+        {count === 1 ? (
+          <>
+            אימון:{" "}
+            <span className="font-semibold text-foreground">{primaryTitle}</span>
+          </>
+        ) : (
+          <>
+            אימונים:{" "}
+            <span className="font-semibold text-foreground">{count}</span>
+            <span className="text-faint"> · {titles.join(" · ")}</span>
+          </>
+        )}
+      </span>
+    </p>
+  );
+}
+
 function VisitRow({
   visit,
   onDelete,
@@ -127,7 +167,7 @@ function VisitRow({
   onDelete: (id: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface-2 p-3.5">
+    <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface-2 p-3.5">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--accent-energy-soft)] text-[color:var(--accent-energy)]">
         <DoorEnterIcon className="h-5 w-5" />
       </span>
@@ -135,15 +175,27 @@ function VisitRow({
         <p className="text-[14px] font-bold leading-tight text-foreground">
           {formatHebrewDate(visit.startedAt.slice(0, 10))}
         </p>
-        <p className="mt-0.5 text-[12.5px] text-muted">
-          <span dir="ltr" className="tabular-nums">
-            {formatClock(visit.startedAt)}–{formatClock(visit.endedAt)}
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12.5px] text-muted">
+          <span>
+            כניסה{" "}
+            <span dir="ltr" className="font-semibold tabular-nums text-foreground">
+              {formatClock(visit.startedAt)}
+            </span>
           </span>
-          {" · "}
+          <span>
+            יציאה{" "}
+            <span dir="ltr" className="font-semibold tabular-nums text-foreground">
+              {formatClock(visit.endedAt)}
+            </span>
+          </span>
+        </div>
+        <p className="mt-0.5 text-[12.5px] text-muted">
+          משך שהייה:{" "}
           <span className="font-semibold text-foreground">
-            {formatDuration(visit.durationMs)} שעות
+            {formatDurationWords(visit.durationMs)}
           </span>
         </p>
+        <VisitWorkoutLine visit={visit} />
       </div>
       <button
         type="button"
@@ -166,10 +218,20 @@ export function GymView() {
 
   const [saved, setSaved] = useState<GymVisit | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmReentry, setConfirmReentry] = useState(false);
 
+  const visitedToday = hasCompletedVisitToday(visits);
+
+  // Check-in: start immediately on the first visit of the day, but ask for a
+  // calm confirmation if one was already completed today (the same-day re-entry
+  // guard). An active visit never reaches here — the active card is shown instead.
   const handleCheckIn = () => {
     setSaved(null);
-    startGymVisit();
+    if (visitedToday) {
+      setConfirmReentry(true);
+    } else {
+      startGymVisit();
+    }
   };
 
   const handleConfirmDeleteVisit = () => {
@@ -184,6 +246,7 @@ export function GymView() {
         active={active}
         lastVisit={stats.lastVisit}
         visitsThisWeek={stats.visitsThisWeek}
+        visitedToday={visitedToday}
         onCheckIn={handleCheckIn}
         onCheckedOut={(visit) => setSaved(visit)}
       />
@@ -299,6 +362,19 @@ export function GymView() {
         onConfirm={handleConfirmDeleteVisit}
         onCancel={() => setDeletingId(null)}
       />
+
+      <ConfirmDialog
+        open={confirmReentry}
+        title="כבר נשמר ביקור במכון היום"
+        description="נראה שכבר נכנסת ויצאת מהמכון היום. האם אתה רוצה להתחיל ביקור נוסף?"
+        confirmLabel="כן, התחל ביקור נוסף"
+        cancelLabel="ביטול"
+        onConfirm={() => {
+          startGymVisit();
+          setConfirmReentry(false);
+        }}
+        onCancel={() => setConfirmReentry(false)}
+      />
     </div>
   );
 }
@@ -312,12 +388,14 @@ function ActiveOrIdle({
   active,
   lastVisit,
   visitsThisWeek,
+  visitedToday,
   onCheckIn,
   onCheckedOut,
 }: {
   active: ReturnType<typeof useActiveGymVisit>;
   lastVisit: GymVisit | null;
   visitsThisWeek: number;
+  visitedToday: boolean;
   onCheckIn: () => void;
   onCheckedOut: (visit: GymVisit) => void;
 }) {
@@ -328,6 +406,7 @@ function ActiveOrIdle({
     <IdleCard
       lastVisit={lastVisit}
       visitsThisWeek={visitsThisWeek}
+      visitedToday={visitedToday}
       onCheckIn={onCheckIn}
     />
   );
@@ -391,6 +470,8 @@ function ActiveVisitCardWithCallback({
             <span className="font-bold text-foreground">
               {formatClock(startedAt)}
             </span>
+            {" · "}
+            {formatHebrewDate(startedAt.slice(0, 10))}
           </p>
 
           <div className="mt-4 rounded-2xl border border-border bg-surface-2 p-4 text-center">

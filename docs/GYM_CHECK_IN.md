@@ -50,6 +50,15 @@ type GymVisit = {
   durationMs: number;  // endedAt - startedAt, clamped ≥ 0
   createdAt: string;
   updatedAt?: string;
+  workouts?: GymVisitWorkoutSnapshot[]; // optional, additive — see below
+};
+
+type GymVisitWorkoutSnapshot = {
+  workoutId: string;          // provenance only — never read back into workout history
+  title: string;              // workout title at check-out, e.g. "גב + יד קדמית"
+  savedAt?: string;           // workout's local date (YYYY-MM-DD); workouts are day-level
+  muscleGroups?: MuscleGroup[];
+  exerciseCount?: number;
 };
 
 type ActiveGymVisit = {
@@ -58,6 +67,9 @@ type ActiveGymVisit = {
   createdAt: string;
 };
 ```
+
+`workouts` is **optional and additive**. Old visits (and visits where nothing
+was trained that day) simply omit it — see *Old-data compatibility* below.
 
 All reads/writes are `isBrowser()`-guarded and fail safely (corrupt/partial
 records are ignored, never trusted). A small `useSyncExternalStore` reactive layer
@@ -73,6 +85,64 @@ snapshot is `[]` / `null`; the real value swaps in after hydration).
    stamps `endedAt`, computes `durationMs`, prepends a `GymVisit` to history,
    clears the active slot, and shows success feedback (`השהייה נשמרה` ·
    `היית במכון 1:24 שעות`). On the Today quick card the check-out is immediate.
+
+## Same-day re-entry guard
+
+Multiple gym visits per day are allowed, but an accidental duplicate is not:
+
+- **Active-visit guard** — while a visit is open there is **no check-in path** at
+  all. Both Today and `/gym` show the live state with a check-out only, so a
+  second active visit can never be created (`startGymVisit()` is also a no-op
+  when one is already open).
+- **Completed-visit guard** — if a visit was already *finished* today (no active
+  visit), tapping `נכנסתי למכון` opens a calm confirmation
+  (`כבר נשמר ביקור במכון היום` · `נראה שכבר נכנסת ויצאת מהמכון היום. האם אתה
+  רוצה להתחיל ביקור נוסף?`) with `כן, התחל ביקור נוסף` / `ביטול`. Only on confirm
+  is another visit created. Cancel does nothing.
+- **First visit of the day** starts immediately, with no confirmation.
+
+The guard is driven by the pure helper `hasCompletedVisitToday(visits, now?)`
+(local-day match on each visit's `startedAt`).
+
+## Linked workouts (display-only snapshot)
+
+A gym visit is **physical presence**, a workout is **training** — they stay
+separate. But at check-out a visit can show *what was trained* during it. Because
+workout history is **day-level** (`WorkoutSession.date` is a `YYYY-MM-DD` with no
+time), "during this visit" is matched by **local day**: `finishGymVisit()` calls
+`snapshotWorkoutsForWindow(workouts, startedAt, endedAt)`, which copies a few
+display fields from every workout dated between the check-in day and check-out day
+inclusive into `visit.workouts`.
+
+This is a **frozen snapshot for display/history only**. It never reads back into
+workout history, never mutates it, and is unaffected if the original workout is
+later edited or deleted. A workout is **never required** to finish a visit.
+
+History rows (and Progress) render it via `visitWorkoutSummary(visit)`:
+
+- one workout → `אימון: <title>`
+- multiple → `אימונים: <count>` (with compact names)
+- none → `לא קושר אימון לביקור הזה`
+
+A workout saved *while a visit is active* needs no special wiring — being the same
+local day, it is picked up automatically at check-out.
+
+## Visit details shown
+
+Each saved visit on `/gym` shows, derived purely from the ISO timestamps (no
+duplicated formatted labels in storage):
+
+- check-in date (`formatHebrewDate`)
+- entry time `כניסה HH:MM` and exit time `יציאה HH:MM` (`formatClock`)
+- duration `משך שהייה: 1ש 35ד` (`formatDurationWords`)
+- linked-workout summary (or the no-linked-workout copy)
+
+## Old-data compatibility
+
+First-version `GymVisit` records have **no `workouts` field**. They load and
+render unchanged — the linked-workout line shows `לא קושר אימון לביקור הזה`.
+`isValidVisit` only requires `id` / `startedAt` / `endedAt` / `durationMs`, so the
+optional field is never a load-or-restore hazard.
 
 ## Active visit persistence
 
@@ -97,11 +167,20 @@ an exit time — the user decides. (No GPS is ever used to detect leaving.)
 
 ## Today / Progress integration
 
-- **Today** shows the compact gym card (quick check-in or live timer) — a useful
-  quick action that does not dominate the screen.
+- **Today** shows a **prominent** gym card (`GymTodayCard`) — a primary-routine
+  card, not a small secondary action:
+  - **Active** → a strong live state: `אתה במכון עכשיו`, entry time and a live
+    `HH:MM:SS` stay timer (`משך שהייה`), with `סיים שהייה במכון`.
+  - **Idle, no visit today** → `עדיין לא נכנסת למכון היום` with context (weekly
+    count / last visit duration) and `נכנסתי למכון`.
+  - **Idle, already visited today** → `כבר נשמר ביקור במכון היום`; check-in goes
+    through the same-day confirmation. The card still does not dominate the
+    screen.
 - **Progress** (`/progress`) shows a compact "נוכחות במכון" stats block (visits
   this week, time at the gym this week, average duration, last visit) — rendered
-  only when at least one visit exists. Derived purely by `getGymVisitStats`.
+  only when at least one visit exists. Derived purely by `getGymVisitStats`. The
+  last-visit tile also shows the last linked workout when available
+  (`visitWorkoutSummary`).
 
 ## Backup & Restore integration
 
@@ -117,6 +196,12 @@ The restore preview shows the **ביקורים במכון** count and a
 back exactly like the rest of the modules (a value overwrites the key, `null`
 clears it). See [`BACKUP_RESTORE.md`](BACKUP_RESTORE.md).
 
+The optional `workouts` snapshot field rides along inside each visit with **no
+format/version change** (`backupVersion` stays `1`): the whole `GymVisit[]` is
+stored and restored as-is. Older backups (visits without `workouts`) and newer
+ones (visits with `workouts`) both restore cleanly, and the preview counts visits
+the same way regardless.
+
 ## Reset behavior
 
 "Reset all data" (Settings) clears gym attendance too — `fitness-store.resetAll()`
@@ -130,8 +215,17 @@ is never touched.
   `deleteGymVisit(id)` / `clearAllGymData()` — mutations.
 - `getGymVisitStats(visits, now?)` — pure: totals, visits-this-week,
   time-this-week, average duration, last visit (Sunday-based week).
-- `formatDuration(ms)` → `H:MM` (e.g. `1:24`); `formatTimer(ms)` → `HH:MM:SS`
-  live timer; `formatClock(iso)` → `HH:MM`.
+- `hasCompletedVisitToday(visits, now?)` — pure: drives the same-day re-entry
+  guard (a *completed* visit today; the open visit is handled separately).
+- `snapshotWorkoutsForWindow(workouts, startedAt, endedAt)` — pure: builds the
+  display-only linked-workout snapshots by local day. `finishGymVisit(now?,
+  workouts?)` calls it at check-out (workouts default to live history; injectable
+  for tests).
+- `visitWorkoutSummary(visit)` — `{ count, primaryTitle, titles }` for the
+  linked-workout label (safe on old/empty visits).
+- `formatDuration(ms)` → `H:MM` (e.g. `1:24`); `formatDurationWords(ms)` →
+  `1ש 35ד`; `formatTimer(ms)` → `HH:MM:SS` live timer; `formatClock(iso)` →
+  `HH:MM`.
 
 ## What this is NOT
 
@@ -143,8 +237,14 @@ manual check-in/out only.
 
 `scripts/qa-gym-check-in.mjs` (expects `next start -p 3334`): empty state,
 check-in + live timer + reload persistence, check-out (saves visit, clears active,
-success + history row), delete open visit / saved visit (both confirm-gated),
-long-open forgot warning (no auto-close), Today check-in/out landing in `/gym`
-history, Progress gym stats, backup export includes `gymVisits` + `activeGymVisit`
-and restore brings them back without altering workout history, and 360/390 +
-light/dark with no console errors.
+worded duration + entry/exit labels + no-linked-workout copy), delete open visit /
+saved visit (both confirm-gated), long-open forgot warning (no auto-close),
+prominent Today card (idle status copy + live `אתה במכון עכשיו` state) landing in
+`/gym` history, **same-day re-entry guard** (confirm appears; cancel creates
+nothing; confirm starts a second visit → two in history), **active-visit guard**
+(no check-in while open; single active visit), **workout linking** (a workout
+saved during the window is snapshotted onto the visit; workout history left
+intact), **old-data compatibility** (a visit with no `workouts` field renders with
+the no-linked-workout copy, no crash), Progress gym stats, backup export includes
+`gymVisits` + `activeGymVisit` and restore brings them back without altering
+workout history, and 360/390 + light/dark with no console errors.

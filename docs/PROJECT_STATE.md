@@ -4,7 +4,25 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (**Gym Check-In / Check-Out**: a new `/gym` screen
+> Last reviewed: Phase 3.xx (**Gym Check-In polish**: the Today gym card
+> (`GymTodayCard`) is now a **prominent primary-routine card** — idle shows the
+> day status (`עדיין לא נכנסת למכון היום` / `כבר נשמר ביקור במכון היום`) with
+> `נכנסתי למכון`; active shows a strong live state (`אתה במכון עכשיו`, entry time
+> + live `HH:MM:SS` `משך שהייה`, `סיים שהייה במכון`). Saved visits on `/gym` now
+> show richer details (check-in date, `כניסה`/`יציאה` times, worded duration, and
+> a **linked-workout** summary). At check-out, workouts saved **during the visit's
+> local-day window** are snapshotted onto the visit as a display-only
+> `GymVisit.workouts?` (workout history is never read back or altered; a workout is
+> never required to finish a visit). A **same-day re-entry guard** prevents
+> accidental duplicates: while a visit is open there is no check-in path, and after
+> a visit was already completed today a check-in asks
+> `כבר נשמר ביקור במכון היום` before starting another. The optional `workouts`
+> field is additive — old visits load and restore unchanged (`backupVersion` stays
+> `1`); the linked-workout line shows `לא קושר אימון לביקור הזה`. No workout/
+> nutrition schema, save-behavior, backup-format, or bottom-nav changes;
+> localStorage-only, no backend/auth/AI/API/cloud/GPS/native. See
+> [`GYM_CHECK_IN.md`](GYM_CHECK_IN.md).
+> Prior: Phase 3.xx (**Gym Check-In / Check-Out**: a new `/gym` screen
 > (`components/gym/GymView.tsx`, `lib/gym-attendance.ts`) tracks **gym
 > attendance** — manual check-in when you enter the gym and check-out when you
 > leave — kept fully **separate from workout logging**. A *workout session* is
@@ -149,7 +167,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | Water Tracking | Daily hydration log + goal + personal cup/bottle presets | `components/water/*`, `docs/WATER_TRACKING.md`, `docs/WATER_PRESETS.md` |
 | Supplements Tracker | Personal supplement/medication tracking (no advice); searchable starter-template library with already-tracked state | `components/supplements/*`, `docs/SUPPLEMENTS_TRACKER.md`, `docs/SUPPLEMENTS_LIBRARY_UX.md` |
 | Progress | Premium weekly insights screen: weekly hero, rule-based insight cards, 7-day activity trends, human empty states, and personal records — derived purely from existing local data (no AI) | `components/progress/*`, `lib/analytics.ts`, `lib/progress-insights.ts`, `docs/PROGRESS_INSIGHTS_UPGRADE.md` |
-| Gym Attendance | Local gym check-in / check-out: live visit timer, weekly stats (visits, time, avg, last), visit history. Tracks *being at the gym* — separate from workout logging. No GPS | `components/gym/*`, `lib/gym-attendance.ts`, `docs/GYM_CHECK_IN.md` |
+| Gym Attendance | Local gym check-in / check-out: prominent Today card, live visit timer, weekly stats (visits, time, avg, last), rich visit history (entry/exit/duration + display-only linked-workout snapshot matched by local day), same-day re-entry guard. Tracks *being at the gym* — separate from workout logging. No GPS | `components/gym/*`, `lib/gym-attendance.ts`, `docs/GYM_CHECK_IN.md` |
 | Settings | Premium "control center": appearance (light/dark only), daily goals, water shortcuts, data & storage (incl. a Backup & Restore card), access & privacy, separated sensitive actions, system info | `components/settings/SettingsView.tsx`, `docs/SETTINGS_CONTROL_CENTER.md` |
 | Backup & Restore | Local JSON export/import of all Fit OS data: Blob download (+ copy/paste fallback), validated import with counts preview + confirm, last-backup status. No backend/auth/cloud/encryption | `components/backup/BackupView.tsx`, `lib/backup.ts`, `docs/BACKUP_RESTORE.md` |
 | Learn (Knowledge Center) | Card-based Hebrew articles + protein calculator | `app/learn/*`, `lib/knowledge-content.ts`, `lib/protein.ts` |
@@ -220,7 +238,7 @@ existing user data is bound to them. See §5 for reset behavior.
 | `yfos:private-access-notice-accepted:session` | **sessionStorage** | Private-access notice accepted **this session** (`"1"`) | `lib/private-access.ts` |
 | `yfos:admin-access-granted:v1` | localStorage | Admin access-code gate unlocked on this device (`"1"`) | `lib/admin-access.ts` |
 | `yfos:active-workout-draft:v1` | localStorage | **Single** in-progress active-workout draft (auto-saved). NOT history — separate from `yfos:workouts`; cleared on final save / explicit discard | `lib/active-workout-draft.ts` |
-| `yfos:gym-visits:v1` | localStorage | Gym **attendance** history (`GymVisit[]`). Separate from `yfos:workouts` — being at the gym, not training. Included in backups; cleared by `resetAll` | `lib/gym-attendance.ts` |
+| `yfos:gym-visits:v1` | localStorage | Gym **attendance** history (`GymVisit[]`). Separate from `yfos:workouts` — being at the gym, not training. Each visit may carry an optional, additive `workouts?` display-only snapshot (no format/version change). Included in backups; cleared by `resetAll` | `lib/gym-attendance.ts` |
 | `yfos:active-gym-visit:v1` | localStorage | **Single** open gym visit (`startedAt` only; the timer is derived). Closed into history on check-out, removed on discard. Included in backups; cleared by `resetAll` | `lib/gym-attendance.ts` |
 | `yfos:backup-meta:v1` | localStorage | Backup bookkeeping only (`lastExportedAt` / `lastRestoredAt` / `lastRestoredBackupCreatedAt`). Best-effort status; **never** part of a backup and not "data" | `lib/backup.ts` |
 
