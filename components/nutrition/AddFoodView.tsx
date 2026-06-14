@@ -43,8 +43,8 @@ export function AddFoodView({
   const fromLibrary = Boolean(libraryItem);
   const title = fromLibrary ? "הוספת מאכל ליומן" : "הוספה ידנית";
   const subtitle = fromLibrary
-    ? "מלא כמות וערכים תזונתיים, ואז שמור ליומן."
-    : "רשום מאכל וערכים תזונתיים, ואז שמור ליומן.";
+    ? "כמות, ערכים תזונתיים — ושומרים ליומן."
+    : "שם המאכל, כמות וערכים — ושומרים ליומן.";
 
   return (
     <div>

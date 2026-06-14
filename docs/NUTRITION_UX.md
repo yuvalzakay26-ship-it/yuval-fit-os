@@ -60,7 +60,7 @@ feeling.
 
 ## Selected-food add flow
 
-The add screen (`AddFoodView` → `FoodLogForm` in a card) shows, in order:
+The add screen (`AddFoodView` → `FoodLogForm`) shows, in order:
 
 - A "נבחר מהמאגר" card with the food image, name, and **category label** (when
   the food came from the library).
@@ -71,6 +71,46 @@ The add screen (`AddFoodView` → `FoodLogForm` in a card) shows, in order:
 Macros are never pre-filled from the library — the user enters portion values
 each time. Saving writes a `FoodLog` and returns to the Nutrition screen; the
 diary and totals update from the user-entered values only.
+
+## Update — Phase 3.22: premium guided "Add to Journal" flow
+
+The add screen was reworked from one long generic form into a **guided,
+card-grouped logging flow**, so a user immediately understands the sequence:
+selected food → meal → quantity → nutrition values → optional save → add. The
+data model is unchanged — `FoodLog`, `SavedFoodValue`, the localStorage keys, and
+the "add to journal" behavior all work exactly as before. The form is no longer
+wrapped in a single `Card`; each step is its own surface (`FoodLogForm`’s
+internal `bare`/`Card` switch was removed since the form now styles its own
+sections).
+
+What changed, by section:
+
+1. **Selected food context** — a more prominent accent-tinted card (larger
+   thumbnail, `נבחר מהמאגר` eyebrow with a check, favorite star + clear).
+2. **Quantity** — clearer label **`כמה אכלת?`**, an example-rich placeholder
+   (`200 גרם, מנה אחת, 2 פרוסות`), and tappable **quick presets**
+   (`100 גרם / מנה / כוס / פרוסה / יחידה`) that fill the free-text field in one
+   tap. The data model stays a single `quantityText` string — presets are pure
+   UI sugar.
+3. **Nutrition values** — calories is shown as an emphasized headline field with
+   a flame icon and a **`קק״ל`** unit; protein / carbs / fat sit in a labelled
+   row each with a **`גרם`** unit. A **`ניתן לעריכה`** pill plus a contextual
+   hint make it unmistakable that these are editable inputs, not passive stats.
+   Native number spinners are hidden for a cleaner look.
+4. **Empty-value clarity** — instead of bare `0 / 0 / 0 / 0`, the hint explains
+   the state: for a library food with no saved values, *"אין עדיין ערכים שמורים
+   למאכל הזה — הזן אותם פעם אחת ושמור לפעם הבאה"*; when saved values were loaded,
+   *"הערכים נטענו מהפעם הקודמת…"*; for manual entry, *"הזן את הערכים… (לא חובה)"*.
+5. **Save for next time** — promoted to a labelled card with a bookmark icon, a
+   plain-language description of what it does, and a **toggle switch** (RTL-aware)
+   instead of a bare checkbox. The reset-saved affordance is unchanged.
+6. **CTA** — the **`הוסף ליומן`** button stays full-width and prominent; a helper
+   line appears while the food name is empty. The page’s `pb-32` keeps it clear
+   of the fixed bottom nav.
+
+No AI, estimation, recommendations, backend, or auth were added. QA:
+`qa/add-food-flow-check.mjs` captures the library + manual variants at 360px and
+390px in light and dark and asserts no horizontal overflow.
 
 ## Macro / progress text clarity
 

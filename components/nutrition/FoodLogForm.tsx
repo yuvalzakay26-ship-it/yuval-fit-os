@@ -12,10 +12,17 @@ import {
   useSavedFoodValues,
 } from "@/lib/fitness-store";
 import { cn, createId, parseOptionalNumber, todayISO } from "@/lib/utils";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
-import { PlusIcon, StarIcon, XIcon } from "@/components/ui/icons";
+import {
+  BookmarkIcon,
+  CheckIcon,
+  FlameIcon,
+  PencilIcon,
+  PlusIcon,
+  StarIcon,
+  XIcon,
+} from "@/components/ui/icons";
 import { MEAL_ORDER, MEAL_TYPE_LABELS } from "./nutrition-labels";
 import { FoodImage } from "./FoodImage";
 
@@ -49,6 +56,16 @@ const EMPTY = {
 
 type FormState = typeof EMPTY;
 
+/** Quick, tappable quantity examples — set the free-text field in one tap. */
+const QUANTITY_PRESETS = ["100 גרם", "מנה", "כוס", "פרוסה", "יחידה"];
+
+/** The three macros rendered as a unit-labelled row (calories sits apart). */
+const MACROS = [
+  { key: "protein", label: "חלבון" },
+  { key: "carbs", label: "פחמימות" },
+  { key: "fat", label: "שומן" },
+] as const;
+
 function buildInitial(prefill?: FoodPrefill | null): FormState {
   if (!prefill) return EMPTY;
   return {
@@ -66,14 +83,11 @@ export function FoodLogForm({
   prefill,
   onSaved,
   onClearPrefill,
-  bare = false,
 }: {
   prefill?: FoodPrefill | null;
   onSaved?: () => void;
   /** Called when the user clears the picked food (or after a save). */
   onClearPrefill?: () => void;
-  /** Drop the Card wrapper when the form already lives inside a sheet/panel. */
-  bare?: boolean;
 }) {
   // Parent remounts this form (via `key`) whenever a new food is picked, so the
   // initializer reliably reflects the latest prefill.
@@ -174,20 +188,38 @@ export function FoodLogForm({
     onClearPrefill?.();
   };
 
-  const formEl = (
-    <form onSubmit={handleSubmit} className="space-y-4">
-        {form.imagePath && (
-          <div className="flex items-center gap-3 rounded-2xl bg-[color:var(--accent-nutrition-soft)] p-2.5">
+  const fromLibrary = Boolean(form.imagePath || sourceFoodId);
+  const categoryLabel =
+    form.category && FOOD_CATEGORY_LABELS[form.category as FoodCategory];
+
+  // What to tell the user about the macro fields, depending on context.
+  let nutritionHint: string;
+  if (saved) {
+    nutritionHint = "הערכים נטענו מהפעם הקודמת. אפשר לערוך אותם בכל רגע.";
+  } else if (sourceFoodId) {
+    nutritionHint =
+      "אין עדיין ערכים שמורים למאכל הזה — הזן אותם פעם אחת ושמור לפעם הבאה.";
+  } else {
+    nutritionHint = "הזן את הערכים התזונתיים של הכמות שאכלת (לא חובה).";
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3.5">
+      {/* ── Selected food context ──────────────────────────────────────── */}
+      {fromLibrary && form.imagePath && (
+        <div className="relative overflow-hidden rounded-2xl border border-[color:var(--accent-nutrition-soft)] bg-[color:var(--accent-nutrition-soft)] p-3">
+          <div className="flex items-center gap-3">
             <FoodImage
               imagePath={form.imagePath}
               alt={form.foodName}
               category={(form.category || "other") as FoodCategory}
               label={form.foodName}
-              sizes="56px"
-              className="h-14 w-14 shrink-0"
+              sizes="64px"
+              className="h-16 w-16 shrink-0 rounded-xl"
             />
             <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-1 text-[11px] font-semibold text-[color:var(--accent-nutrition)]">
+              <p className="flex flex-wrap items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wide text-[color:var(--accent-nutrition)]">
+                <CheckIcon className="h-3 w-3" />
                 נבחר מהמאגר
                 {isFavorite && (
                   <span className="inline-flex items-center gap-0.5 text-amber-500">
@@ -196,40 +228,46 @@ export function FoodLogForm({
                   </span>
                 )}
               </p>
-              <p className="truncate text-[14px] font-bold text-foreground">
+              <p className="mt-0.5 truncate text-[15px] font-extrabold text-foreground">
                 {form.foodName}
               </p>
-              {form.category && FOOD_CATEGORY_LABELS[form.category as FoodCategory] && (
-                <p className="truncate text-[11.5px] text-muted">
-                  {FOOD_CATEGORY_LABELS[form.category as FoodCategory]}
-                </p>
+              {categoryLabel && (
+                <p className="truncate text-[12px] text-muted">{categoryLabel}</p>
               )}
             </div>
-            {sourceFoodId && (
+            <div className="flex shrink-0 items-center gap-0.5">
+              {sourceFoodId && (
+                <button
+                  type="button"
+                  onClick={() => toggleFavoriteFood(sourceFoodId)}
+                  className="tap flex h-9 w-9 items-center justify-center rounded-xl text-faint hover:bg-surface-2"
+                  aria-label={isFavorite ? "הסר מהמועדפים" : "הוסף למועדפים"}
+                  aria-pressed={isFavorite}
+                >
+                  <StarIcon
+                    filled={isFavorite}
+                    className={cn(
+                      "h-[19px] w-[19px]",
+                      isFavorite && "text-amber-400",
+                    )}
+                  />
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => toggleFavoriteFood(sourceFoodId)}
-                className="tap -m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-faint hover:bg-surface-2"
-                aria-label={isFavorite ? "הסר מהמועדפים" : "הוסף למועדפים"}
-                aria-pressed={isFavorite}
+                onClick={clearLibraryLink}
+                className="tap flex h-9 w-9 items-center justify-center rounded-xl text-faint hover:bg-surface-2 hover:text-foreground"
+                aria-label="ניקוי הבחירה מהמאגר"
               >
-                <StarIcon
-                  filled={isFavorite}
-                  className={cn("h-[18px] w-[18px]", isFavorite && "text-amber-400")}
-                />
+                <XIcon className="h-4 w-4" />
               </button>
-            )}
-            <button
-              type="button"
-              onClick={clearLibraryLink}
-              className="tap -m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-faint hover:bg-surface-2 hover:text-foreground"
-              aria-label="ניקוי הבחירה מהמאגר"
-            >
-              <XIcon className="h-4 w-4" />
-            </button>
+            </div>
           </div>
-        )}
+        </div>
+      )}
 
+      {/* ── Step 1 · Basics: name, meal, quantity ──────────────────────── */}
+      <section className="space-y-4 rounded-2xl border border-border bg-surface p-4 shadow-soft">
         <div>
           <Label htmlFor="food-name">מה אכלת?</Label>
           <Input
@@ -240,20 +278,20 @@ export function FoodLogForm({
           />
         </div>
 
-        {/* Meal type as friendly segmented chips */}
         <div>
-          <Label>ארוחה</Label>
+          <Label>לאיזו ארוחה?</Label>
           <div className="grid grid-cols-4 gap-1.5">
             {MEAL_ORDER.map((meal) => (
               <button
                 key={meal}
                 type="button"
                 onClick={() => update({ mealType: meal })}
+                aria-pressed={form.mealType === meal}
                 className={cn(
-                  "tap rounded-xl px-1 py-2 text-[12px] font-semibold",
+                  "tap rounded-xl px-1 py-2 text-[12px] font-semibold transition-colors",
                   form.mealType === meal
                     ? "nutrition-gradient text-[color:var(--accent-contrast)] shadow-glow-nutrition"
-                    : "border border-border bg-surface-2 text-muted",
+                    : "border border-border bg-surface-2 text-muted hover:text-foreground",
                 )}
               >
                 {MEAL_TYPE_LABELS[meal]}
@@ -263,82 +301,172 @@ export function FoodLogForm({
         </div>
 
         <div>
-          <Label htmlFor="quantity">כמות</Label>
+          <Label htmlFor="quantity">כמה אכלת?</Label>
           <Input
             id="quantity"
             value={form.quantityText}
             onChange={(e) => update({ quantityText: e.target.value })}
-            placeholder="200 גרם / מנה"
+            placeholder="לדוגמה: 200 גרם, מנה אחת, 2 פרוסות"
           />
-        </div>
-
-        <div>
-          <Label>ערכים תזונתיים</Label>
-          <div className="grid grid-cols-4 gap-2">
-            {(
-              [
-                { key: "protein", label: "חלבון" },
-                { key: "carbs", label: "פחמימות" },
-                { key: "fat", label: "שומן" },
-                { key: "calories", label: "קלוריות" },
-              ] as const
-            ).map((f) => (
-              <div key={f.key}>
-                <Input
-                  id={f.key}
-                  type="number"
-                  inputMode={f.key === "calories" ? "numeric" : "decimal"}
-                  min={0}
-                  placeholder="0"
-                  className="px-1 text-center text-[15px] font-semibold"
-                  value={form[f.key]}
-                  onChange={(e) => update({ [f.key]: e.target.value })}
-                />
-                <p className="mt-1 text-center text-[10.5px] font-medium text-faint">
-                  {f.label}
-                </p>
-              </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {QUANTITY_PRESETS.map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => update({ quantityText: q })}
+                aria-pressed={form.quantityText === q}
+                className={cn(
+                  "tap rounded-full px-3 py-1 text-[12px] font-semibold transition-colors",
+                  form.quantityText === q
+                    ? "border border-[color:var(--accent-nutrition)] bg-[color:var(--accent-nutrition-soft)] text-[color:var(--accent-nutrition)]"
+                    : "border border-border bg-surface-2 text-muted hover:text-foreground",
+                )}
+              >
+                {q}
+              </button>
             ))}
           </div>
         </div>
+      </section>
 
-        {/* Saved-values controls — only for library foods (stable sourceFoodId). */}
-        {sourceFoodId && (
-          <div className="space-y-2.5 rounded-2xl bg-surface-2 p-3">
-            <label className="tap flex cursor-pointer items-center gap-2.5">
-              <input
-                type="checkbox"
-                checked={form.saveValues}
-                onChange={(e) => update({ saveValues: e.target.checked })}
-                className="h-[18px] w-[18px] shrink-0 rounded accent-[color:var(--accent-nutrition)]"
-              />
-              <span className="text-[13.5px] font-semibold text-foreground">
-                שמור ערכים לפעם הבאה
-              </span>
-            </label>
-            {saved && (
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[11.5px] text-[color:var(--accent-nutrition)]">
-                  נטען מהערכים ששמרת
-                </p>
-                <button
-                  type="button"
-                  onClick={handleResetSaved}
-                  className="tap shrink-0 text-[11.5px] font-semibold text-faint underline-offset-2 hover:text-foreground hover:underline"
-                >
-                  אפס ערכים שמורים
-                </button>
-              </div>
-            )}
+      {/* ── Step 2 · Nutrition values (clearly editable) ───────────────── */}
+      <section className="space-y-3 rounded-2xl border border-border bg-surface p-4 shadow-soft">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="text-[14px] font-bold text-foreground">
+              ערכים תזונתיים
+            </h3>
+            <p className="mt-0.5 text-[11.5px] leading-relaxed text-muted">
+              {nutritionHint}
+            </p>
           </div>
-        )}
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-2 px-2 py-1 text-[10.5px] font-semibold text-faint">
+            <PencilIcon className="h-3 w-3" />
+            ניתן לעריכה
+          </span>
+        </div>
 
-        <Button type="submit" disabled={!canSave} size="lg" className="w-full">
-          <PlusIcon className="h-5 w-5" /> הוסף ליומן
-        </Button>
-      </form>
+        {/* Calories — the headline figure, emphasized. */}
+        <div className="rounded-xl border border-border bg-surface-2 px-3.5 py-2.5 transition-[border-color,box-shadow] focus-within:border-[color:var(--accent-nutrition)] focus-within:ring-4 focus-within:ring-[color:var(--accent-nutrition-soft)]">
+          <div className="flex items-center justify-between">
+            <label
+              htmlFor="calories"
+              className="flex items-center gap-1.5 text-[12px] font-semibold text-muted"
+            >
+              <FlameIcon className="h-3.5 w-3.5 text-[color:var(--accent-nutrition)]" />
+              קלוריות
+            </label>
+            <span className="text-[11px] font-medium text-faint">קק״ל</span>
+          </div>
+          <input
+            id="calories"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            placeholder="0"
+            className="mt-0.5 w-full bg-transparent text-[22px] font-extrabold tabular-nums text-foreground outline-none placeholder:text-faint/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            value={form.calories}
+            onChange={(e) => update({ calories: e.target.value })}
+          />
+        </div>
+
+        {/* Macros — protein / carbs / fat, each a labelled, unit-suffixed field. */}
+        <div className="grid grid-cols-3 gap-2">
+          {MACROS.map((m) => (
+            <div
+              key={m.key}
+              className="rounded-xl border border-border bg-surface-2 px-2.5 py-2 transition-[border-color,box-shadow] focus-within:border-[color:var(--accent-nutrition)] focus-within:ring-4 focus-within:ring-[color:var(--accent-nutrition-soft)]"
+            >
+              <label
+                htmlFor={m.key}
+                className="block text-[11.5px] font-semibold text-muted"
+              >
+                {m.label}
+              </label>
+              <div className="mt-0.5 flex items-baseline gap-1">
+                <input
+                  id={m.key}
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  placeholder="0"
+                  className="w-full min-w-0 bg-transparent text-[18px] font-bold tabular-nums text-foreground outline-none placeholder:text-faint/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  value={form[m.key]}
+                  onChange={(e) => update({ [m.key]: e.target.value })}
+                />
+                <span className="shrink-0 text-[10.5px] font-medium text-faint">
+                  גרם
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Step 3 · Save for next time (library foods only) ───────────── */}
+      {sourceFoodId && (
+        <section className="rounded-2xl border border-border bg-surface p-4 shadow-soft">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--accent-nutrition-soft)] text-[color:var(--accent-nutrition)]">
+              <BookmarkIcon className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[14px] font-bold text-foreground">
+                שמירת ערכים לפעם הבאה
+              </p>
+              <p className="mt-0.5 text-[12px] leading-relaxed text-muted">
+                נזכור את הכמות והערכים שהזנת למאכל הזה — בפעם הבאה שתוסיף אותו הכול
+                ימולא אוטומטית.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={form.saveValues}
+              aria-label="שמור ערכים לפעם הבאה"
+              onClick={() => update({ saveValues: !form.saveValues })}
+              className={cn(
+                "tap relative h-6 w-11 shrink-0 rounded-full transition-colors",
+                form.saveValues
+                  ? "bg-[color:var(--accent-nutrition)]"
+                  : "bg-border-strong",
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-[inset-inline-start]",
+                  form.saveValues ? "start-[1.375rem]" : "start-0.5",
+                )}
+              />
+            </button>
+          </div>
+          {saved && (
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
+              <p className="flex items-center gap-1.5 text-[11.5px] font-semibold text-[color:var(--accent-nutrition)]">
+                <CheckIcon className="h-3.5 w-3.5" />
+                נטען מהערכים ששמרת
+              </p>
+              <button
+                type="button"
+                onClick={handleResetSaved}
+                className="tap shrink-0 text-[11.5px] font-semibold text-faint underline-offset-2 hover:text-foreground hover:underline"
+              >
+                אפס ערכים שמורים
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ── CTA ────────────────────────────────────────────────────────── */}
+      <Button type="submit" disabled={!canSave} size="lg" className="w-full">
+        <PlusIcon className="h-5 w-5" /> הוסף ליומן
+      </Button>
+      {!canSave && (
+        <p className="text-center text-[11.5px] text-faint">
+          הזן שם מאכל כדי להוסיף ליומן
+        </p>
+      )}
+    </form>
   );
-
-  if (bare) return formEl;
-  return <Card className="p-4">{formEl}</Card>;
 }
