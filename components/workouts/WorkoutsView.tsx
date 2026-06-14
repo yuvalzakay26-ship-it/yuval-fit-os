@@ -10,10 +10,18 @@ import {
   useWorkoutTemplates,
   useWorkouts,
 } from "@/lib/fitness-store";
+import {
+  clearActiveWorkoutDraft,
+  fromActiveWorkoutDraft,
+  getActiveWorkoutDraft,
+  hasMeaningfulWorkoutDraft,
+  useActiveWorkoutDraft,
+} from "@/lib/active-workout-draft";
 import { lastPerformance } from "@/lib/analytics";
 import { getExerciseById } from "@/lib/seed-exercises";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SectionHeader } from "@/components/ui/PageHeader";
 import {
   CopyIcon,
@@ -26,6 +34,7 @@ import { WorkoutBuilder, type BuilderSeed } from "./WorkoutBuilder";
 import { WorkoutHistory } from "./WorkoutHistory";
 import { TemplateCard } from "./TemplateCard";
 import { TemplateEditor } from "./TemplateEditor";
+import { DraftRestoreCard } from "./DraftRestoreCard";
 
 function emptySets(count: number): WorkoutExerciseEntry["sets"] {
   return Array.from({ length: count }, (_, i) => ({
@@ -44,13 +53,24 @@ export function WorkoutsView() {
     () => searchParams.get("new") === "1",
   );
   const [builderSeed, setBuilderSeed] = useState<BuilderSeed | null>(null);
+  // True only when the builder was opened by *restoring* the auto-saved draft,
+  // so it can resume the existing draft slot instead of treating it as a
+  // conflict. Reset on every other open and on close.
+  const [resumingDraft, setResumingDraft] = useState(false);
   // null = closed, "new" = creating, otherwise the template being edited.
   const [editingTemplate, setEditingTemplate] = useState<
     WorkoutTemplate | "new" | null
   >(null);
 
+  // The current local active-workout draft, surfaced as a restore prompt on the
+  // hub so returning users see "you have an unsaved workout". Reactive + SSR-safe
+  // (null on the server, real value after hydration). See `lib/active-workout-draft.ts`.
+  const draft = useActiveWorkoutDraft();
+  const [discardOpen, setDiscardOpen] = useState(false);
+
   const openBuilder = (seed: BuilderSeed | null) => {
     setBuilderSeed(seed);
+    setResumingDraft(false);
     setEditingTemplate(null);
     setBuilding(true);
   };
@@ -58,6 +78,24 @@ export function WorkoutsView() {
   const closeBuilder = () => {
     setBuilding(false);
     setBuilderSeed(null);
+    setResumingDraft(false);
+  };
+
+  // Resume the auto-saved draft: open the builder seeded from it, in resume mode.
+  const continueDraft = () => {
+    const current = getActiveWorkoutDraft();
+    if (!current) return;
+    setBuilderSeed(fromActiveWorkoutDraft(current));
+    setResumingDraft(true);
+    setEditingTemplate(null);
+    setBuilding(true);
+  };
+
+  // Explicit discard from the hub (after a confirm) — clears the draft slot. The
+  // draft store notifies, so the banner disappears on its own.
+  const discardDraft = () => {
+    clearActiveWorkoutDraft();
+    setDiscardOpen(false);
   };
 
   const startFromTemplate = (template: WorkoutTemplate) => {
@@ -102,6 +140,7 @@ export function WorkoutsView() {
       {building ? (
         <WorkoutBuilder
           initial={builderSeed}
+          resumed={resumingDraft}
           onSaved={closeBuilder}
           onCancel={closeBuilder}
         />
@@ -112,6 +151,18 @@ export function WorkoutsView() {
         />
       ) : (
         <>
+          {/* Returning to an unsaved session — premium restore prompt. Only
+              shown for a meaningful draft, so an untouched builder never nags. */}
+          {hasMeaningfulWorkoutDraft(draft) && draft && (
+            <DraftRestoreCard
+              draft={draft}
+              onContinue={continueDraft}
+              onDiscard={() => setDiscardOpen(true)}
+              description="המערכת שמרה טיוטה מקומית כדי שלא תאבד את מה שהזנת."
+              discardLabel="מחק טיוטה"
+            />
+          )}
+
           {/* Command center — the workouts hub at a glance + the primary CTA.
               Layered glows (strength blue lead + a warm energy counter-glow) and
               a deeper gradient wash give the hero richer, more alive depth while
@@ -302,6 +353,17 @@ export function WorkoutsView() {
           />
         )}
       </section>
+
+      <ConfirmDialog
+        open={discardOpen}
+        title="למחוק את הטיוטה?"
+        description="הטיוטה השמורה של האימון תימחק מהמכשיר הזה. לא ניתן לשחזר אותה."
+        confirmLabel="מחק טיוטה"
+        cancelLabel="ביטול"
+        tone="danger"
+        onConfirm={discardDraft}
+        onCancel={() => setDiscardOpen(false)}
+      />
     </div>
   );
 }

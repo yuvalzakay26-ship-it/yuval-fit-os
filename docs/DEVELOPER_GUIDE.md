@@ -69,6 +69,13 @@ docs/                   feature docs + this guide + PROJECT_STATE.md
   3. Adding a cache slot + snapshot + hook + mutations in `fitness-store.ts`.
   4. Documenting the key in [`PROJECT_STATE.md` §4](PROJECT_STATE.md) and wiring a
      reset path (it is cleared automatically by `resetAll` if it is in `KEYS`).
+- **Ephemeral / single-slot state can own its own module** (outside `STORAGE_KEYS`)
+  when it is not "saved data" — e.g. the gates (`lib/welcome.ts`) and the
+  active-workout **draft** (`lib/active-workout-draft.ts`, key
+  `yfos:active-workout-draft:v1`). The draft is a recoverable in-progress slot,
+  deliberately separate from workout history (`yfos:workouts`); it auto-saves on
+  change, restores on return, and clears on final save / discard. See
+  [`ACTIVE_WORKOUT_DRAFT_AUTOSAVE.md`](ACTIVE_WORKOUT_DRAFT_AUTOSAVE.md).
 - **Pure logic goes in `lib/analytics.ts`** (data passed in, nothing read from
   storage) so it stays SSR-safe and testable.
 - **Never read `localStorage` during render without the `isBrowser()` guard** and a
@@ -145,6 +152,7 @@ Useful entry points:
 | `scripts/qa-navigation.mjs` | Bottom nav shape, `/more` System Hub links, active-tab state, 360/390 overflow (`:3331`) |
 | `scripts/qa-workout-session.mjs` | Active workout session: builder opens, picker add, kg/reps entry, set complete, add/delete set, finish CTA, save, hero/progress, light+dark, 360/390 overflow (`:3331`) |
 | `scripts/qa-workout-reorder.mjs` | Active workout exercise reorder (drag-only UI): assert no up/down buttons + a grip handle per row, **drag** the third exercise to first (real pointer drag) — asserting the **floating overlay clone appears mid-drag, follows the pointer in X *and* Y, and is removed after drop** — + keyboard ArrowUp/Down handle reorder, verify kg/reps/completed travel with it, `עכשיו` badge recalculates, save preserves order in history, add/delete still work, light+dark, 360/390 overflow (`:3331`) |
+| `scripts/qa-workout-draft.mjs` | Active workout **auto-save draft**: empty builder leaves no prompt, a real session (title + exercises + kg/reps + completed + reorder) auto-saves, survives a **full reload**, restores via `המשך אימון` (order + values intact), final save lands it in history **once** and clears the prompt, `מחק טיוטה` (confirmed) discards, light+dark, 360/390 overflow (`:3331`) |
 | `scripts/qa-settings.mjs` | Settings control center: two appearance modes only (no "מערכת"), header toggle, legacy `system` migration, separated danger section, 360/390 overflow (`:3332`) |
 
 ### Seeding the gates in QA

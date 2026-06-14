@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type {
   MuscleGroup,
@@ -17,10 +17,22 @@ import { addWorkout, useWorkouts } from "@/lib/fitness-store";
 import { lastPerformance } from "@/lib/analytics";
 import { cn, createId, formatSetsSummary, todayISO } from "@/lib/utils";
 import { identityLabel, workoutIdentity } from "@/lib/workout-theme";
+import {
+  type ActiveWorkoutDraft,
+  clearActiveWorkoutDraft,
+  fromActiveWorkoutDraft,
+  getActiveWorkoutDraft,
+  hasMeaningfulWorkoutDraft,
+  saveActiveWorkoutDraft,
+  toActiveWorkoutDraft,
+  useIsClient,
+} from "@/lib/active-workout-draft";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Input, Label } from "@/components/ui/Field";
 import {
+  CheckCircleIcon,
   CheckIcon,
   GripIcon,
   PlusIcon,
@@ -30,6 +42,7 @@ import {
 import { ExerciseImage } from "@/components/exercises/ExerciseImage";
 import { MuscleChips } from "./MuscleChips";
 import { ExercisePicker } from "./ExercisePicker";
+import { DraftRestoreCard } from "./DraftRestoreCard";
 
 function emptySet(setNumber: number): SetEntry {
   return { setNumber, weightKg: 0, reps: 0, completed: false };
@@ -72,10 +85,17 @@ export interface BuilderSeed {
 
 export function WorkoutBuilder({
   initial,
+  resumed = false,
   onSaved,
   onCancel,
 }: {
   initial?: BuilderSeed | null;
+  /**
+   * True when this builder was opened by *restoring* the auto-saved draft (the
+   * seed already IS the draft). In that case there is no conflict to resolve and
+   * auto-save resumes immediately, re-writing the same draft slot.
+   */
+  resumed?: boolean;
   onSaved: (session: WorkoutSession) => void;
   onCancel: () => void;
 }) {
@@ -89,6 +109,39 @@ export function WorkoutBuilder({
   // normal scrolling and set-input interactions never fight a drag gesture on
   // mobile. Entered via the "סדר תרגילים" pill, exited via "סיום סידור".
   const [reordering, setReordering] = useState(false);
+
+  /* ----------------------- Auto-save draft (Phase 3.xx) -----------------------
+     Protects the in-progress session against accidental loss before the final
+     `סיים ושמור אימון`. The draft is a single local slot, separate from workout
+     history. See `lib/active-workout-draft.ts` + docs.
+
+     - `pendingDraft`  : the draft that already existed when this builder opened,
+                         captured once post-hydration. When NOT resuming and it is
+                         meaningful, it surfaces as a restore/conflict card and
+                         auto-save is HELD until resolved, so the found draft is
+                         never silently overwritten by a new/template session.
+     - `latestDraftRef`: the last meaningful draft, flushed on unmount/pagehide so
+                         a fast navigation can't drop the final keystroke. */
+  const mounted = useIsClient();
+  const [captured, setCaptured] = useState(false);
+  const [pendingDraft, setPendingDraft] = useState<ActiveWorkoutDraft | null>(
+    null,
+  );
+  // One-time, post-hydration capture via the sanctioned "adjust state during
+  // render" pattern (gated on `mounted`, so it never runs during SSR/hydration →
+  // no mismatch, and converges as `captured` flips true). Resuming means the seed
+  // already IS the draft, so there is nothing to reconcile.
+  if (mounted && !captured) {
+    setCaptured(true);
+    if (!resumed) {
+      const open = getActiveWorkoutDraft();
+      if (hasMeaningfulWorkoutDraft(open)) setPendingDraft(open);
+    }
+  }
+
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const latestDraftRef = useRef<ActiveWorkoutDraft | null>(null);
 
   const usedIds = useMemo(() => new Set(entries.map((e) => e.exerciseId)), [entries]);
 
@@ -191,6 +244,61 @@ export function WorkoutBuilder({
     (e) => e.sets.length === 0 || e.sets.some((s) => !s.completed),
   )?.exerciseId;
 
+  // Auto-save the in-progress session whenever it changes. Held until we are on
+  // the client and until any found-draft conflict is resolved. All state/storage
+  // writes happen inside the debounce timer (never synchronously in the effect
+  // body). A non-meaningful session (blank/empty) writes nothing and clears any
+  // stale draft, so an untouched builder never leaves an annoying restore prompt.
+  useEffect(() => {
+    if (!mounted || !captured || pendingDraft) return;
+    const id = setTimeout(() => {
+      const draft = toActiveWorkoutDraft({ title, entries });
+      if (!hasMeaningfulWorkoutDraft(draft)) {
+        latestDraftRef.current = null;
+        clearActiveWorkoutDraft();
+        setSavedAt(null);
+        return;
+      }
+      latestDraftRef.current = draft;
+      saveActiveWorkoutDraft(draft);
+      setSavedAt(draft.updatedAt);
+    }, 400);
+    return () => clearTimeout(id);
+  }, [title, entries, mounted, captured, pendingDraft]);
+
+  // Flush the latest draft on unmount / page hide so a fast tab-switch or route
+  // change can't lose the final edit caught inside the debounce window. The ref
+  // is nulled on final save / discard, so those intentional clears are never
+  // resurrected by this flush.
+  useEffect(() => {
+    const flush = () => {
+      if (latestDraftRef.current) saveActiveWorkoutDraft(latestDraftRef.current);
+    };
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, []);
+
+  // Restore the found draft into the builder, then resume auto-save (it re-writes
+  // the same slot). Replaces whatever blank/template content was loaded.
+  const continuePendingDraft = () => {
+    if (!pendingDraft) return;
+    const restored = fromActiveWorkoutDraft(pendingDraft);
+    setTitle(restored.title);
+    setEntries(restored.entries);
+    setPendingDraft(null);
+  };
+
+  // Discard the found draft and keep the current (blank/template) session, which
+  // then auto-saves fresh. Explicit, user-initiated — never silent.
+  const discardPendingDraft = () => {
+    clearActiveWorkoutDraft();
+    latestDraftRef.current = null;
+    setPendingDraft(null);
+  };
+
   const handleSave = () => {
     if (!canSave) return;
     const session: WorkoutSession = {
@@ -201,11 +309,76 @@ export function WorkoutBuilder({
       exercises: entries,
     };
     addWorkout(session);
+    // The session is now officially in history → its in-progress draft is done.
+    // Guard on `pendingDraft`: if an unrelated found-draft is still awaiting the
+    // user's choice, leave it intact (it belongs to a different session).
+    if (!pendingDraft) {
+      latestDraftRef.current = null;
+      clearActiveWorkoutDraft();
+    }
     onSaved(session);
   };
 
+  const meaningfulNow = entries.length > 0 || title.trim().length > 0;
+
+  // Cancelling never destroys data by default: the draft is auto-saved and stays
+  // recoverable from the hub. We only confirm when there is something to keep,
+  // and only an explicit "discard" choice clears the draft.
+  const handleCancel = () => {
+    if (pendingDraft) {
+      // The current session was never drafted (auto-save was held); the found
+      // draft stays safe for later. Just leave.
+      onCancel();
+      return;
+    }
+    if (meaningfulNow) {
+      setCancelConfirm(true);
+      return;
+    }
+    onCancel();
+  };
+
+  const leaveKeepingDraft = () => {
+    setCancelConfirm(false);
+    onCancel();
+  };
+
+  const leaveDiscardingDraft = () => {
+    clearActiveWorkoutDraft();
+    latestDraftRef.current = null;
+    setCancelConfirm(false);
+    onCancel();
+  };
+
+  const savedTime = savedAt
+    ? (() => {
+        try {
+          return new Intl.DateTimeFormat("he-IL", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }).format(new Date(savedAt));
+        } catch {
+          return "";
+        }
+      })()
+    : "";
+
   return (
     <div className="space-y-4">
+      {/* ===== Unsaved-draft conflict =====
+          Shown when a NEW or template session opens while a meaningful draft
+          already exists. Auto-save is held until the user resolves this, so the
+          found draft is never silently overwritten. */}
+      {pendingDraft && (
+        <DraftRestoreCard
+          draft={pendingDraft}
+          onContinue={continuePendingDraft}
+          onDiscard={discardPendingDraft}
+          description="כבר יש אצלך אימון שלא נשמר. אפשר להמשיך אותו, או למחוק את הטיוטה ולהתחיל מחדש."
+          discardLabel="מחק טיוטה"
+        />
+      )}
+
       {/* ===== Active session hero ===== */}
       <Card
         variant="raised"
@@ -259,6 +432,24 @@ export function WorkoutBuilder({
               className="text-[17px] font-bold"
             />
           </div>
+
+          {/* Calm auto-save feedback — appears once the draft has been saved and
+              there is no unresolved conflict. Reassures without being noisy. */}
+          {savedAt && !pendingDraft && (
+            <p className="flex items-center gap-1.5 text-[11px] font-medium text-faint">
+              <span
+                className="inline-flex"
+                style={{ color: "var(--mg)" }}
+                aria-hidden="true"
+              >
+                <CheckCircleIcon className="h-3.5 w-3.5" />
+              </span>
+              <span>נשמר אוטומטית</span>
+              {savedTime && (
+                <span className="text-faint/70 tabular-nums">· {savedTime}</span>
+              )}
+            </p>
+          )}
 
           {muscleGroups.length > 0 && <MuscleChips groups={muscleGroups} />}
 
@@ -583,7 +774,7 @@ export function WorkoutBuilder({
               <CheckIcon className="h-5 w-5 text-faint" /> סיים ושמור אימון
             </button>
           )}
-          <Button variant="secondary" size="lg" onClick={onCancel}>
+          <Button variant="secondary" size="lg" onClick={handleCancel}>
             ביטול
           </Button>
         </div>
@@ -597,6 +788,19 @@ export function WorkoutBuilder({
           recentIds={recentIds}
         />
       )}
+
+      {/* Leaving the builder. The draft is auto-saved, so the default is a safe
+          exit that keeps it; an explicit destructive option discards it. */}
+      <ConfirmDialog
+        open={cancelConfirm}
+        title="לצאת מהאימון?"
+        description="הטיוטה נשמרה אוטומטית במכשיר הזה — אפשר להמשיך אותה אחר כך מהמסך הראשי. אפשר גם למחוק אותה לגמרי."
+        confirmLabel="צא — הטיוטה נשמרה"
+        cancelLabel="המשך לערוך"
+        onConfirm={leaveKeepingDraft}
+        onCancel={() => setCancelConfirm(false)}
+        extraAction={{ label: "מחק טיוטה וצא", onClick: leaveDiscardingDraft }}
+      />
     </div>
   );
 }

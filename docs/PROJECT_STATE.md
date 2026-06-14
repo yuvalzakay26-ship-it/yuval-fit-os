@@ -4,7 +4,18 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx.2 (Active workout reorder — **drag motion polish**:
+> Last reviewed: Phase 3.xx (Active workout **auto-save draft**: the in-progress
+> session is auto-saved locally under a new key `yfos:active-workout-draft:v1` so
+> leaving the builder before `סיים ושמור אימון` no longer loses data. On return a
+> premium restore card (`נמצא אימון שלא נשמר`) offers `המשך אימון` / `מחק טיוטה`;
+> a calm `נשמר אוטומטית` status shows in the session hero. The draft is separate
+> from history — final save clears it and still appends exactly one
+> `WorkoutSession`; empty/untouched builders never create a prompt; a
+> new/template session that meets an existing draft shows a conflict choice
+> instead of silently overwriting it. No history schema / storage-key / payload /
+> routes / final-save changes; localStorage-only, no backend/auth/AI/API.
+> See [`ACTIVE_WORKOUT_DRAFT_AUTOSAVE.md`](ACTIVE_WORKOUT_DRAFT_AUTOSAVE.md).
+> Prior: Phase 3.xx.2 (Active workout reorder — **drag motion polish**:
 > the dragged exercise now lifts into a **floating overlay clone** that follows
 > the pointer in **both X and Y** (`scale(1.03)` + identity glow) while the source
 > row stays as a faded, dashed **ghost placeholder**; order is still computed from
@@ -135,7 +146,12 @@ existing user data is bound to them. See §5 for reset behavior.
 | `yfos:welcome-seen:v1` | localStorage | First-visit welcome screen seen flag (`"1"`) | `lib/welcome.ts` |
 | `yfos:private-access-notice-accepted:session` | **sessionStorage** | Private-access notice accepted **this session** (`"1"`) | `lib/private-access.ts` |
 | `yfos:admin-access-granted:v1` | localStorage | Admin access-code gate unlocked on this device (`"1"`) | `lib/admin-access.ts` |
+| `yfos:active-workout-draft:v1` | localStorage | **Single** in-progress active-workout draft (auto-saved). NOT history — separate from `yfos:workouts`; cleared on final save / explicit discard | `lib/active-workout-draft.ts` |
 
+> The active-workout **draft** is intentionally outside `STORAGE_KEYS` and the
+> history key (`yfos:workouts`): it is a recoverable in-progress slot, not a
+> saved workout. See [`ACTIVE_WORKOUT_DRAFT_AUTOSAVE.md`](ACTIVE_WORKOUT_DRAFT_AUTOSAVE.md).
+>
 > The theme has **no separate key** — it is a field inside `yfos:settings`. The
 > pre-paint `THEME_INIT_SCRIPT` reads `yfos:settings` directly. The three gates
 > use pre-paint init scripts that toggle `.welcome-seen` /
