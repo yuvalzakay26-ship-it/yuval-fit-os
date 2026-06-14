@@ -41,6 +41,7 @@ lib/
   fitness-store.ts      reactive hooks over storage (useSyncExternalStore)
   analytics.ts          pure derivations (totals, summaries, PRs) — no storage
   today.ts              Today daily-completion + deterministic next-action (pure)
+  progress-insights.ts  Progress weekly hero / insight cards / 7-day activity / PRs (pure)
   welcome.ts            welcome gate state + init script
   private-access.ts     private-access gate state + init script
   admin-access.ts       admin access-code gate state + init script
@@ -138,6 +139,7 @@ Useful entry points:
 | `qa/admin-access-check.mjs` | Admin access-code gate: wrong/correct code, persistence, Settings lock |
 | `qa/welcome-check.mjs` | Welcome screen + persistence + reset |
 | `qa/today-dashboard-check.mjs` | Today dashboard: completion ratio (`0/3` empty, `3/4` rich), next-action card, optional supplements, 360/390 + dark |
+| `scripts/qa-progress-insights.mjs` | Progress insights: empty / one-workout / rich-week states — weekly hero (`השבוע שלך`), human empty states (no cold dashes), `תובנות השבוע` / `מגמות שבועיות` / `שיאים אישיים` sections, heaviest record value, 360/390 overflow, no console errors, light+dark (`:3331`) |
 | `qa/food-library-check.mjs`, `qa/*-food-check.mjs` | Food library + per-category data |
 | `qa/templates-check.mjs` | Workout templates |
 | `qa/learn-check.mjs` | Knowledge Center |

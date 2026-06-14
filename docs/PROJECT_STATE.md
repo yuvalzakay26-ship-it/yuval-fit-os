@@ -4,7 +4,22 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (Active workout **collapsible exercise cards**: each
+> Last reviewed: Phase 3.xx (**Progress Insights upgrade**: the Progress screen
+> (`/progress`) is no longer a static stats grid — it now leads with a premium
+> weekly hero (`השבוע שלך`: one calm motivating line + compact
+> אימונים/מים/חלבון metrics), then rule-based weekly insight cards
+> (`תובנות השבוע`), a compact 7-day Sun→Sat activity grid (`מגמות שבועיות`,
+> CSS-only — filled/empty/future per day), and a stronger personal-records
+> section (`שיאים אישיים`: ranked, trophy on #1, muscle group + reps context).
+> Cold `—` placeholders were replaced with short human empty states (e.g.
+> `אין מספיק נתוני מים השבוע`, `הוסף עוד יומיים של תזונה כדי לראות ממוצע`). All
+> insights are deterministic derivations over existing local data in the new pure
+> `lib/progress-insights.ts` (`weeklyHero` / `weeklyInsights` / `weeklyActivity` /
+> `personalRecords`) — NO AI, NO advice, NO new data model. No schema /
+> storage-key / route / navigation / Today / save-behavior changes;
+> localStorage-only, no backend/auth/AI/API. See
+> [`PROGRESS_INSIGHTS_UPGRADE.md`](PROGRESS_INSIGHTS_UPGRADE.md).
+> Prior: Phase 3.xx (Active workout **collapsible exercise cards**: each
 > exercise card in the builder now has a small chevron toggle (`הצג סטים` /
 > `הסתר סטים`, `aria-expanded`) that minimises it to a premium muscle-tinted
 > compact summary (`X סטים · Y מתוך X בוצעו`, plus the shared header image / name
@@ -95,7 +110,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | Favorite Foods | Quick-access favorites (identity only, no macros) | `docs/NUTRITION_FAVORITES.md` |
 | Water Tracking | Daily hydration log + goal + personal cup/bottle presets | `components/water/*`, `docs/WATER_TRACKING.md`, `docs/WATER_PRESETS.md` |
 | Supplements Tracker | Personal supplement/medication tracking (no advice); searchable starter-template library with already-tracked state | `components/supplements/*`, `docs/SUPPLEMENTS_TRACKER.md`, `docs/SUPPLEMENTS_LIBRARY_UX.md` |
-| Progress | Totals, weekly counts, protein average, PRs | `components/progress/*`, `lib/analytics.ts` |
+| Progress | Premium weekly insights screen: weekly hero, rule-based insight cards, 7-day activity trends, human empty states, and personal records — derived purely from existing local data (no AI) | `components/progress/*`, `lib/analytics.ts`, `lib/progress-insights.ts`, `docs/PROGRESS_INSIGHTS_UPGRADE.md` |
 | Settings | Premium "control center": appearance (light/dark only), daily goals, water shortcuts, data & storage, access & privacy, separated sensitive actions, system info | `components/settings/SettingsView.tsx`, `docs/SETTINGS_CONTROL_CENTER.md` |
 | Learn (Knowledge Center) | Card-based Hebrew articles + protein calculator | `app/learn/*`, `lib/knowledge-content.ts`, `lib/protein.ts` |
 | Welcome screen | First-visit intro (gate) | `components/welcome/WelcomeGate.tsx`, `lib/welcome.ts` |
@@ -214,9 +229,12 @@ deliberately do **not** touch user data. Keep these concerns separate.
   `useSyncExternalStore`, caching snapshots and invalidating on mutation — no
   `setState`-in-effect, no hydration mismatch (server snapshots are stable
   constants; the real client value swaps in after mount).
-- **Pure derivations (`lib/analytics.ts`, `lib/today.ts`)** never touch storage —
-  callers pass data in, so they stay testable and SSR-safe. `lib/today.ts` adds
-  the Today daily-completion + deterministic next-action logic (no AI/advice).
+- **Pure derivations (`lib/analytics.ts`, `lib/today.ts`,
+  `lib/progress-insights.ts`)** never touch storage — callers pass data in, so they
+  stay testable and SSR-safe. `lib/today.ts` adds the Today daily-completion +
+  deterministic next-action logic; `lib/progress-insights.ts` adds the Progress
+  weekly hero / insight cards / 7-day activity / personal records. Both are
+  deterministic, no AI, no advice.
 - **Gates (`lib/welcome.ts`, `lib/private-access.ts`, `lib/admin-access.ts`)**
   mirror that same `useSyncExternalStore` shape and expose pre-paint init
   scripts. The admin gate fails **closed** (storage hiccup keeps it up); the
