@@ -142,6 +142,7 @@ Useful entry points:
 | `scripts/qa-water.mjs`, `scripts/qa-supplements.mjs` | Water, supplements |
 | `scripts/qa-water-presets.mjs` | Personal water presets (`:3326`) |
 | `scripts/qa-navigation.mjs` | Bottom nav shape, `/more` System Hub links, active-tab state, 360/390 overflow (`:3331`) |
+| `scripts/qa-workout-session.mjs` | Active workout session: builder opens, picker add, kg/reps entry, set complete, add/delete set, finish CTA, save, hero/progress, light+dark, 360/390 overflow (`:3331`) |
 | `scripts/qa-settings.mjs` | Settings control center: two appearance modes only (no "מערכת"), header toggle, legacy `system` migration, separated danger section, 360/390 overflow (`:3332`) |
 
 ### Seeding the gates in QA

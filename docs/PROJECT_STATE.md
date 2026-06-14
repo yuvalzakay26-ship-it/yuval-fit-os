@@ -4,9 +4,15 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (navigation & System Hub upgrade: Exercises moved
-> out of the bottom nav into a new premium `/more` "מרכז מערכת" hub; bottom nav
-> is now Today / Workouts / Nutrition / Progress / More).
+> Last reviewed: Phase 3.xx (active workout session premium UX upgrade: the
+> workout builder is now a focused "live" session — identity-coloured hero with
+> stats + progress, muscle-aware exercise cards, current-exercise "עכשיו"
+> highlight, upgraded set tracker, premium "סיים ושמור אימון" CTA. Presentation
+> only — storage, schema, save payload and routes unchanged. See
+> [`ACTIVE_WORKOUT_SESSION_UX.md`](ACTIVE_WORKOUT_SESSION_UX.md). Prior: navigation
+> & System Hub upgrade — Exercises moved out of the bottom nav into the premium
+> `/more` "מרכז מערכת" hub; bottom nav is Today / Workouts / Nutrition / Progress
+> / More).
 
 ---
 
@@ -33,7 +39,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | --- | --- | --- |
 | Today dashboard | At-a-glance daily summary (greeting, workout, macros, water, supplements) | `components/today/TodayView.tsx` |
 | System Hub ("מרכז מערכת") | Premium `/more` hub gathering all secondary tools into module-coloured categories (pure navigation) | `components/more/SystemHubView.tsx`, `docs/NAVIGATION_SYSTEM_HUB.md` |
-| Workouts | Log sessions, build from templates, view history | `components/workouts/*` |
+| Workouts | Log sessions, build from templates, view history; the active session (builder) is a premium muscle-aware "live workout" experience | `components/workouts/*`, `docs/ACTIVE_WORKOUT_SESSION_UX.md` |
 | Exercise Library | 133 exercises, images, instructions, external demo videos | `components/exercises/*`, `lib/seed-exercises.ts` |
 | Nutrition | Daily food logs + macro totals | `components/nutrition/NutritionView.tsx` |
 | Food Library | Visual catalogue of foods to log from | `components/nutrition/FoodLibrary*`, `lib/food-library.ts` |
