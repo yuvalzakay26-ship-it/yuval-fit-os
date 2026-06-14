@@ -6,10 +6,17 @@
 > as the order of the session's `entries` array, so reordering is just moving an
 > entry inside that array. No schema, storage key, save payload, route, history
 > logic or RTL behaviour changed.
+>
+> **Phase 3.xx.1 update:** the reorder UI is now **drag-only** in the visible
+> interface — the earlier on-row up/down arrow buttons were removed for a
+> cleaner, more premium, modern-mobile feel. Reordering uses a lightweight,
+> dependency-free **Pointer Events** drag (reliable on touch *and* mouse), with
+> ArrowUp/ArrowDown on the focused grip handle kept purely for keyboard/AT
+> accessibility — no visible arrow controls.
 
 Owner component: [`components/workouts/WorkoutBuilder.tsx`](../components/workouts/WorkoutBuilder.tsx)
 Helper: `moveWorkoutEntry(entries, fromIndex, toIndex)` (same file, exported).
-Icons: `GripIcon`, `ArrowUpIcon`, `ArrowDownIcon` in [`components/ui/icons.tsx`](../components/ui/icons.tsx).
+Icons: `GripIcon` in [`components/ui/icons.tsx`](../components/ui/icons.tsx).
 QA: [`scripts/qa-workout-reorder.mjs`](../scripts/qa-workout-reorder.mjs).
 
 ---
@@ -32,33 +39,38 @@ with **2+ exercises**.
 
 Tapping it enters **reorder mode**:
 
-- The full editing cards are swapped for a **calm, compact sortable list** (image
-  + muscle label + name + a small `{sets} סטים · {done} בוצעו` line). Editing
-  surfaces (kg/reps inputs, the add-exercise card) are hidden, so nothing can be
-  accidentally edited mid-reorder and there are **no destructive delete controls**
-  on screen.
+- The full editing cards are swapped for a **calm, compact, drag-only sortable
+  list** (image + muscle label + name + a small `{sets} סטים · {done} בוצעו`
+  line). Editing surfaces (kg/reps inputs, the add-exercise card) are hidden, so
+  nothing can be accidentally edited mid-reorder and there are **no destructive
+  delete controls** and **no up/down arrow buttons** on screen.
 - A subtle instruction shows: **`גרור כדי לשנות את סדר התרגילים`**.
-- Each row has a **grip handle** (`GripIcon`) and **up/down buttons**.
+- Each row has a single **grip handle** (`GripIcon`) — the only reorder control.
 - The pill flips to **`סיום סידור`** to exit.
 
 On exit the full cards return in the **new order**, with every value intact.
 
-## How reordering works (drag **and** up/down — both)
+## How reordering works (drag-only, with a keyboard fallback)
 
-Two mechanisms are provided so the experience is stable everywhere:
+The visible interface is **drag-only** — the earlier up/down arrow buttons were
+removed. One mechanism, two input paths, both calling the same pure helper
+`moveWorkoutEntry(entries, fromIndex, toIndex)`:
 
-1. **Drag-and-drop** (pointer/mouse) — native HTML5 DnD, **no dependency**. The
-   row is `draggable`; `onDragOver` reorders live as the pointer passes another
-   row. Graceful and lightweight.
-2. **Up / down buttons** — rock-solid on touch and fully keyboard / assistive-tech
-   accessible, with named labels (`העבר את {name} למעלה` / `…למטה`). These are the
-   primary, always-reliable path; drag is the enhancement on top.
+1. **Pointer drag** (touch / mouse / pen) — a lightweight, **dependency-free**
+   implementation built on **Pointer Events**, *not* native HTML5 drag-and-drop
+   (which is unreliable on mobile). Pressing the grip handle calls
+   `setPointerCapture`, so every subsequent move/up for that pointer is routed to
+   the handle — the key to reliable touch dragging. As the pointer passes other
+   rows, `indexAtY()` maps its Y coordinate to a target index and the list
+   reorders **live**. `touch-action: none` on the handle stops the page scrolling
+   under a touch drag. The dragged row lifts (subtle scale + identity glow).
+2. **Keyboard** — the grip handle is a real focusable `<button>`; when focused,
+   **ArrowUp / ArrowDown** move the row (Home/End jump to the ends). This keeps
+   reordering fully accessible **without** showing any arrow buttons in the UI.
 
-Both call the same pure helper:
-
-```ts
-moveWorkoutEntry(entries, fromIndex, toIndex)
-```
+> Why not native HTML5 DnD? It does not fire reliably for touch on mobile, which
+> is the primary target. The Pointer Events approach works identically for mouse
+> and touch with no library and no heavy dependency.
 
 ## Data preservation guarantee
 
@@ -98,8 +110,18 @@ Nothing about this logic changed — it simply follows the new order for free.
 
 `node scripts/qa-workout-reorder.mjs` (server on `:3331`) drives the real flow at
 360px and 390px in **light and dark**: add three exercises → type distinct kg
-into each and complete the middle one's set → enter reorder mode → move that
-exercise to first → exit → assert the new order, that its kg/completed value
+into each and complete the **third** one's set → enter reorder mode → assert
+there are **no visible up/down (`העבר`) buttons** but a grip handle per row →
+**drag** the third exercise to the top (a real Playwright pointer drag, which
+emits the same `pointerdown`/`pointermove`/`pointerup` the app handles) → verify
+the **keyboard** handle (ArrowDown/ArrowUp on the focused grip) also reorders →
+exit → assert the new order, that the moved exercise's kg/completed value
 followed it, that the `עכשיו` badge recalculated, that add/delete still work, and
 that saving lands the reordered order (and data) into history — all with **zero
 horizontal overflow** and no console errors.
+
+Playwright's `page.mouse` emits real pointer events in Chromium, so the pointer
+drag **is** automated here (and passes in all four scheme×width runs). The
+identical Pointer Events code path runs for real-finger touch on a device; that
+final on-device feel (lift animation, scroll suppression) is the one aspect
+verified by hand in mobile emulation rather than asserted programmatically.

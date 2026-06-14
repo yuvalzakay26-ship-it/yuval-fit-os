@@ -1,15 +1,17 @@
-// QA pass for Active Workout exercise reorder (Phase 3.xx).
+// QA pass for Active Workout exercise reorder — drag-only UI (Phase 3.xx.1).
 // Usage: node scripts/qa-workout-reorder.mjs (expects `next start -p 3331` running)
 //
-// Drives the real reorder flow end to end: open the builder, add three
-// exercises, type distinct kg into each + complete one set of the middle
-// exercise, enter reorder mode, move that exercise to the first position, exit,
-// and confirm the new order AND that every kg/reps/completed value travelled
-// with the right exercise. Also confirms the current-exercise ("עכשיו") badge
-// recalculates, that saving preserves the new order into history, that add/
-// delete still work afterwards, and that there is no horizontal overflow at
-// 360px and 390px in light and dark. Pure UI over localStorage — no backend,
-// schema, routes, or save-payload changes.
+// Reorder mode is now drag-only: a grip handle per row, a lightweight pointer
+// drag (mouse/touch), and ArrowUp/ArrowDown on the focused handle for keyboard
+// accessibility — NO visible up/down buttons. This pass drives the real flow at
+// 360px and 390px in light and dark: add three exercises, put distinct kg into
+// each and complete the third one's set, enter reorder mode, assert there are no
+// up/down buttons but a grip handle per row, DRAG the third exercise to the top,
+// verify the keyboard handle also reorders, exit, and confirm the new order AND
+// that every kg/reps/completed value travelled with the right exercise. Then
+// confirm the current "עכשיו" badge recalculates, that saving preserves the new
+// order into history, that add/delete still work, and zero horizontal overflow.
+// Pure UI over localStorage — no backend, schema, routes, or save-payload changes.
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
 
@@ -24,6 +26,7 @@ const check = (name, ok) => {
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}`);
   if (!ok) failures++;
 };
+const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const noOverflow = (page) =>
   page.evaluate(
@@ -31,6 +34,20 @@ const noOverflow = (page) =>
       document.documentElement.scrollWidth -
       document.documentElement.clientWidth,
   );
+
+// Drive a real pointer drag of `handle` onto the vertical centre of `targetBox`.
+// Playwright's mouse input emits pointer events in Chromium, exercising the same
+// onPointerDown/Move/Up path real touch/mouse uses.
+async function dragHandleTo(page, handle, targetY) {
+  const hb = await handle.boundingBox();
+  const cx = hb.x + hb.width / 2;
+  const cy = hb.y + hb.height / 2;
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx, cy - 6, { steps: 3 }); // nudge to begin the drag
+  await page.mouse.move(cx, targetY, { steps: 16 });
+  await page.mouse.up();
+}
 
 for (const scheme of ["dark", "light"]) {
   for (const width of [360, 390]) {
@@ -72,33 +89,25 @@ for (const scheme of ["dark", "light"]) {
     await page.getByRole("button", { name: /^סיום/ }).click();
     await dialog.waitFor({ state: "hidden" });
 
-    // The exercise card names, in their current (add) order. Card name <p>s are
-    // the only `leading-tight font-bold` paragraphs in the builder.
-    const cardNames = page.locator("p.leading-tight.font-bold");
-    check(`[${tag}] three exercise cards`, (await cardNames.count()) === 3);
-    const names = await cardNames.allInnerTexts();
-    const [, nameB] = names; // the middle exercise we will promote to first
+    const nameRows = page.locator("p.leading-tight.font-bold");
+    check(`[${tag}] three exercise cards`, (await nameRows.count()) === 3);
+    const names = await nameRows.allInnerTexts();
+    const nameC = names[2]; // the third exercise we will drag to the top
 
-    /* 2. Enter distinct kg into each exercise + complete the middle one's set. */
+    /* 2. Distinct kg per exercise + complete the THIRD one's set. */
     const kg = page.getByRole("spinbutton");
     await kg.nth(0).fill("11"); // A
     await kg.nth(2).fill("22"); // B
     await kg.nth(4).fill("33"); // C
-    await kg.nth(3).fill("12"); // B reps
+    await kg.nth(5).fill("10"); // C reps
     const complete = page.getByRole("button", { name: "סימון סט כבוצע" });
-    await complete.nth(1).click(); // complete B's set
+    await complete.nth(2).click(); // complete C's set
     check(
-      `[${tag}] B set marked completed`,
-      (await complete.nth(1).getAttribute("aria-pressed")) === "true",
-    );
-    // Before reorder, B (the 2nd, fully done) is NOT current; A (1st, unfinished)
-    // is — so the first card carries the "עכשיו" badge.
-    check(
-      `[${tag}] "עכשיו" present before reorder`,
-      await page.getByText("עכשיו", { exact: true }).first().isVisible(),
+      `[${tag}] C set marked completed`,
+      (await complete.nth(2).getAttribute("aria-pressed")) === "true",
     );
 
-    /* 3. Enter reorder mode. */
+    /* 3. Enter reorder mode — drag-only UI. */
     await page.getByRole("button", { name: "סדר תרגילים" }).click();
     check(
       `[${tag}] reorder instruction shows`,
@@ -110,13 +119,14 @@ for (const scheme of ["dark", "light"]) {
       `[${tag}] finish-reorder pill ("סיום סידור") shows`,
       await page.getByRole("button", { name: "סיום סידור" }).isVisible(),
     );
-    // Three up + three down accessibility buttons (one pair per exercise).
+    // The whole point of this phase: NO visible up/down buttons.
     check(
-      `[${tag}] up/down controls present`,
-      (await page.getByRole("button", { name: /העבר את .* למעלה/ }).count()) === 3 &&
-        (await page.getByRole("button", { name: /העבר את .* למטה/ }).count()) === 3,
+      `[${tag}] no visible up/down ("העבר") buttons`,
+      (await page.getByRole("button", { name: /העבר/ }).count()) === 0,
     );
-    // Editing surfaces are hidden in reorder mode (no kg inputs, no add card).
+    // ...but a grip handle on every row (accessible name "שינוי מיקום: …").
+    const grips = page.getByRole("button", { name: /^שינוי מיקום/ });
+    check(`[${tag}] a grip handle per row`, (await grips.count()) === 3);
     check(
       `[${tag}] kg inputs hidden during reorder`,
       (await page.getByRole("spinbutton").count()) === 0,
@@ -124,44 +134,69 @@ for (const scheme of ["dark", "light"]) {
 
     if (width === 390) {
       await page.screenshot({
-        path: `${OUT}/workout-reorder-mode-${scheme}.png`,
+        path: `${OUT}/workout-reorder-drag-${scheme}.png`,
         fullPage: true,
       });
     }
 
-    /* 4. Move B up one position: A,B,C -> B,A,C. */
-    await page
-      .getByRole("button", { name: `העבר את ${nameB} למעלה` })
-      .click();
+    /* 4. DRAG the third exercise (C) to the first position. */
+    const topRowBox = await grips.first().boundingBox();
+    await dragHandleTo(
+      page,
+      grips.nth(2), // C's handle (3rd row)
+      topRowBox.y + 4, // just above the first row's midpoint → insert at index 0
+    );
+    const orderAfterDrag = await page
+      .locator("p.leading-tight.font-bold")
+      .allInnerTexts();
+    check(`[${tag}] drag moved C to first`, orderAfterDrag[0] === nameC);
     check(`[${tag}] no overflow — reorder mode`, (await noOverflow(page)) === 0);
 
-    /* 5. Exit reorder mode and verify the new order + preserved data. */
+    /* 5. Keyboard handle also reorders (accessible, no visible arrows).
+          C is first; ArrowDown on its focused handle moves it to 2nd, ArrowUp
+          back to 1st — leaving the order we want for the save assertions. */
+    const cGrip = page.getByRole("button", { name: new RegExp(`^שינוי מיקום: ${esc(nameC)}`) });
+    await cGrip.focus();
+    await page.keyboard.press("ArrowDown");
+    check(
+      `[${tag}] keyboard ArrowDown moves C off the top`,
+      (await page.locator("p.leading-tight.font-bold").first().innerText()) !==
+        nameC,
+    );
+    await page.getByRole("button", { name: new RegExp(`^שינוי מיקום: ${esc(nameC)}`) }).focus();
+    await page.keyboard.press("ArrowUp");
+    check(
+      `[${tag}] keyboard ArrowUp restores C to the top`,
+      (await page.locator("p.leading-tight.font-bold").first().innerText()) ===
+        nameC,
+    );
+
+    /* 6. Exit reorder mode and verify the new order + preserved data. */
     await page.getByRole("button", { name: "סיום סידור" }).click();
-    const cardsAfter = page.locator("p.leading-tight.font-bold");
     check(
-      `[${tag}] B moved to first position`,
-      (await cardsAfter.first().innerText()) === nameB,
-    );
-    // The first card's kg input now reads B's value — data travelled with it.
-    check(
-      `[${tag}] B kept its kg (22) after move`,
-      (await page.getByRole("spinbutton").nth(0).inputValue()) === "22",
+      `[${tag}] C is first after exit`,
+      (await page.locator("p.leading-tight.font-bold").first().innerText()) ===
+        nameC,
     );
     check(
-      `[${tag}] B kept its completed set after move`,
+      `[${tag}] C kept its kg (33) after move`,
+      (await page.getByRole("spinbutton").nth(0).inputValue()) === "33",
+    );
+    check(
+      `[${tag}] C kept its completed set after move`,
       (await page
         .getByRole("button", { name: "סימון סט כבוצע" })
         .first()
         .getAttribute("aria-pressed")) === "true",
     );
-    // Current-exercise badge recalculated: B (now first) is fully done → "הושלם",
-    // and the still-unfinished A is now the current "עכשיו" exercise.
+    // Current-exercise badge recalculated: C (now first) is fully done → "הושלם",
+    // and a still-unfinished exercise is now the current "עכשיו" one.
     const firstCard = page
       .locator("div.module-mg.sheen")
-      .filter({ hasText: nameB })
+      .filter({ hasText: nameC })
       .first();
     check(
-      `[${tag}] B card shows "הושלם" (not current) after move`,
+      `[${tag}] C card shows "הושלם" (not current) after move`,
       (await firstCard.getByText("הושלם", { exact: true }).count()) === 1 &&
         (await firstCard.getByText("עכשיו", { exact: true }).count()) === 0,
     );
@@ -171,7 +206,7 @@ for (const scheme of ["dark", "light"]) {
     );
     check(`[${tag}] no overflow — after reorder`, (await noOverflow(page)) === 0);
 
-    /* 6. Add + delete still work after a reorder. */
+    /* 7. Add + delete still work after a reorder. */
     const beforeAdd = await page.locator("p.leading-tight.font-bold").count();
     await page.getByText("הוסף עוד תרגיל", { exact: true }).click();
     await dialog.waitFor({ state: "visible" });
@@ -188,22 +223,21 @@ for (const scheme of ["dark", "light"]) {
       (await page.locator("p.leading-tight.font-bold").count()) === beforeAdd,
     );
 
-    /* 7. Save and confirm history preserves the reordered order + data. */
+    /* 8. Save and confirm history preserves the reordered order + data. */
     await page.getByRole("button", { name: "סיים ושמור אימון" }).click();
     await page.waitForURL(/\/workouts/);
     check(
       `[${tag}] history visible after save`,
       await page.getByText("היסטוריית אימונים", { exact: true }).isVisible(),
     );
-    // The exercise breakdown lists exercises in saved (array) order — B first.
     const firstHistoryRow = page.locator("ul.border-t li").first();
     check(
-      `[${tag}] history shows B first`,
-      (await firstHistoryRow.innerText()).includes(nameB),
+      `[${tag}] history shows C first`,
+      (await firstHistoryRow.innerText()).includes(nameC),
     );
     check(
-      `[${tag}] history first row preserves B's top weight (22)`,
-      (await firstHistoryRow.innerText()).includes("22"),
+      `[${tag}] history first row preserves C's top weight (33)`,
+      (await firstHistoryRow.innerText()).includes("33"),
     );
 
     await ctx.close();

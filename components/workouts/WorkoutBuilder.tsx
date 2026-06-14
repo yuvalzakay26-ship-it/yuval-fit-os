@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type {
   MuscleGroup,
   SetEntry,
@@ -20,8 +20,6 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
   CheckIcon,
   GripIcon,
   PlusIcon,
@@ -90,8 +88,6 @@ export function WorkoutBuilder({
   // normal scrolling and set-input interactions never fight a drag gesture on
   // mobile. Entered via the "סדר תרגילים" pill, exited via "סיום סידור".
   const [reordering, setReordering] = useState(false);
-  // Index of the row currently being dragged (pointer DnD), or null.
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
 
   const usedIds = useMemo(() => new Set(entries.map((e) => e.exerciseId)), [entries]);
 
@@ -331,17 +327,13 @@ export function WorkoutBuilder({
 
       {/* ===== Exercise list =====
           In reorder mode the full editing cards are swapped for a calm, compact
-          sortable list — both drag-and-drop (pointer) and up/down buttons
-          (mobile-stable + keyboard/accessible). All data lives in `entries`, so
-          reordering the array never touches a single kg/reps/completed value;
-          the cards return in the new order with everything intact. */}
+          drag-only sortable list (grip handle + lightweight pointer/touch drag;
+          arrow keys on the handle for accessibility — no visible up/down
+          buttons). All data lives in `entries`, so reordering the array never
+          touches a single kg/reps/completed value; the cards return in the new
+          order with everything intact. */}
       {reordering && entries.length >= 2 ? (
-        <ReorderList
-          entries={entries}
-          dragIndex={dragIndex}
-          onDragIndex={setDragIndex}
-          onMove={moveEntry}
-        />
+        <ReorderList entries={entries} onMove={moveEntry} />
       ) : (
         entries.map((entry) => {
         const exercise = getExerciseById(entry.exerciseId);
@@ -609,26 +601,97 @@ export function WorkoutBuilder({
 }
 
 /**
- * The active-workout reorder mode: a compact, calm sortable list of the
- * exercises. Two stable ways to reorder, no destructive controls:
- *  - **Drag** via the grip handle (pointer / mouse) — live reordering as you
- *    drag over another row.
- *  - **Up / down** buttons — rock-solid on touch and fully keyboard/AT
- *    accessible, with named labels.
+ * The active-workout reorder mode: a compact, calm, **drag-only** sortable list
+ * of the exercises — no visible up/down buttons, no delete, no inputs.
+ *
+ * Reordering uses a lightweight, dependency-free **Pointer Events** drag (works
+ * for mouse *and* touch, unlike native HTML5 DnD which is unreliable on mobile):
+ * pressing the grip handle captures the pointer and the list reorders live as
+ * the finger/cursor passes other rows. The grip is also a real focusable button
+ * so keyboard users can move a row with ArrowUp / ArrowDown — accessible without
+ * cluttering the UI with arrow controls.
+ *
  * It renders order only; every kg/reps/completed value stays in `entries` and is
- * never touched here — moving a row just relocates its entry in the array.
+ * never touched here — moving a row just relocates its entry in the array via
+ * `moveWorkoutEntry`.
  */
 function ReorderList({
   entries,
-  dragIndex,
-  onDragIndex,
   onMove,
 }: {
   entries: WorkoutExerciseEntry[];
-  dragIndex: number | null;
-  onDragIndex: (index: number | null) => void;
   onMove: (fromIndex: number, toIndex: number) => void;
 }) {
+  // One ref per row, so a pointer Y coordinate can be mapped to a target index.
+  const rowRefs = useRef<Array<HTMLLIElement | null>>([]);
+  // The row being dragged (drives the lifted/active visual). Mirrored in a ref so
+  // the pointer-move handler always reads the latest index after a live reorder.
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const activeRef = useRef<number | null>(null);
+  const setActive = (index: number | null) => {
+    activeRef.current = index;
+    setActiveIndex(index);
+  };
+
+  // The insertion index for a given client-Y: the first row whose vertical
+  // midpoint sits below the pointer, else the last row (clamped to the ends).
+  const indexAtY = (y: number): number => {
+    const rows = rowRefs.current;
+    for (let i = 0; i < rows.length; i++) {
+      const el = rows[i];
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (y < r.top + r.height / 2) return i;
+    }
+    return rows.length - 1;
+  };
+
+  const startDrag = (index: number, e: React.PointerEvent<HTMLButtonElement>) => {
+    // Primary button / touch / pen only.
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    // Capture so every subsequent move/up for this pointer lands on the handle —
+    // the key to reliable touch dragging without native HTML5 DnD.
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setActive(index);
+  };
+
+  const onDragMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const from = activeRef.current;
+    if (from === null) return;
+    e.preventDefault(); // stop the page from scrolling under the drag
+    const to = indexAtY(e.clientY);
+    if (to >= 0 && to !== from) {
+      onMove(from, to);
+      setActive(to);
+    }
+  };
+
+  const endDrag = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (activeRef.current === null) return;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* pointer already released */
+    }
+    setActive(null);
+  };
+
+  // Keyboard fallback on the handle — accessible reordering with no visible
+  // arrow buttons. Home/End jump to the ends.
+  const onHandleKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLButtonElement>,
+  ) => {
+    let to = index;
+    if (e.key === "ArrowUp") to = index - 1;
+    else if (e.key === "ArrowDown") to = index + 1;
+    else if (e.key === "Home") to = 0;
+    else if (e.key === "End") to = entries.length - 1;
+    else return;
+    e.preventDefault();
+    onMove(index, to);
+  };
+
   return (
     <div className="space-y-2">
       <p className="px-0.5 text-[12px] font-medium text-muted">
@@ -640,42 +703,37 @@ function ReorderList({
           if (!exercise) return null;
           const exIdentity = workoutIdentity([exercise.muscleGroup]);
           const doneSets = entry.sets.filter((s) => s.completed).length;
-          const dragging = dragIndex === index;
-          const isFirst = index === 0;
-          const isLast = index === entries.length - 1;
+          const dragging = activeIndex === index;
 
           return (
             <li
               key={entry.exerciseId}
-              draggable
-              onDragStart={() => onDragIndex(index)}
-              onDragOver={(e) => {
-                // Allow dropping and reorder live as the pointer passes a row.
-                e.preventDefault();
-                if (dragIndex === null || dragIndex === index) return;
-                onMove(dragIndex, index);
-                onDragIndex(index);
+              ref={(el) => {
+                rowRefs.current[index] = el;
               }}
-              onDrop={(e) => {
-                e.preventDefault();
-                onDragIndex(null);
-              }}
-              onDragEnd={() => onDragIndex(null)}
               style={exIdentity.style}
               className={cn(
-                "module-mg flex items-center gap-2 rounded-2xl border bg-surface-2 p-2.5 transition-shadow",
+                "module-mg flex select-none items-center gap-2 rounded-2xl border bg-surface-2 p-2.5 transition-[transform,box-shadow]",
                 dragging
-                  ? "border-[color:var(--mg)] shadow-glow-mg"
+                  ? "relative z-10 scale-[1.02] border-[color:var(--mg)] shadow-glow-mg"
                   : "border-border",
               )}
             >
-              {/* Grip handle — the drag affordance (pointer devices). */}
-              <span
-                className="flex h-10 w-6 shrink-0 cursor-grab items-center justify-center rounded-lg text-faint active:cursor-grabbing"
-                aria-hidden="true"
+              {/* Grip handle — the *only* reorder control: drag (pointer/touch)
+                  or ArrowUp/ArrowDown when focused. `touch-none` stops the page
+                  scrolling when a touch drag starts on the handle. */}
+              <button
+                type="button"
+                onPointerDown={(e) => startDrag(index, e)}
+                onPointerMove={onDragMove}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+                onKeyDown={(e) => onHandleKeyDown(index, e)}
+                aria-label={`שינוי מיקום: ${exercise.nameHe}. גרור או השתמש בחיצים למעלה ולמטה`}
+                className="flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-faint transition-colors hover:bg-[color:var(--mg-soft)] hover:text-[color:var(--mg)] active:cursor-grabbing"
               >
                 <GripIcon className="h-5 w-5" />
-              </span>
+              </button>
 
               <ExerciseImage
                 imagePath={exercise.imagePath}
@@ -705,34 +763,6 @@ function ReorderList({
                     </>
                   )}
                 </p>
-              </div>
-
-              {/* Up / down — mobile-stable + keyboard/AT accessible. */}
-              <div className="flex shrink-0 flex-col gap-1">
-                <button
-                  type="button"
-                  onClick={() => onMove(index, index - 1)}
-                  disabled={isFirst}
-                  aria-label={`העבר את ${exercise.nameHe} למעלה`}
-                  className={cn(
-                    "tap flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-foreground transition-colors hover:bg-[color:var(--mg-soft)]",
-                    isFirst && "opacity-35",
-                  )}
-                >
-                  <ArrowUpIcon className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onMove(index, index + 1)}
-                  disabled={isLast}
-                  aria-label={`העבר את ${exercise.nameHe} למטה`}
-                  className={cn(
-                    "tap flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-foreground transition-colors hover:bg-[color:var(--mg-soft)]",
-                    isLast && "opacity-35",
-                  )}
-                >
-                  <ArrowDownIcon className="h-4 w-4" />
-                </button>
               </div>
             </li>
           );
