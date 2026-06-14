@@ -13,6 +13,19 @@
 > dependency-free **Pointer Events** drag (reliable on touch *and* mouse), with
 > ArrowUp/ArrowDown on the focused grip handle kept purely for keyboard/AT
 > accessibility — no visible arrow controls.
+>
+> **Phase 3.xx.2 update (drag motion polish):** the dragged item now *physically
+> follows the finger*. Instead of the row only snapping vertically between slots,
+> a **floating overlay clone** lifts out and tracks the pointer in **both X and
+> Y** (`scale(1.03)` + identity glow), while the original row stays in place as a
+> faded, dashed **ghost placeholder** so the layout never collapses. The list
+> still reorders underneath by **Y position / row midpoints** — only the *visual*
+> moved to a free-floating card. The overlay is rendered through a portal with
+> `position: fixed`, so it is immune to transformed ancestors and never jumps
+> when the array reorders beneath it: it is positioned from the live pointer
+> coordinates, so it always sits under the finger. On release the overlay is
+> removed and the real card settles into its new slot. Still
+> dependency-free Pointer Events; no new libraries.
 
 Owner component: [`components/workouts/WorkoutBuilder.tsx`](../components/workouts/WorkoutBuilder.tsx)
 Helper: `moveWorkoutEntry(entries, fromIndex, toIndex)` (same file, exported).
@@ -63,7 +76,23 @@ removed. One mechanism, two input paths, both calling the same pure helper
    the handle — the key to reliable touch dragging. As the pointer passes other
    rows, `indexAtY()` maps its Y coordinate to a target index and the list
    reorders **live**. `touch-action: none` on the handle stops the page scrolling
-   under a touch drag. The dragged row lifts (subtle scale + identity glow).
+   under a touch drag (only the handle blocks scroll — the rest of the row and
+   page scroll normally). **The dragged item lifts into a floating overlay clone
+   that follows the pointer in both X and Y** (`scale(1.03)` + identity glow,
+   higher z-index), while the source row stays put as a faded, dashed ghost
+   placeholder. Because order is computed from Y only, the overlay can roam
+   horizontally for a natural, physical feel without affecting where the entry
+   lands. The grab offset + row size are captured once at `pointerdown`, so the
+   card stays under the finger at the same relative point and matches the row's
+   footprint. On `pointerup`/`pointercancel` the overlay is cleared and the row
+   un-ghosts.
+
+   > **Why an overlay instead of transforming the row in place?** Live reordering
+   > changes the dragged row's DOM position, which would make a row-level
+   > `translate` jump every time the array reorders. A portaled, `position: fixed`
+   > overlay positioned from the raw pointer coordinates is immune to that — it
+   > never jumps, and it ignores transformed ancestors. The original row remains
+   > as a placeholder purely to reserve layout space.
 2. **Keyboard** — the grip handle is a real focusable `<button>`; when focused,
    **ArrowUp / ArrowDown** move the row (Home/End jump to the ends). This keeps
    reordering fully accessible **without** showing any arrow buttons in the UI.
@@ -113,15 +142,19 @@ Nothing about this logic changed — it simply follows the new order for free.
 into each and complete the **third** one's set → enter reorder mode → assert
 there are **no visible up/down (`העבר`) buttons** but a grip handle per row →
 **drag** the third exercise to the top (a real Playwright pointer drag, which
-emits the same `pointerdown`/`pointermove`/`pointerup` the app handles) → verify
-the **keyboard** handle (ArrowDown/ArrowUp on the focused grip) also reorders →
-exit → assert the new order, that the moved exercise's kg/completed value
-followed it, that the `עכשיו` badge recalculated, that add/delete still work, and
-that saving lands the reordered order (and data) into history — all with **zero
-horizontal overflow** and no console errors.
+emits the same `pointerdown`/`pointermove`/`pointerup` the app handles) →
+**assert the floating overlay clone appears mid-drag, that it follows the pointer
+in both X and Y** (its bounding box shifts on both axes between two samples), and
+that **it is removed after drop** → verify the **keyboard** handle
+(ArrowDown/ArrowUp on the focused grip) also reorders → exit → assert the new
+order, that the moved exercise's kg/completed value followed it, that the `עכשיו`
+badge recalculated, that add/delete still work, and that saving lands the
+reordered order (and data) into history — all with **zero horizontal overflow**
+and no console errors. (100 assertions across the four scheme×width runs.)
 
 Playwright's `page.mouse` emits real pointer events in Chromium, so the pointer
-drag **is** automated here (and passes in all four scheme×width runs). The
-identical Pointer Events code path runs for real-finger touch on a device; that
-final on-device feel (lift animation, scroll suppression) is the one aspect
+drag — including the floating overlay's X/Y tracking — **is** automated here (and
+passes in all four scheme×width runs). The identical Pointer Events code path
+runs for real-finger touch on a device; the final on-device *feel* (the lift
+animation easing, scroll suppression on the handle only) is the one aspect
 verified by hand in mobile emulation rather than asserted programmatically.

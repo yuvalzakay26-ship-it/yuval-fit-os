@@ -4,15 +4,23 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx.1 (Active workout reorder — drag-only UI polish: the
-> on-row up/down arrow buttons were removed; reorder mode is now a clean
-> **drag-only** list (grip handle + lightweight, dependency-free Pointer-Events
-> drag that works on touch and mouse, with ArrowUp/ArrowDown on the focused
-> handle kept for keyboard accessibility). Behaviour is unchanged: order is just
-> the `entries` array order; reordering relocates the whole entry, so
-> kg/reps/completed stay attached and the `עכשיו` current-exercise badge
-> recalculates. No schema / storage / save-payload / routes changes. See
-> [`ACTIVE_WORKOUT_REORDER.md`](ACTIVE_WORKOUT_REORDER.md).
+> Last reviewed: Phase 3.xx.2 (Active workout reorder — **drag motion polish**:
+> the dragged exercise now lifts into a **floating overlay clone** that follows
+> the pointer in **both X and Y** (`scale(1.03)` + identity glow) while the source
+> row stays as a faded, dashed **ghost placeholder**; order is still computed from
+> the pointer's Y / row midpoints, so the floating card can roam horizontally for
+> a natural, physical feel without changing where the entry lands. The overlay is
+> portaled with `position: fixed` and positioned from the live pointer
+> coordinates, so it never jumps when the array reorders and ignores transformed
+> ancestors. Still dependency-free Pointer Events — no new libraries, no visible
+> up/down buttons, keyboard ArrowUp/ArrowDown/Home/End still works. Behaviour is
+> unchanged: order is just the `entries` array order; reordering relocates the
+> whole entry, so kg/reps/completed stay attached and the `עכשיו`
+> current-exercise badge recalculates. No schema / storage / save-payload /
+> routes changes. See [`ACTIVE_WORKOUT_REORDER.md`](ACTIVE_WORKOUT_REORDER.md).
+> Prior: Phase 3.xx.1 reorder drag-only UI polish — the on-row up/down arrow
+> buttons were removed for a clean drag-only list (grip handle + Pointer-Events
+> drag, ArrowUp/ArrowDown on the focused handle for keyboard accessibility).
 > Prior: active workout exercise reorder shipped (the reorder mode itself).
 > Prior: Today quick start & priority-action upgrade: Today
 > now leads with a deterministic `הפעולה הבאה שלך` next-action card and an

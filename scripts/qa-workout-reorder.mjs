@@ -1,17 +1,22 @@
-// QA pass for Active Workout exercise reorder — drag-only UI (Phase 3.xx.1).
+// QA pass for Active Workout exercise reorder — drag-only UI (Phase 3.xx.2).
 // Usage: node scripts/qa-workout-reorder.mjs (expects `next start -p 3331` running)
 //
-// Reorder mode is now drag-only: a grip handle per row, a lightweight pointer
-// drag (mouse/touch), and ArrowUp/ArrowDown on the focused handle for keyboard
-// accessibility — NO visible up/down buttons. This pass drives the real flow at
-// 360px and 390px in light and dark: add three exercises, put distinct kg into
-// each and complete the third one's set, enter reorder mode, assert there are no
-// up/down buttons but a grip handle per row, DRAG the third exercise to the top,
-// verify the keyboard handle also reorders, exit, and confirm the new order AND
-// that every kg/reps/completed value travelled with the right exercise. Then
-// confirm the current "עכשיו" badge recalculates, that saving preserves the new
-// order into history, that add/delete still work, and zero horizontal overflow.
-// Pure UI over localStorage — no backend, schema, routes, or save-payload changes.
+// Reorder mode is drag-only: a grip handle per row, a lightweight pointer drag
+// (mouse/touch), and ArrowUp/ArrowDown on the focused handle for keyboard
+// accessibility — NO visible up/down buttons. Phase 3.xx.2 polishes the drag
+// FEEL: the dragged item is now a floating overlay clone (portaled, fixed) that
+// follows the pointer in BOTH X and Y while the original row stays as a faded
+// ghost placeholder; order is still computed from the pointer's Y / row
+// midpoints. This pass drives the real flow at 360px and 390px in light and
+// dark: add three exercises, put distinct kg into each and complete the third
+// one's set, enter reorder mode, assert there are no up/down buttons but a grip
+// handle per row, DRAG the third exercise to the top (asserting the floating
+// overlay clone appears mid-drag), verify the keyboard handle also reorders,
+// exit, and confirm the new order AND that every kg/reps/completed value
+// travelled with the right exercise. Then confirm the current "עכשיו" badge
+// recalculates, that saving preserves the new order into history, that
+// add/delete still work, and zero horizontal overflow. Pure UI over
+// localStorage — no backend, schema, routes, or save-payload changes.
 import { chromium } from "@playwright/test";
 import fs from "node:fs";
 
@@ -37,16 +42,42 @@ const noOverflow = (page) =>
 
 // Drive a real pointer drag of `handle` onto the vertical centre of `targetBox`.
 // Playwright's mouse input emits pointer events in Chromium, exercising the same
-// onPointerDown/Move/Up path real touch/mouse uses.
+// onPointerDown/Move/Up path real touch/mouse uses. Returns whether the floating
+// drag overlay clone (which follows the pointer in X *and* Y) was present and
+// actually tracked the pointer horizontally + vertically while mid-drag.
 async function dragHandleTo(page, handle, targetY) {
+  const overlay = page.getByTestId("reorder-drag-overlay");
   const hb = await handle.boundingBox();
   const cx = hb.x + hb.width / 2;
   const cy = hb.y + hb.height / 2;
   await page.mouse.move(cx, cy);
   await page.mouse.down();
   await page.mouse.move(cx, cy - 6, { steps: 3 }); // nudge to begin the drag
-  await page.mouse.move(cx, targetY, { steps: 16 });
+  // Sample the floating overlay's position partway through the drag. waitFor lets
+  // React flush the drag-state update before we read the box (isVisible alone
+  // does not auto-wait).
+  await page.mouse.move(cx - 30, cy - 40, { steps: 8 });
+  const overlayVisible = await overlay
+    .waitFor({ state: "visible", timeout: 2000 })
+    .then(() => true)
+    .catch(() => false);
+  const boxA = overlayVisible ? await overlay.boundingBox() : null;
+  // ...then again after moving further in BOTH axes — it must have followed.
+  await page.mouse.move(cx + 20, targetY, { steps: 12 });
+  const boxB = (await overlay.isVisible().catch(() => false))
+    ? await overlay.boundingBox()
+    : null;
+  const followedXY =
+    !!boxA &&
+    !!boxB &&
+    Math.abs(boxB.x - boxA.x) > 4 && // moved horizontally with the pointer
+    Math.abs(boxB.y - boxA.y) > 4; // and vertically
   await page.mouse.up();
+  // Overlay must be gone once the drag is released (ghost row settles back).
+  const overlayGoneAfterDrop = !(await overlay
+    .isVisible()
+    .catch(() => false));
+  return { overlayVisible, followedXY, overlayGoneAfterDrop };
 }
 
 for (const scheme of ["dark", "light"]) {
@@ -141,10 +172,22 @@ for (const scheme of ["dark", "light"]) {
 
     /* 4. DRAG the third exercise (C) to the first position. */
     const topRowBox = await grips.first().boundingBox();
-    await dragHandleTo(
+    const dragResult = await dragHandleTo(
       page,
       grips.nth(2), // C's handle (3rd row)
       topRowBox.y + 4, // just above the first row's midpoint → insert at index 0
+    );
+    check(
+      `[${tag}] floating drag overlay appears mid-drag`,
+      dragResult.overlayVisible,
+    );
+    check(
+      `[${tag}] dragged overlay follows the pointer in X and Y`,
+      dragResult.followedXY,
+    );
+    check(
+      `[${tag}] drag overlay is removed after drop`,
+      dragResult.overlayGoneAfterDrop,
     );
     const orderAfterDrag = await page
       .locator("p.leading-tight.font-bold")

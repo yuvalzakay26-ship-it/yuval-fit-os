@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type {
   MuscleGroup,
   SetEntry,
@@ -600,6 +601,19 @@ export function WorkoutBuilder({
   );
 }
 
+/** Live pointer-drag state — only present while a row is being dragged. */
+type DragState = {
+  /** Current pointer position, in viewport (client) coordinates. */
+  x: number;
+  y: number;
+  /** Where inside the row the finger grabbed (offset from the row's top-left). */
+  grabX: number;
+  grabY: number;
+  /** The dragged row's footprint, so the overlay matches its size. */
+  w: number;
+  h: number;
+};
+
 /**
  * The active-workout reorder mode: a compact, calm, **drag-only** sortable list
  * of the exercises — no visible up/down buttons, no delete, no inputs.
@@ -610,6 +624,16 @@ export function WorkoutBuilder({
  * the finger/cursor passes other rows. The grip is also a real focusable button
  * so keyboard users can move a row with ArrowUp / ArrowDown — accessible without
  * cluttering the UI with arrow controls.
+ *
+ * **Drag feel:** the *order* is computed purely from the pointer's Y position
+ * (`indexAtY` / row midpoints), but the *visual* dragged item is a floating
+ * overlay clone (rendered through a portal, `position: fixed`) that follows the
+ * pointer in **both X and Y**. The original row stays in the list as a faded
+ * ghost placeholder, so layout never collapses and the order updates underneath
+ * by Y midpoint. Because the overlay is positioned absolutely from the live
+ * pointer coordinates, it never jumps when the list reorders beneath it — it
+ * always sits under the finger. On release the overlay is removed and the real
+ * card settles into its new slot.
  *
  * It renders order only; every kg/reps/completed value stays in `entries` and is
  * never touched here — moving a row just relocates its entry in the array via
@@ -624,14 +648,20 @@ function ReorderList({
 }) {
   // One ref per row, so a pointer Y coordinate can be mapped to a target index.
   const rowRefs = useRef<Array<HTMLLIElement | null>>([]);
-  // The row being dragged (drives the lifted/active visual). Mirrored in a ref so
-  // the pointer-move handler always reads the latest index after a live reorder.
+  // The row being dragged (drives the ghost placeholder + which entry the
+  // floating overlay shows). Mirrored in a ref so the pointer-move handler always
+  // reads the latest index after a live reorder.
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const activeRef = useRef<number | null>(null);
   const setActive = (index: number | null) => {
     activeRef.current = index;
     setActiveIndex(index);
   };
+  // Live drag state (drives the floating overlay so it follows X *and* Y). The
+  // grab offset + row size are captured once at drag start and carried alongside
+  // the pointer position so the overlay sits under the finger at the same
+  // relative spot and matches the row's footprint.
+  const [drag, setDrag] = useState<DragState | null>(null);
 
   // The insertion index for a given client-Y: the first row whose vertical
   // midpoint sits below the pointer, else the last row (clamped to the ends).
@@ -652,6 +682,18 @@ function ReorderList({
     // Capture so every subsequent move/up for this pointer lands on the handle —
     // the key to reliable touch dragging without native HTML5 DnD.
     e.currentTarget.setPointerCapture(e.pointerId);
+    // Anchor the overlay to where the finger grabbed within the row + its size.
+    const rect = rowRefs.current[index]?.getBoundingClientRect();
+    const grabX = rect ? e.clientX - rect.left : 0;
+    const grabY = rect ? e.clientY - rect.top : 0;
+    setDrag({
+      x: e.clientX,
+      y: e.clientY,
+      grabX,
+      grabY,
+      w: rect?.width ?? 0,
+      h: rect?.height ?? 0,
+    });
     setActive(index);
   };
 
@@ -659,6 +701,10 @@ function ReorderList({
     const from = activeRef.current;
     if (from === null) return;
     e.preventDefault(); // stop the page from scrolling under the drag
+    // Move the floating overlay with the pointer (both axes); keep the captured
+    // grab offset + size.
+    setDrag((d) => (d ? { ...d, x: e.clientX, y: e.clientY } : d));
+    // Order is still decided purely by vertical position / row midpoints.
     const to = indexAtY(e.clientY);
     if (to >= 0 && to !== from) {
       onMove(from, to);
@@ -674,6 +720,7 @@ function ReorderList({
       /* pointer already released */
     }
     setActive(null);
+    setDrag(null);
   };
 
   // Keyboard fallback on the handle — accessible reordering with no visible
@@ -692,6 +739,12 @@ function ReorderList({
     onMove(index, to);
   };
 
+  // The entry currently floating in the overlay (tracks live across reorders).
+  const draggedEntry = activeIndex !== null ? entries[activeIndex] : null;
+  const draggedExercise = draggedEntry
+    ? getExerciseById(draggedEntry.exerciseId)
+    : null;
+
   return (
     <div className="space-y-2">
       <p className="px-0.5 text-[12px] font-medium text-muted">
@@ -702,7 +755,6 @@ function ReorderList({
           const exercise = getExerciseById(entry.exerciseId);
           if (!exercise) return null;
           const exIdentity = workoutIdentity([exercise.muscleGroup]);
-          const doneSets = entry.sets.filter((s) => s.completed).length;
           const dragging = activeIndex === index;
 
           return (
@@ -713,9 +765,12 @@ function ReorderList({
               }}
               style={exIdentity.style}
               className={cn(
-                "module-mg flex select-none items-center gap-2 rounded-2xl border bg-surface-2 p-2.5 transition-[transform,box-shadow]",
+                "module-mg flex select-none items-center gap-2 rounded-2xl border bg-surface-2 p-2.5 transition-[opacity,box-shadow]",
+                // While dragging, this row is the ghost/placeholder left behind —
+                // its footprint stays so layout never collapses, but it fades and
+                // gets a dashed outline; the floating overlay carries the visual.
                 dragging
-                  ? "relative z-10 scale-[1.02] border-[color:var(--mg)] shadow-glow-mg"
+                  ? "border-dashed border-[color:var(--mg)] opacity-40"
                   : "border-border",
               )}
             >
@@ -735,40 +790,95 @@ function ReorderList({
                 <GripIcon className="h-5 w-5" />
               </button>
 
-              <ExerciseImage
-                imagePath={exercise.imagePath}
-                alt={exercise.nameHe}
-                muscleGroup={exercise.muscleGroup}
-                imageKey={exercise.imageKey}
-                sizes="44px"
-                className="h-11 w-11 shrink-0"
-              />
-
-              <div className="min-w-0 flex-1">
-                <span
-                  className="block text-[9.5px] font-bold uppercase tracking-[0.06em]"
-                  style={{ color: "var(--mg)" }}
-                >
-                  {MUSCLE_GROUP_LABELS[exercise.muscleGroup]}
-                </span>
-                <p className="truncate text-[14px] font-bold leading-tight text-foreground">
-                  {exercise.nameHe}
-                </p>
-                <p className="mt-0.5 text-[11px] text-faint">
-                  <span className="tabular-nums">{entry.sets.length}</span> סטים
-                  {doneSets > 0 && (
-                    <>
-                      {" · "}
-                      <span className="tabular-nums">{doneSets}</span> בוצעו
-                    </>
-                  )}
-                </p>
-              </div>
+              <ReorderRowBody exercise={exercise} entry={entry} />
             </li>
           );
         })}
       </ul>
+
+      {/* Floating overlay clone — follows the pointer in X *and* Y while the row
+          above stays as a ghost placeholder. Portaled to <body> with
+          `position: fixed` so it is unaffected by any transformed ancestor and
+          always sits under the finger, even as the list reorders beneath it.
+          Purely decorative (`aria-hidden`, `pointer-events-none`). */}
+      {drag &&
+        draggedEntry &&
+        draggedExercise &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            aria-hidden="true"
+            dir="rtl"
+            data-testid="reorder-drag-overlay"
+            className="pointer-events-none fixed z-50 will-change-transform"
+            style={{
+              left: drag.x - drag.grabX,
+              top: drag.y - drag.grabY,
+              width: drag.w,
+            }}
+          >
+            <div
+              style={workoutIdentity([draggedExercise.muscleGroup]).style}
+              className="module-mg flex scale-[1.03] items-center gap-2 rounded-2xl border border-[color:var(--mg)] bg-surface-2 p-2.5 shadow-glow-mg"
+            >
+              <span className="flex h-11 w-8 shrink-0 items-center justify-center rounded-lg text-[color:var(--mg)]">
+                <GripIcon className="h-5 w-5" />
+              </span>
+              <ReorderRowBody exercise={draggedExercise} entry={draggedEntry} />
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
+  );
+}
+
+/**
+ * The shared inner content of a reorder row (image + muscle label + name + a
+ * compact sets/done line). Rendered both in the real list rows and inside the
+ * floating drag overlay, so the lifted card is pixel-identical to the row it
+ * stands in for.
+ */
+function ReorderRowBody({
+  exercise,
+  entry,
+}: {
+  exercise: NonNullable<ReturnType<typeof getExerciseById>>;
+  entry: WorkoutExerciseEntry;
+}) {
+  const doneSets = entry.sets.filter((s) => s.completed).length;
+  return (
+    <>
+      <ExerciseImage
+        imagePath={exercise.imagePath}
+        alt={exercise.nameHe}
+        muscleGroup={exercise.muscleGroup}
+        imageKey={exercise.imageKey}
+        sizes="44px"
+        className="h-11 w-11 shrink-0"
+      />
+
+      <div className="min-w-0 flex-1">
+        <span
+          className="block text-[9.5px] font-bold uppercase tracking-[0.06em]"
+          style={{ color: "var(--mg)" }}
+        >
+          {MUSCLE_GROUP_LABELS[exercise.muscleGroup]}
+        </span>
+        <p className="truncate text-[14px] font-bold leading-tight text-foreground">
+          {exercise.nameHe}
+        </p>
+        <p className="mt-0.5 text-[11px] text-faint">
+          <span className="tabular-nums">{entry.sets.length}</span> סטים
+          {doneSets > 0 && (
+            <>
+              {" · "}
+              <span className="tabular-nums">{doneSets}</span> בוצעו
+            </>
+          )}
+        </p>
+      </div>
+    </>
   );
 }
 
