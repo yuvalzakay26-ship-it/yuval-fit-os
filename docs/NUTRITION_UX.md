@@ -32,8 +32,13 @@ The reusable bottom-sheet component (`components/ui/Sheet.tsx`) and its
 3. **Quick actions** — the compact entry points:
    - `בחר מהמאגר` — opens the full-screen food library (`/nutrition/library`).
    - `הוסף ידנית` — opens the full-screen add-food screen (`/nutrition/add`).
-   - `אחרונים` — a horizontal row of recently logged foods (shown only when such data exists).
-4. **Today's diary** — logged foods with thumbnails, or an action-oriented empty state.
+   - `מועדפים` — quick chips for starred library foods (shown only when any exist).
+4. **`אכלת לאחרונה`** — quick reuse: a horizontal row of recently logged foods,
+   each with a one-tap `הוסף שוב` that re-logs it for today. Replaced the old
+   deep-link "אחרונים" chips (which forced re-entering values). See
+   [`NUTRITION_QUICK_REUSE.md`](NUTRITION_QUICK_REUSE.md).
+5. **Today's diary** — logged foods with thumbnails (each with `הוסף שוב`), or an
+   action-oriented empty state.
 
 The full food library grid and the add-food form are **no longer inline**; they
 open on demand. This keeps the main page short regardless of how big the library
@@ -50,9 +55,10 @@ gets.
   the library.
 - Tapping **`הוסף ידנית`** navigates to **`/nutrition/add`** with a blank form
   (back link to Nutrition).
-- Tapping a chip under **`אחרונים`** navigates to `/nutrition/add` prefilled from
-  a previously logged food (`?foodId=` when it came from the library, otherwise
-  `?name=`).
+- Tapping **`הוסף שוב`** (under `אכלת לאחרונה` or on a diary row) does **not**
+  navigate — it duplicates that log into today's journal in place and confirms
+  with a calm `נוסף ליומן של היום` toast. See
+  [`NUTRITION_QUICK_REUSE.md`](NUTRITION_QUICK_REUSE.md).
 
 Each step is a real route, so the browser/hardware **back** button works
 naturally (library → add → back → library), and there is never a stacked-overlay
@@ -121,9 +127,12 @@ and **`0 מתוך 2200 קלוריות`**. Calculations are unchanged.
 ## Data model
 
 **No data model changes.** `FoodLog` is unchanged and existing logs keep working
-(image and image-less logs both render). The "אחרונים" list is a pure derivation
-over existing logs (`recentFoods()` in `lib/analytics.ts`) — it stores nothing
-new and carries no macros.
+(image and image-less logs both render). The `אכלת לאחרונה` list is a pure
+derivation over existing logs (`getRecentFoodEntries()` in
+`lib/nutrition-reuse.ts`) — it stores nothing new. Unlike the old "אחרונים" chips,
+it carries the user's previously entered macros so `הוסף שוב` can re-log in one
+tap (`createFoodLogFromExistingEntry()`); nothing is ever inferred. See
+[`NUTRITION_QUICK_REUSE.md`](NUTRITION_QUICK_REUSE.md).
 
 ## Intentionally not implemented yet
 

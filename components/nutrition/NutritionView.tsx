@@ -1,22 +1,29 @@
 "use client";
 
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { recentFoods, sumNutrition, todaysFoodLogs } from "@/lib/analytics";
+import { sumNutrition, todaysFoodLogs } from "@/lib/analytics";
 import {
+  getRecentFoodEntries,
+  duplicateFoodLogForToday,
+} from "@/lib/nutrition-reuse";
+import {
+  addFoodLog,
   removeFoodLog,
   useFavoriteFoods,
   useFoodLogs,
   useSettings,
 } from "@/lib/fitness-store";
+import type { FoodLog } from "@/lib/fitness-types";
 import type { FoodCategory } from "@/lib/food-library";
 import { foodById } from "@/lib/food-library";
-import type { RecentFood } from "@/lib/analytics";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState, SectionHeader } from "@/components/ui/PageHeader";
 import {
   AppleIcon,
+  CheckIcon,
   DatabaseIcon,
   PlusIcon,
   StarIcon,
@@ -29,12 +36,9 @@ import { MacroSummary } from "./MacroSummary";
 import { ProteinCalculator } from "./ProteinCalculator";
 import { MEAL_TYPE_LABELS } from "./nutrition-labels";
 
-/** Deep-link into the add-food flow for a previously logged food. */
-function recentHref(food: RecentFood): string {
-  if (food.sourceFoodId) {
-    return `/nutrition/add?foodId=${encodeURIComponent(food.sourceFoodId)}`;
-  }
-  return `/nutrition/add?name=${encodeURIComponent(food.foodName)}`;
+/** Compact macro line, e.g. "18 חלבון · 30 פחמ׳ · 12 שומן". */
+function macroLine(log: FoodLog): string {
+  return `${Math.round(log.protein)} חלבון · ${Math.round(log.carbs)} פחמ׳ · ${Math.round(log.fat)} שומן`;
 }
 
 export function NutritionView() {
@@ -44,7 +48,24 @@ export function NutritionView() {
 
   const today = todaysFoodLogs(logs);
   const totals = sumNutrition(today);
-  const recents = recentFoods(logs);
+  // "אכלת לאחרונה" — recent unique foods derived purely from the log history.
+  const recents = getRecentFoodEntries(logs);
+
+  // Calm, transient success feedback for "הוסף שוב". One small toast, announced
+  // politely, auto-dismissed; component-local only (no storage, no data model).
+  const [flash, setFlash] = useState<string | null>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+  }, []);
+
+  const addAgain = useCallback((entry: FoodLog) => {
+    // Duplicate into today's journal: a new id + today's date, original intact.
+    addFoodLog(duplicateFoodLogForToday(entry));
+    setFlash("נוסף ליומן של היום");
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlash(null), 2200);
+  }, []);
 
   // Resolve favorite ids to library items (newest first), dropping any whose
   // source food no longer exists. Capped to keep the Nutrition screen compact.
@@ -152,36 +173,71 @@ export function NutritionView() {
             </div>
           </div>
         )}
+      </section>
 
-        {/* "אחרונים" — backed by real log data; shown only when it exists.
-            Saved macro values prefill in the add flow (Phase 3.18). */}
-        {recents.length > 0 && (
-          <div className="mt-3">
-            <p className="mb-2 text-[12px] font-semibold text-muted">אחרונים</p>
-            <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-              {recents.map((food) => (
-                <Link
-                  key={food.sourceFoodId ?? food.foodName}
-                  href={recentHref(food)}
-                  className="tap flex shrink-0 items-center gap-2 rounded-full border border-border bg-surface py-1.5 pe-3 ps-1.5 text-[12.5px] font-semibold text-foreground hover:border-border-strong"
-                >
+      {/* 5 — "אכלת לאחרונה" — quick reuse of previously logged foods. Recent
+          items are derived from the log history and carry the macros the user
+          already entered, so re-logging is one tap. Nothing is inferred. */}
+      <section>
+        <SectionHeader title="אכלת לאחרונה" />
+        {recents.length === 0 ? (
+          <Card className="p-4 text-center">
+            <p className="text-[13.5px] font-semibold text-foreground">
+              עדיין אין מאכלים אחרונים
+            </p>
+            <p className="mt-1 text-[12px] leading-snug text-muted">
+              אחרי שתוסיף אוכל ליומן, תוכל להוסיף אותו שוב בלחיצה אחת.
+            </p>
+          </Card>
+        ) : (
+          <div className="no-scrollbar -mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1">
+            {recents.map((food) => (
+              <Card
+                key={food.id}
+                className="flex w-[208px] shrink-0 flex-col gap-2.5 p-3"
+              >
+                <div className="flex items-center gap-2.5">
                   <FoodImage
                     imagePath={food.imagePath}
                     alt={food.foodName}
                     category={(food.category || "other") as FoodCategory}
                     label={food.foodName}
-                    sizes="28px"
-                    className="h-7 w-7 shrink-0 rounded-full"
+                    sizes="40px"
+                    className="h-10 w-10 shrink-0 rounded-xl"
                   />
-                  <span className="max-w-[8rem] truncate">{food.foodName}</span>
-                </Link>
-              ))}
-            </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13.5px] font-bold text-foreground">
+                      {food.foodName}
+                    </p>
+                    <Badge tone="muted">{MEAL_TYPE_LABELS[food.mealType]}</Badge>
+                  </div>
+                </div>
+                <p className="text-[11.5px] leading-snug text-muted">
+                  {food.quantityText && (
+                    <span className="text-faint">{food.quantityText} · </span>
+                  )}
+                  {food.calories ? (
+                    <span className="font-semibold text-[color:var(--accent-nutrition)]">
+                      {Math.round(food.calories)} קל׳
+                    </span>
+                  ) : null}
+                </p>
+                <p className="text-[11px] leading-snug text-faint">{macroLine(food)}</p>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="mt-auto w-full"
+                  onClick={() => addAgain(food)}
+                >
+                  <PlusIcon className="h-4 w-4" /> הוסף שוב
+                </Button>
+              </Card>
+            ))}
           </div>
         )}
       </section>
 
-      {/* 5 — Today's diary */}
+      {/* 6 — Today's diary */}
       <section>
         <SectionHeader title={`היומן של היום${today.length ? ` · ${today.length}` : ""}`} />
         {today.length === 0 ? (
@@ -239,6 +295,13 @@ export function NutritionView() {
                   </p>
                 </div>
                 <button
+                  onClick={() => addAgain(log)}
+                  className="tap flex h-9 shrink-0 items-center gap-1 rounded-xl border border-border px-2.5 text-[12px] font-semibold text-[color:var(--accent-nutrition)] hover:border-border-strong"
+                  aria-label={`הוסף שוב — ${log.foodName}`}
+                >
+                  <PlusIcon className="h-4 w-4" /> הוסף שוב
+                </button>
+                <button
                   onClick={() => handleDelete(log.id)}
                   className="tap -m-1.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-faint hover:bg-surface-2 hover:text-red-500"
                   aria-label="מחיקת פריט"
@@ -250,6 +313,23 @@ export function NutritionView() {
           </div>
         )}
       </section>
+
+      {/* Calm transient confirmation for "הוסף שוב". Fixed above the bottom nav,
+          announced politely. Presentation only — no data is stored here. */}
+      <div
+        aria-live="polite"
+        className="pointer-events-none fixed inset-x-0 z-40 flex justify-center px-4"
+        style={{ bottom: "calc(env(safe-area-inset-bottom) + 84px)" }}
+      >
+        {flash && (
+          <div className="animate-fade-up flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-[13px] font-semibold text-foreground shadow-soft">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[color:var(--accent-nutrition-soft)] text-[color:var(--accent-nutrition)]">
+              <CheckIcon className="h-3 w-3" />
+            </span>
+            {flash}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

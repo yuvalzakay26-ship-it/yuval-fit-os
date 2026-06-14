@@ -4,7 +4,26 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (**Gym Check-In polish**: the Today gym card
+> Last reviewed: Phase 3.xx (**Nutrition Quick Reuse**: the Nutrition screen
+> (`components/nutrition/NutritionView.tsx`) now makes daily logging fast with
+> one-tap reuse. A new **`אכלת לאחרונה`** section shows a compact, scrollable row
+> of recently-logged foods (name, meal-type, quantity, calories, P/C/F) each with
+> a **`הוסף שוב`** button, and every *היומן של היום* row gained its own `הוסף שוב`
+> action. Tapping it duplicates that entry into today's journal — a **new id** +
+> today's local date, all other values preserved, the **original never mutated** —
+> and shows a calm auto-dismissing **`נוסף ליומן של היום`** toast. Recent foods are
+> derived **purely from the existing `yfos:foodLogs` history** via the new pure
+> `lib/nutrition-reuse.ts` (`getRecentFoodEntries` / `createFoodLogFromExistingEntry`
+> / `normalizeRecentFoodKey`, de-duped by source-id-or-name + quantity + macros,
+> capped at 8) — **no new storage key, no `FoodLog` schema change**. The old
+> "אחרונים" deep-link chips (which forced re-entering values) were replaced by this
+> richer reuse section; the previous `recentFoods()` helper moved out of
+> `lib/analytics.ts`. Favorites and saved values stay separate and untouched;
+> Backup & Restore is unchanged (recent list re-derives after a restore). Today and
+> the Add-Food screen were intentionally not cluttered. localStorage-only, no
+> backend/auth/AI/API/cloud/native. See
+> [`NUTRITION_QUICK_REUSE.md`](NUTRITION_QUICK_REUSE.md).
+> Prior: Phase 3.xx (**Gym Check-In polish**: the Today gym card
 > (`GymTodayCard`) is now a **prominent primary-routine card** — idle shows the
 > day status (`עדיין לא נכנסת למכון היום` / `כבר נשמר ביקור במכון היום`) with
 > `נכנסתי למכון`; active shows a strong live state (`אתה במכון עכשיו`, entry time
@@ -160,7 +179,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | System Hub ("מרכז מערכת") | Premium `/more` hub gathering all secondary tools into module-coloured categories (pure navigation) | `components/more/SystemHubView.tsx`, `docs/NAVIGATION_SYSTEM_HUB.md` |
 | Workouts | Log sessions, build from templates, view history; the active session (builder) is a premium muscle-aware "live workout" experience with an explicit drag-only exercise reorder mode (Pointer-Events drag + keyboard, no data loss) and **collapsible exercise cards** (per-card chevron + `מזער הכל`/`פתח הכל`, visual-only) to tame long sessions | `components/workouts/*`, `docs/ACTIVE_WORKOUT_SESSION_UX.md`, `docs/ACTIVE_WORKOUT_REORDER.md`, `docs/ACTIVE_WORKOUT_COLLAPSIBLE_CARDS.md` |
 | Exercise Library | 133 exercises, images, instructions, external demo videos | `components/exercises/*`, `lib/seed-exercises.ts` |
-| Nutrition | Daily food logs + macro totals | `components/nutrition/NutritionView.tsx` |
+| Nutrition | Daily food logs + macro totals, plus **quick reuse**: an `אכלת לאחרונה` row and per-entry `הוסף שוב` that re-log a previous food in one tap (derived from logs, no new storage) | `components/nutrition/NutritionView.tsx`, `lib/nutrition-reuse.ts`, `docs/NUTRITION_QUICK_REUSE.md` |
 | Food Library | Visual catalogue of foods to log from | `components/nutrition/FoodLibrary*`, `lib/food-library.ts` |
 | Saved Food Values | User's remembered per-food default macros | `docs/NUTRITION_SAVED_VALUES.md` |
 | Favorite Foods | Quick-access favorites (identity only, no macros) | `docs/NUTRITION_FAVORITES.md` |

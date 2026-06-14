@@ -40,6 +40,7 @@ lib/
   storage.ts            the ONLY localStorage access for app data (STORAGE_KEYS)
   fitness-store.ts      reactive hooks over storage (useSyncExternalStore)
   analytics.ts          pure derivations (totals, summaries, PRs) — no storage
+  nutrition-reuse.ts    recent foods + add-again helpers (pure, derived from food logs)
   today.ts              Today daily-completion + deterministic next-action (pure)
   progress-insights.ts  Progress weekly hero / insight cards / 7-day activity / PRs (pure)
   backup.ts             Local JSON backup/restore: build/validate/preview/restore + meta (mostly pure)
@@ -164,6 +165,7 @@ Useful entry points:
 | `scripts/qa-image-viewer.mjs` | Exercise image viewer |
 | `scripts/qa-nutrition-smoke.mjs` | Nutrition add/log flow |
 | `scripts/qa-saved-values.mjs`, `scripts/qa-favorites.mjs` | Saved values, favorites |
+| `scripts/qa-nutrition-reuse.mjs` | Nutrition quick reuse (`:3338`): `אכלת לאחרונה` empty state, recent de-dupe + 8-item limit, `הוסף שוב` from the recent row and from the journal (new id, today's date, values match the original, original untouched, totals + `נוסף ליומן של היום` toast), 360/390 overflow, light/dark, no console errors |
 | `scripts/qa-water.mjs`, `scripts/qa-supplements.mjs` | Water, supplements |
 | `scripts/qa-water-presets.mjs` | Personal water presets (`:3326`) |
 | `scripts/qa-navigation.mjs` | Bottom nav shape, `/more` System Hub links, active-tab state, 360/390 overflow (`:3331`) |
