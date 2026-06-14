@@ -450,9 +450,16 @@ export function WorkoutBuilder({
         <SearchIcon className="h-[18px] w-[18px] shrink-0 text-faint" />
       </button>
 
-      {/* ===== Finish / save ===== */}
-      <div className="space-y-2.5 pt-1">
-        {canSave && (
+      {/* ===== Finish / save =====
+          The identity custom properties (--mg*) only exist where they are
+          spread inline, and this block is a sibling of the hero — so it carries
+          its own `identity.style`. Without it, the enabled gradient and the
+          disabled tint would both resolve against an *undefined* --mg and wash
+          out to invisible. Each state is styled explicitly (never relying on the
+          base Button's faded `disabled:opacity-50`) so the CTA always reads
+          clearly in both themes. */}
+      <div style={identity.style} className="space-y-2.5 pt-1">
+        {canSave ? (
           <p className="text-center text-[12.5px] font-semibold text-muted">
             <span
               className="tabular-nums"
@@ -462,16 +469,33 @@ export function WorkoutBuilder({
             </span>{" "}
             מתוך <span className="tabular-nums">{totalSets}</span> סטים בוצעו
           </p>
+        ) : (
+          <p className="text-center text-[12.5px] font-semibold text-muted">
+            הוסף תרגיל אחד כדי להפעיל את שמירת האימון
+          </p>
         )}
         <div className="flex gap-2.5">
-          <Button
-            onClick={handleSave}
-            disabled={!canSave}
-            size="lg"
-            className="mg-gradient shadow-glow-mg sheen flex-1"
-          >
-            <CheckIcon className="h-5 w-5" /> סיים ושמור אימון
-          </Button>
+          {canSave ? (
+            <Button
+              onClick={handleSave}
+              size="lg"
+              className="mg-gradient shadow-glow-mg sheen flex-1"
+            >
+              <CheckIcon className="h-5 w-5" /> סיים ושמור אימון
+            </Button>
+          ) : (
+            // Disabled, but deliberately *visible*: a solid surface fill, a
+            // strong border and readable muted text — clearly "temporarily
+            // unavailable", never white-on-white. No opacity wash.
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              className="flex h-12 flex-1 cursor-not-allowed items-center justify-center gap-2 rounded-2xl border border-border-strong bg-surface px-5 text-[15px] font-bold text-muted shadow-soft"
+            >
+              <CheckIcon className="h-5 w-5 text-faint" /> סיים ושמור אימון
+            </button>
+          )}
           <Button variant="secondary" size="lg" onClick={onCancel}>
             ביטול
           </Button>

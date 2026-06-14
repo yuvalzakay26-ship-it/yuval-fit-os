@@ -76,7 +76,56 @@ for (const scheme of ["dark", "light"]) {
       `[${tag}] empty-state CTA "בחר תרגיל ראשון"`,
       await page.getByText("בחר תרגיל ראשון", { exact: true }).isVisible(),
     );
+
+    // With no exercises the finish CTA is disabled — but it must stay clearly
+    // visible and readable (not white-on-white) and explain itself.
+    const finishDisabled = page.getByRole("button", {
+      name: "סיים ושמור אימון",
+    });
+    check(
+      `[${tag}] disabled finish CTA visible`,
+      await finishDisabled.isVisible(),
+    );
+    check(
+      `[${tag}] disabled finish CTA is disabled`,
+      await finishDisabled.isDisabled(),
+    );
+    check(
+      `[${tag}] disabled-state helper text shows`,
+      await page
+        .getByText("הוסף תרגיל אחד כדי להפעיל את שמירת האימון", { exact: true })
+        .isVisible(),
+    );
+    // The CTA text must have real contrast against its background (not a
+    // near-invisible washed-out state). Compare luminance of colour vs bg.
+    const ctaContrastOk = await finishDisabled.evaluate((el) => {
+      const lum = (c) => {
+        const m = c.match(/\d+(\.\d+)?/g)?.map(Number) ?? [0, 0, 0];
+        const [r, g, b] = m;
+        const f = (v) => {
+          const s = v / 255;
+          return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+        };
+        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+      };
+      const s = getComputedStyle(el);
+      const l1 = lum(s.color);
+      const l2 = lum(s.backgroundColor);
+      const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+      return ratio;
+    });
+    check(
+      `[${tag}] disabled CTA text contrast ≥ 3:1 (${ctaContrastOk.toFixed(2)})`,
+      ctaContrastOk >= 3,
+    );
     check(`[${tag}] no overflow — empty builder`, (await noOverflow(page)) === 0);
+
+    if (width === 390) {
+      await page.screenshot({
+        path: `${OUT}/workout-session-empty-${scheme}.png`,
+        fullPage: true,
+      });
+    }
 
     /* 2. Add two exercises through the visual picker. */
     await page.getByText("בחר תרגיל ראשון", { exact: true }).click();
