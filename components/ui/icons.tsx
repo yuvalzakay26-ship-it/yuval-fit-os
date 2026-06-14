@@ -159,6 +159,12 @@ export const ClockIcon = (p: IconProps) =>
 
 export const ChevronIcon = (p: IconProps) => base(<path d="m9 6 6 6-6 6" />, p);
 
+// Down-pointing chevron — the collapse / expand affordance for active-workout
+// exercise cards. Rotated 180° via a className (e.g. `rotate-180`) when the card
+// is expanded so it points up ("tap to minimise").
+export const ChevronDownIcon = (p: IconProps) =>
+  base(<path d="m6 9 6 6 6-6" />, p);
+
 // Four rounded tiles — the "more / system hub" affordance for the bottom nav.
 // Reads as an app grid / launcher rather than a generic menu.
 export const GridIcon = (p: IconProps) =>

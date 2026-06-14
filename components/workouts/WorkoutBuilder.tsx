@@ -34,6 +34,7 @@ import { Input, Label } from "@/components/ui/Field";
 import {
   CheckCircleIcon,
   CheckIcon,
+  ChevronDownIcon,
   GripIcon,
   PlusIcon,
   SearchIcon,
@@ -110,6 +111,32 @@ export function WorkoutBuilder({
   // mobile. Entered via the "סדר תרגילים" pill, exited via "סיום סידור".
   const [reordering, setReordering] = useState(false);
 
+  /* ----------------------- Collapsible cards (Phase 3.xx) ----------------------
+     Each exercise card can be minimised to a compact summary so a long session
+     (4–6 exercises) stops being an endless scroll. This is **visual only**:
+     collapse state lives entirely in this Set of exercise ids — it never enters
+     `entries`, the draft, or saved history, and never touches a single
+     kg/reps/completed value. New exercises start expanded (absent from the Set);
+     the user's manual choice is respected for the rest of the session and nothing
+     auto-collapses. The no-duplicate rule guarantees `exerciseId` is unique within
+     the active workout, so it is a safe key. */
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+
+  const toggleExerciseCollapsed = (exerciseId: string) =>
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(exerciseId)) next.delete(exerciseId);
+      else next.add(exerciseId);
+      return next;
+    });
+
+  const collapseAllExercises = () =>
+    setCollapsedIds(new Set(entries.map((e) => e.exerciseId)));
+
+  const expandAllExercises = () => setCollapsedIds(new Set());
+
   /* ----------------------- Auto-save draft (Phase 3.xx) -----------------------
      Protects the in-progress session against accidental loss before the final
      `סיים ושמור אימון`. The draft is a single local slot, separate from workout
@@ -169,8 +196,17 @@ export function WorkoutBuilder({
     setEntries((prev) => [...prev, { exerciseId, sets: [emptySet(1)] }]);
   };
 
-  const removeExercise = (exerciseId: string) =>
+  const removeExercise = (exerciseId: string) => {
     setEntries((prev) => prev.filter((e) => e.exerciseId !== exerciseId));
+    // Drop any lingering collapse flag so re-adding the same exercise later
+    // starts expanded (collapse is UI-only, keyed purely by exerciseId).
+    setCollapsedIds((prev) => {
+      if (!prev.has(exerciseId)) return prev;
+      const next = new Set(prev);
+      next.delete(exerciseId);
+      return next;
+    });
+  };
 
   // Reorder by array position. The whole entry object travels with the move, so
   // its sets / kg / reps / completed values stay attached to the right exercise.
@@ -236,6 +272,13 @@ export function WorkoutBuilder({
   );
   const progressPct = totalSets ? Math.round((completedSets / totalSets) * 100) : 0;
   const canSave = entries.length > 0;
+
+  // Drives the single "collapse all / expand all" toggle: when every card is
+  // already minimised the control flips to "expand all". Stale ids (for removed
+  // exercises) can't make this true because they are pruned on remove.
+  const allCollapsed =
+    entries.length > 0 &&
+    entries.every((e) => collapsedIds.has(e.exerciseId));
 
   // The "current" exercise is the first one still carrying an unfinished set —
   // it gets the live highlight + "עכשיו" badge. Once everything's ticked there
@@ -496,24 +539,43 @@ export function WorkoutBuilder({
           than making every card draggable all the time, so normal scrolling and
           set-input taps are never hijacked by a stray drag on mobile. */}
       {entries.length >= 2 && (
-        <div className="flex items-center justify-between gap-2 px-0.5 pt-1">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-0.5 pt-1">
           <span className="text-[12.5px] font-bold text-muted">
             <span className="tabular-nums">{entries.length}</span> תרגילים
           </span>
-          <button
-            type="button"
-            onClick={() => setReordering((v) => !v)}
-            aria-pressed={reordering}
-            className={cn(
-              "tap inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-bold transition-colors",
-              reordering
-                ? "border-transparent bg-foreground text-background shadow-soft"
-                : "border-border-strong bg-surface-2 text-foreground hover:bg-surface",
+          <div className="flex items-center gap-2">
+            {/* Collapse all / expand all — a small secondary control, only
+                outside reorder mode (reorder has its own focused compact list).
+                Collapse is visual-only, so this never touches workout data. */}
+            {!reordering && (
+              <button
+                type="button"
+                onClick={
+                  allCollapsed ? expandAllExercises : collapseAllExercises
+                }
+                className="tap inline-flex items-center gap-1.5 rounded-full border border-border-strong bg-surface-2 px-3 py-1.5 text-[12.5px] font-bold text-foreground transition-colors hover:bg-surface"
+              >
+                <ChevronDownIcon
+                  className={cn("h-4 w-4", !allCollapsed && "rotate-180")}
+                />
+                {allCollapsed ? "פתח הכל" : "מזער הכל"}
+              </button>
             )}
-          >
-            <GripIcon className="h-4 w-4" />
-            {reordering ? "סיום סידור" : "סדר תרגילים"}
-          </button>
+            <button
+              type="button"
+              onClick={() => setReordering((v) => !v)}
+              aria-pressed={reordering}
+              className={cn(
+                "tap inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12.5px] font-bold transition-colors",
+                reordering
+                  ? "border-transparent bg-foreground text-background shadow-soft"
+                  : "border-border-strong bg-surface-2 text-foreground hover:bg-surface",
+              )}
+            >
+              <GripIcon className="h-4 w-4" />
+              {reordering ? "סיום סידור" : "סדר תרגילים"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -536,6 +598,7 @@ export function WorkoutBuilder({
         const doneSets = entry.sets.filter((s) => s.completed).length;
         const allDone = entry.sets.length > 0 && doneSets === entry.sets.length;
         const isCurrent = entry.exerciseId === currentExerciseId;
+        const collapsed = collapsedIds.has(entry.exerciseId);
 
         return (
           <div
@@ -556,7 +619,9 @@ export function WorkoutBuilder({
             />
 
             <div className="relative">
-              {/* Header: image · title · status · delete. */}
+              {/* Header: image · title · status · collapse toggle · delete.
+                  The header is identical whether the card is collapsed or
+                  expanded — only the body below it changes. */}
               <div className="flex items-start gap-3">
                 <ExerciseImage
                   imagePath={exercise.imagePath}
@@ -601,15 +666,64 @@ export function WorkoutBuilder({
                     )}
                   </p>
                 </div>
-                <button
-                  onClick={() => removeExercise(entry.exerciseId)}
-                  className="tap -m-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-faint/70 hover:bg-red-500/10 hover:text-red-500"
-                  aria-label="הסרת תרגיל"
-                >
-                  <TrashIcon className="h-4 w-4" />
-                </button>
+                {/* Right-side controls: collapse/expand chevron (always) and,
+                    only when expanded, the delete-exercise button — collapsed
+                    cards stay a clean summary. Both are dedicated buttons, so
+                    tapping kg/reps/completed never toggles the card. */}
+                <div className="-me-1 flex shrink-0 items-center gap-0.5">
+                  {!collapsed && (
+                    <button
+                      onClick={() => removeExercise(entry.exerciseId)}
+                      className="tap flex h-8 w-8 items-center justify-center rounded-lg text-faint/70 hover:bg-red-500/10 hover:text-red-500"
+                      aria-label="הסרת תרגיל"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => toggleExerciseCollapsed(entry.exerciseId)}
+                    aria-expanded={!collapsed}
+                    aria-label={
+                      collapsed
+                        ? `הצג סטים: ${exercise.nameHe}`
+                        : `הסתר סטים: ${exercise.nameHe}`
+                    }
+                    className="tap flex h-8 w-8 items-center justify-center rounded-lg text-faint/80 transition-colors hover:bg-[color:var(--mg-soft)] hover:text-[color:var(--mg)]"
+                  >
+                    <ChevronDownIcon
+                      className={cn(
+                        "h-[18px] w-[18px] transition-transform",
+                        !collapsed && "rotate-180",
+                      )}
+                    />
+                  </button>
+                </div>
               </div>
 
+              {collapsed ? (
+                /* Collapsed: a premium compact summary instead of the sets
+                   table. Image / name / muscle / badges / previous performance
+                   already live in the shared header above; this adds the
+                   set-count and completed-count at a glance. No inputs render,
+                   so nothing can be edited until the card is expanded again —
+                   but every value stays untouched in `entries`. */
+                <div className="mt-3 flex items-center gap-2 rounded-xl bg-[color:var(--mg-soft)] px-3 py-2.5">
+                  <span className="text-[12.5px] font-semibold text-muted">
+                    <span className="tabular-nums" style={{ color: "var(--mg)" }}>
+                      {entry.sets.length}
+                    </span>{" "}
+                    סטים
+                    <span className="mx-1.5 text-faint">·</span>
+                    <span className="tabular-nums" style={{ color: "var(--mg)" }}>
+                      {doneSets}
+                    </span>{" "}
+                    מתוך{" "}
+                    <span className="tabular-nums">{entry.sets.length}</span> בוצעו
+                  </span>
+                </div>
+              ) : (
+                <>
               {/* Sets header. */}
               <div className="mt-3 grid grid-cols-[1.5rem_1fr_1fr_2.25rem_1.5rem] items-center gap-2 px-0.5 text-[10px] font-bold uppercase tracking-wide text-faint">
                 <span className="text-center">סט</span>
@@ -698,6 +812,8 @@ export function WorkoutBuilder({
               >
                 <PlusIcon className="h-4 w-4" /> הוספת סט
               </button>
+                </>
+              )}
             </div>
           </div>
         );

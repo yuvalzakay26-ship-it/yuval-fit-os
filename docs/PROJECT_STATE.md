@@ -4,7 +4,23 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (Active workout **auto-save draft**: the in-progress
+> Last reviewed: Phase 3.xx (Active workout **collapsible exercise cards**: each
+> exercise card in the builder now has a small chevron toggle (`הצג סטים` /
+> `הסתר סטים`, `aria-expanded`) that minimises it to a premium muscle-tinted
+> compact summary (`X סטים · Y מתוך X בוצעו`, plus the shared header image / name
+> / muscle / previous-performance / `עכשיו`·`הושלם` badges) and expands it back
+> to the full kg/reps/completed editing card — so a 4–6 exercise session stops
+> being an endless scroll. A single `מזער הכל` / `פתח הכל` control collapses or
+> expands everything at once. **Collapse is visual only**: it lives in
+> component-local state keyed by `exerciseId`, never enters `entries`, the draft,
+> or saved history, never triggers a draft write, and never touches a
+> kg/reps/completed value. New exercises start expanded; nothing auto-collapses;
+> reorder mode hides the collapse controls and preserves each card's state on
+> exit; a restored draft comes back fully expanded with all values intact. No
+> schema / storage-key / payload / routes / draft-shape changes; localStorage-only,
+> no backend/auth/AI/API. See
+> [`ACTIVE_WORKOUT_COLLAPSIBLE_CARDS.md`](ACTIVE_WORKOUT_COLLAPSIBLE_CARDS.md).
+> Prior: Phase 3.xx (Active workout **auto-save draft**: the in-progress
 > session is auto-saved locally under a new key `yfos:active-workout-draft:v1` so
 > leaving the builder before `סיים ושמור אימון` no longer loses data. On return a
 > premium restore card (`נמצא אימון שלא נשמר`) offers `המשך אימון` / `מחק טיוטה`;
@@ -71,7 +87,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | --- | --- | --- |
 | Today dashboard | Daily command center: greeting, completion ring, deterministic next-action card, status strip, module cards (workout, macros, water, supplements). Optional-aware (supplements never block the day) | `components/today/TodayView.tsx`, `lib/today.ts`, `docs/TODAY_QUICK_START.md` |
 | System Hub ("מרכז מערכת") | Premium `/more` hub gathering all secondary tools into module-coloured categories (pure navigation) | `components/more/SystemHubView.tsx`, `docs/NAVIGATION_SYSTEM_HUB.md` |
-| Workouts | Log sessions, build from templates, view history; the active session (builder) is a premium muscle-aware "live workout" experience with an explicit drag-only exercise reorder mode (Pointer-Events drag + keyboard, no data loss) | `components/workouts/*`, `docs/ACTIVE_WORKOUT_SESSION_UX.md`, `docs/ACTIVE_WORKOUT_REORDER.md` |
+| Workouts | Log sessions, build from templates, view history; the active session (builder) is a premium muscle-aware "live workout" experience with an explicit drag-only exercise reorder mode (Pointer-Events drag + keyboard, no data loss) and **collapsible exercise cards** (per-card chevron + `מזער הכל`/`פתח הכל`, visual-only) to tame long sessions | `components/workouts/*`, `docs/ACTIVE_WORKOUT_SESSION_UX.md`, `docs/ACTIVE_WORKOUT_REORDER.md`, `docs/ACTIVE_WORKOUT_COLLAPSIBLE_CARDS.md` |
 | Exercise Library | 133 exercises, images, instructions, external demo videos | `components/exercises/*`, `lib/seed-exercises.ts` |
 | Nutrition | Daily food logs + macro totals | `components/nutrition/NutritionView.tsx` |
 | Food Library | Visual catalogue of foods to log from | `components/nutrition/FoodLibrary*`, `lib/food-library.ts` |
