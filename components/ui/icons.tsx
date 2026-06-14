@@ -205,6 +205,36 @@ export const PencilIcon = (p: IconProps) =>
     p,
   );
 
+// Download to device — used by the backup "ייצא גיבוי" action.
+export const DownloadIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M12 3v12M7 10l5 5 5-5" />
+      <path d="M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17" />
+    </>,
+    p,
+  );
+
+// Upload from device — used by the backup "ייבא גיבוי" restore action.
+export const UploadIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M12 21V9M7 14l5-5 5 5" />
+      <path d="M4 7V4.5A1.5 1.5 0 0 1 5.5 3h13A1.5 1.5 0 0 1 20 4.5V7" />
+    </>,
+    p,
+  );
+
+// Circular arrows — "refresh / reload" prompt after a restore.
+export const RefreshIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M3.5 12a8.5 8.5 0 0 1 14.5-6M20.5 12a8.5 8.5 0 0 1-14.5 6" />
+      <path d="M18 3v3.5h-3.5M6 21v-3.5h3.5" />
+    </>,
+    p,
+  );
+
 export const CopyIcon = (p: IconProps) =>
   base(
     <>

@@ -191,7 +191,7 @@ const SECTIONS: HubSection[] = [
         tone: "system",
       },
       {
-        href: "/settings",
+        href: "/backup",
         title: "גיבוי ושחזור",
         description: "ייצוא וייבוא הנתונים שלך",
         icon: DatabaseIcon,

@@ -369,6 +369,26 @@ export function SettingsView() {
             <StatusRow label="נפח מוערך" value={`${approxKb.toFixed(1)} KB`} />
           </div>
         </Card>
+
+        {/* Backup & restore — opens the dedicated /backup screen. */}
+        <Link
+          href="/backup"
+          className="tap mt-2.5 block"
+          aria-label="גיבוי ושחזור — ייצא או שחזר את נתוני Fit OS מהמכשיר הזה"
+        >
+          <Card className="flex items-center gap-3.5 hover:bg-surface-2">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-soft)] text-accent">
+              <DatabaseIcon className="h-[22px] w-[22px]" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13.5px] font-bold text-foreground">גיבוי ושחזור</p>
+              <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">
+                ייצא או שחזר את נתוני Fit OS מהמכשיר הזה
+              </p>
+            </div>
+            <ChevronIcon className="h-4 w-4 shrink-0 rotate-180 text-faint" />
+          </Card>
+        </Link>
       </section>
 
       {/* ------------------------ Access & privacy -------------------------- */}

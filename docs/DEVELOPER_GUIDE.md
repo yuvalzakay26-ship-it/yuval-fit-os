@@ -42,6 +42,7 @@ lib/
   analytics.ts          pure derivations (totals, summaries, PRs) — no storage
   today.ts              Today daily-completion + deterministic next-action (pure)
   progress-insights.ts  Progress weekly hero / insight cards / 7-day activity / PRs (pure)
+  backup.ts             Local JSON backup/restore: build/validate/preview/restore + meta (mostly pure)
   welcome.ts            welcome gate state + init script
   private-access.ts     private-access gate state + init script
   admin-access.ts       admin access-code gate state + init script
@@ -79,6 +80,11 @@ docs/                   feature docs + this guide + PROJECT_STATE.md
   [`ACTIVE_WORKOUT_DRAFT_AUTOSAVE.md`](ACTIVE_WORKOUT_DRAFT_AUTOSAVE.md).
 - **Pure logic goes in `lib/analytics.ts`** (data passed in, nothing read from
   storage) so it stays SSR-safe and testable.
+- **Cross-cutting data tools read every key from one table.** `lib/backup.ts`
+  drives export/restore from `BACKUP_MODULES`, which maps friendly fields to the
+  real `STORAGE_KEYS` (imported, never re-typed) so it can't drift. It adds **one**
+  new key, `yfos:backup-meta:v1` (status only), and never touches existing keys'
+  shapes; gate/admin keys are explicitly excluded. See `docs/BACKUP_RESTORE.md`.
 - **Never read `localStorage` during render without the `isBrowser()` guard** and a
   stable server snapshot — this is what keeps hydration clean.
 
@@ -157,6 +163,7 @@ Useful entry points:
 | `scripts/qa-workout-collapse.mjs` | Active workout **collapsible cards**: default all-expanded, collapse one card (its kg/reps inputs hide, a compact `סטים … בוצעו` summary + `aria-expanded` show, the rest stay editable), expand it back (values intact), complete a set + collapse (`הושלם` in summary), `מזער הכל`/`פתח הכל` toggle every card, collapse controls hidden in reorder mode, the important **collapse → reorder-to-first → expand** data-stays scenario, collapse state **not** in the restored draft (comes back expanded) nor in saved history, light+dark, 360/390 overflow (`:3331`) |
 | `scripts/qa-workout-draft.mjs` | Active workout **auto-save draft**: empty builder leaves no prompt, a real session (title + exercises + kg/reps + completed + reorder) auto-saves, survives a **full reload**, restores via `המשך אימון` (order + values intact), final save lands it in history **once** and clears the prompt, `מחק טיוטה` (confirmed) discards, light+dark, 360/390 overflow (`:3331`) |
 | `scripts/qa-settings.mjs` | Settings control center: two appearance modes only (no "מערכת"), header toggle, legacy `system` migration, separated danger section, 360/390 overflow (`:3332`) |
+| `scripts/qa-backup-restore.mjs` | Backup & Restore: export JSON shape + gate/admin exclusions + `lastExportedAt`, invalid/wrong-app/unsupported-version rejection, counts preview + confirm gate, full seed→clear→restore (data reappears, admin/gate untouched), Settings + System Hub `/backup` links, friendly empty state, 360/390 overflow, light+dark, no console errors (`:3333`) |
 
 ### Seeding the gates in QA
 
