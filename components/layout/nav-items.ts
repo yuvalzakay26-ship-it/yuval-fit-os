@@ -32,6 +32,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/more",
     label: "עוד",
     icon: GridIcon,
-    match: ["/exercises", "/settings", "/learn"],
+    match: ["/exercises", "/settings", "/learn", "/gym"],
   },
 ];

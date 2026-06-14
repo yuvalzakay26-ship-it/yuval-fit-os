@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/icons";
 import { WaterCard } from "@/components/water/WaterCard";
 import { SupplementsCard } from "@/components/supplements/SupplementsCard";
+import { GymTodayCard } from "@/components/gym/GymTodayCard";
 
 /* ----------------------------- Daily copy ----------------------------- */
 // Calm, motivating, non-medical. Drives the hero's headline from how many of
@@ -417,6 +418,12 @@ export function TodayView() {
             tint="supplement"
           />
         </div>
+      </section>
+
+      {/* Gym attendance — quick check-in / live visit */}
+      <section className="space-y-4">
+        <SectionHeader title="נוכחות במכון" accent="var(--accent-energy)" />
+        <GymTodayCard />
       </section>
 
       {/* Daily habits — water + supplements */}

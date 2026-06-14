@@ -78,6 +78,12 @@ docs/                   feature docs + this guide + PROJECT_STATE.md
   deliberately separate from workout history (`yfos:workouts`); it auto-saves on
   change, restores on return, and clears on final save / discard. See
   [`ACTIVE_WORKOUT_DRAFT_AUTOSAVE.md`](ACTIVE_WORKOUT_DRAFT_AUTOSAVE.md).
+  **Gym attendance** (`lib/gym-attendance.ts`, keys `yfos:gym-visits:v1` +
+  `yfos:active-gym-visit:v1`) follows this same self-contained pattern: it owns
+  both keys, exposes its own `useSyncExternalStore` hooks + pure stats, and is
+  separate from workout history. Because it lives outside `STORAGE_KEYS`, it is
+  wired into backups (`BACKUP_MODULES`) and into `resetAll` explicitly. See
+  [`GYM_CHECK_IN.md`](GYM_CHECK_IN.md).
 - **Pure logic goes in `lib/analytics.ts`** (data passed in, nothing read from
   storage) so it stays SSR-safe and testable.
 - **Cross-cutting data tools read every key from one table.** `lib/backup.ts`
@@ -163,6 +169,7 @@ Useful entry points:
 | `scripts/qa-workout-collapse.mjs` | Active workout **collapsible cards**: default all-expanded, collapse one card (its kg/reps inputs hide, a compact `סטים … בוצעו` summary + `aria-expanded` show, the rest stay editable), expand it back (values intact), complete a set + collapse (`הושלם` in summary), `מזער הכל`/`פתח הכל` toggle every card, collapse controls hidden in reorder mode, the important **collapse → reorder-to-first → expand** data-stays scenario, collapse state **not** in the restored draft (comes back expanded) nor in saved history, light+dark, 360/390 overflow (`:3331`) |
 | `scripts/qa-workout-draft.mjs` | Active workout **auto-save draft**: empty builder leaves no prompt, a real session (title + exercises + kg/reps + completed + reorder) auto-saves, survives a **full reload**, restores via `המשך אימון` (order + values intact), final save lands it in history **once** and clears the prompt, `מחק טיוטה` (confirmed) discards, light+dark, 360/390 overflow (`:3331`) |
 | `scripts/qa-settings.mjs` | Settings control center: two appearance modes only (no "מערכת"), header toggle, legacy `system` migration, separated danger section, 360/390 overflow (`:3332`) |
+| `scripts/qa-gym-check-in.mjs` | Gym check-in/out (`:3334`): empty state, check-in + live timer + reload persistence, check-out (saves visit, clears active, success + history row), confirm-gated delete of open/saved visits, long-open forgot warning (no auto-close), Today check-in/out → `/gym` history, Progress gym stats, backup export+restore of `gymVisits`/`activeGymVisit` without altering workouts, 360/390 + light/dark, no console errors |
 | `scripts/qa-backup-restore.mjs` | Backup & Restore: export JSON shape + gate/admin exclusions + `lastExportedAt`, invalid/wrong-app/unsupported-version rejection, counts preview + confirm gate, full seed→clear→restore (data reappears, admin/gate untouched), Settings + System Hub `/backup` links, friendly empty state, 360/390 overflow, light+dark, no console errors (`:3333`) |
 
 ### Seeding the gates in QA

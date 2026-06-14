@@ -21,6 +21,7 @@ import {
   type WorkoutTemplate,
 } from "./fitness-types";
 import * as storage from "./storage";
+import { clearAllGymData } from "./gym-attendance";
 
 const EMPTY_WORKOUTS: WorkoutSession[] = [];
 const EMPTY_FOODLOGS: FoodLog[] = [];
@@ -320,6 +321,9 @@ export function updateSettings(settings: Settings): void {
 
 export function resetAll(): void {
   storage.resetAllData();
+  // Gym attendance lives in its own module/keys (outside STORAGE_KEYS), so clear
+  // it explicitly here — "reset all data" should remove gym visits too.
+  clearAllGymData();
   invalidate();
   notify();
 }

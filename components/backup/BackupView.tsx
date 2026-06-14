@@ -334,8 +334,16 @@ export function BackupView() {
                   value={pending.preview.supplements}
                 />
                 <PreviewRow
+                  label="ביקורים במכון"
+                  value={pending.preview.gymVisits}
+                />
+                <PreviewRow
                   label="כולל הגדרות"
                   value={yesNo(pending.preview.settingsIncluded)}
+                />
+                <PreviewRow
+                  label="כולל שהייה פעילה במכון"
+                  value={yesNo(pending.preview.activeGymVisitIncluded)}
                 />
                 <PreviewRow
                   label="כולל טיוטת אימון"

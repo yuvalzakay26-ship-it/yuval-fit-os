@@ -22,6 +22,7 @@
 import { useSyncExternalStore } from "react";
 import { STORAGE_KEYS } from "./storage";
 import { ACTIVE_WORKOUT_DRAFT_KEY } from "./active-workout-draft";
+import { ACTIVE_GYM_VISIT_KEY, GYM_VISITS_KEY } from "./gym-attendance";
 import { toISODate } from "./utils";
 
 /** App marker stored in every backup so a foreign file is rejected on import. */
@@ -72,6 +73,12 @@ export const BACKUP_MODULES: BackupModule[] = [
     field: "supplementLogs",
     storageKey: STORAGE_KEYS.supplementLogs,
     label: "יומן תוספים",
+  },
+  { field: "gymVisits", storageKey: GYM_VISITS_KEY, label: "ביקורים במכון" },
+  {
+    field: "activeGymVisit",
+    storageKey: ACTIVE_GYM_VISIT_KEY,
+    label: "שהייה פעילה במכון",
   },
   {
     field: "activeWorkoutDraft",
@@ -238,8 +245,10 @@ export interface BackupPreview {
   supplementLogs: number;
   savedFoodValues: number;
   favoriteFoods: number;
+  gymVisits: number;
   settingsIncluded: boolean;
   activeDraftIncluded: boolean;
+  activeGymVisitIncluded: boolean;
   /** True when no module carries any user data — a friendly "empty backup" hint. */
   isEmpty: boolean;
 }
@@ -267,8 +276,10 @@ export function previewBackup(backup: Backup): BackupPreview {
   const supplementLogs = arrayLen(d.supplementLogs);
   const savedFoodValues = recordCount(d.savedFoodValues);
   const favoriteFoods = recordCount(d.favoriteFoods);
+  const gymVisits = arrayLen(d.gymVisits);
   const settingsIncluded = isObject(d.settings);
   const activeDraftIncluded = isMeaningfulDraft(d.activeWorkoutDraft);
+  const activeGymVisitIncluded = isObject(d.activeGymVisit);
   const isEmpty =
     workouts +
       workoutTemplates +
@@ -277,10 +288,12 @@ export function previewBackup(backup: Backup): BackupPreview {
       supplements +
       supplementLogs +
       savedFoodValues +
-      favoriteFoods ===
+      favoriteFoods +
+      gymVisits ===
       0 &&
     !settingsIncluded &&
-    !activeDraftIncluded;
+    !activeDraftIncluded &&
+    !activeGymVisitIncluded;
   return {
     createdAt: backup.createdAt,
     backupVersion: backup.backupVersion,
@@ -292,8 +305,10 @@ export function previewBackup(backup: Backup): BackupPreview {
     supplementLogs,
     savedFoodValues,
     favoriteFoods,
+    gymVisits,
     settingsIncluded,
     activeDraftIncluded,
+    activeGymVisitIncluded,
     isEmpty,
   };
 }

@@ -37,6 +37,8 @@ to protect it. Backup & Restore is that safety net — nothing more.
     "waterLogs": [ /* … */ ],
     "supplements": [ /* … */ ],
     "supplementLogs": [ /* … */ ],
+    "gymVisits": [ /* … */ ],
+    "activeGymVisit": null,
     "activeWorkoutDraft": null
   }
 }
@@ -63,6 +65,8 @@ each friendly field to a real storage key imported from `lib/storage.ts` /
 | `waterLogs` | `yfos:water-logs:v1` |
 | `supplements` | `yfos:supplements:v1` |
 | `supplementLogs` | `yfos:supplement-logs:v1` |
+| `gymVisits` | `yfos:gym-visits:v1` |
+| `activeGymVisit` | `yfos:active-gym-visit:v1` |
 | `activeWorkoutDraft` | `yfos:active-workout-draft:v1` (only when meaningful) |
 
 ### Excluded keys (never backed up, never restored)
@@ -90,8 +94,8 @@ reveals a read-only textarea to copy manually.
 1. The user picks a JSON file (`<input type="file">`) **or** pastes backup text.
 2. `parseBackupJson()` → `validateBackup()` runs first; nothing is written yet.
 3. A **preview** card shows backup date, version, and counts (workouts,
-   nutrition entries, water days, supplements, whether settings / active draft
-   are included).
+   nutrition entries, water days, supplements, gym visits, whether settings /
+   active gym visit / active draft are included).
 4. `שחזר עכשיו` opens a `ConfirmDialog`
    (`שחזור הגיבוי יחליף את הנתונים הקיימים במכשיר הזה. להמשיך?`).
 5. **Only after confirmation** does `restoreBackup()` write to `localStorage`.

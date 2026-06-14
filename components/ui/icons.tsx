@@ -503,6 +503,37 @@ export const ShieldIcon = (p: IconProps) =>
     p,
   );
 
+// Door with an inbound arrow — the "נכנסתי למכון" check-in affordance. Reads as
+// "enter", never as location/GPS.
+export const DoorEnterIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M14 3.5h3.5A1.5 1.5 0 0 1 19 5v14a1.5 1.5 0 0 1-1.5 1.5H14" />
+      <path d="M3 12h9M8.5 8l4 4-4 4" />
+    </>,
+    p,
+  );
+
+// Door with an outbound arrow — the "סיים שהייה" check-out affordance.
+export const DoorExitIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M10 3.5H6.5A1.5 1.5 0 0 0 5 5v14a1.5 1.5 0 0 0 1.5 1.5H10" />
+      <path d="M21 12h-9M16.5 8l4 4-4 4" />
+    </>,
+    p,
+  );
+
+// Stopwatch — the active gym-visit timer glyph (a clock with a top stem/button).
+export const StopwatchIcon = (p: IconProps) =>
+  base(
+    <>
+      <circle cx="12" cy="13.5" r="7.5" />
+      <path d="M12 13.5V9.5M9.5 2.5h5M12 2.5V6M18.5 7.5l1.4-1.4" />
+    </>,
+    p,
+  );
+
 // Circular check. Supports a solid fill (like StarIcon) so the "taken" habit
 // state can read as a confident, filled badge.
 export const CheckCircleIcon = ({

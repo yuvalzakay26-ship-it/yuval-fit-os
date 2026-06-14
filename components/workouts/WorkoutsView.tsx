@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { WorkoutTemplate, WorkoutExerciseEntry } from "@/lib/fitness-types";
 import {
@@ -24,7 +25,9 @@ import { Card } from "@/components/ui/Card";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SectionHeader } from "@/components/ui/PageHeader";
 import {
+  ChevronIcon,
   CopyIcon,
+  DoorEnterIcon,
   DumbbellIcon,
   ListIcon,
   PlayIcon,
@@ -232,6 +235,25 @@ export function WorkoutsView() {
               </Button>
             </div>
           </Card>
+
+          {/* Gym attendance — a quiet link to the separate "time at the gym"
+              tracker. Distinct from logging a workout. */}
+          <Link href="/gym" className="tap block" aria-label="נוכחות במכון">
+            <Card className="module-energy sheen flex items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-energy-soft)] text-[color:var(--accent-energy)]">
+                <DoorEnterIcon className="h-[22px] w-[22px]" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px] font-bold leading-tight text-foreground">
+                  נוכחות במכון
+                </p>
+                <p className="mt-0.5 truncate text-[12.5px] text-muted">
+                  כניסה, יציאה וזמן שהייה במכון
+                </p>
+              </div>
+              <ChevronIcon className="h-4 w-4 shrink-0 rotate-180 text-faint" />
+            </Card>
+          </Link>
 
           <section>
             <SectionHeader

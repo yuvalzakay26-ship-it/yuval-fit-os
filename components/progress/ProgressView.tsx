@@ -20,6 +20,11 @@ import {
 } from "@/lib/progress-insights";
 import { getExerciseById, MUSCLE_GROUP_LABELS } from "@/lib/seed-exercises";
 import {
+  formatDuration,
+  getGymVisitStats,
+  useGymVisits,
+} from "@/lib/gym-attendance";
+import {
   useFoodLogs,
   useSupplementLogs,
   useSupplements,
@@ -34,11 +39,13 @@ import {
   CalendarIcon,
   ChartIcon,
   ClockIcon,
+  DoorEnterIcon,
   DropletIcon,
   DumbbellIcon,
   FlameIcon,
   PillIcon,
   SparkIcon,
+  StopwatchIcon,
   TrophyIcon,
 } from "@/components/ui/icons";
 import { StatCard } from "./StatCard";
@@ -185,7 +192,9 @@ export function ProgressView() {
   const waterLogs = useWaterLogs();
   const supplements = useSupplements();
   const supplementLogs = useSupplementLogs();
+  const gymVisits = useGymVisits();
 
+  const gymStats = getGymVisitStats(gymVisits);
   const summary = progressSummary(workouts, foodLogs);
   const hero = weeklyHero(workouts, foodLogs, waterLogs);
   const insights = weeklyInsights({ workouts, foodLogs, waterLogs });
@@ -199,7 +208,8 @@ export function ProgressView() {
     workouts.length > 0 ||
     foodLogs.length > 0 ||
     waterLogs.length > 0 ||
-    supplements.length > 0;
+    supplements.length > 0 ||
+    gymVisits.length > 0;
 
   if (!hasData) {
     return (
@@ -409,6 +419,75 @@ export function ProgressView() {
                 </p>
                 <p className="mt-1.5 text-[12px] font-medium text-muted">
                   ימים עם תיעוד השבוע
+                </p>
+              </div>
+            </Card>
+          </div>
+        </section>
+      )}
+
+      {/* Gym attendance — visits + time at the gym (separate from workouts). */}
+      {gymVisits.length > 0 && (
+        <section>
+          <SectionHeader title="נוכחות במכון" accent="var(--accent-energy)" />
+          <div className="grid grid-cols-2 gap-3">
+            <Card className="space-y-2 p-4">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent-energy-soft)] text-[color:var(--accent-energy)]">
+                <DoorEnterIcon className="h-[18px] w-[18px]" />
+              </span>
+              <div>
+                <p className="text-[26px] font-extrabold leading-none tabular-nums text-foreground">
+                  {gymStats.visitsThisWeek}
+                </p>
+                <p className="mt-1.5 text-[12px] font-medium text-muted">
+                  ביקורים השבוע
+                </p>
+              </div>
+            </Card>
+            <Card className="space-y-2 p-4">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent-energy-soft)] text-[color:var(--accent-energy)]">
+                <StopwatchIcon className="h-[18px] w-[18px]" />
+              </span>
+              <div>
+                <p className="text-[26px] font-extrabold leading-none tabular-nums text-foreground">
+                  {formatDuration(gymStats.totalMsThisWeek)}
+                  <span className="text-[14px] font-semibold text-muted"> שעות</span>
+                </p>
+                <p className="mt-1.5 text-[12px] font-medium text-muted">
+                  זמן במכון השבוע
+                </p>
+              </div>
+            </Card>
+            <Card className="space-y-2 p-4">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent-energy-soft)] text-[color:var(--accent-energy)]">
+                <ClockIcon className="h-[18px] w-[18px]" />
+              </span>
+              <div>
+                <p className="text-[26px] font-extrabold leading-none tabular-nums text-foreground">
+                  {gymStats.averageMs != null
+                    ? formatDuration(gymStats.averageMs)
+                    : "—"}
+                  {gymStats.averageMs != null && (
+                    <span className="text-[14px] font-semibold text-muted"> שעות</span>
+                  )}
+                </p>
+                <p className="mt-1.5 text-[12px] font-medium text-muted">
+                  משך ממוצע
+                </p>
+              </div>
+            </Card>
+            <Card className="space-y-2 p-4">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--accent-energy-soft)] text-[color:var(--accent-energy)]">
+                <CalendarIcon className="h-[18px] w-[18px]" />
+              </span>
+              <div>
+                <p className="text-[17px] font-extrabold leading-tight text-foreground">
+                  {gymStats.lastVisit
+                    ? formatHebrewDate(gymStats.lastVisit.startedAt.slice(0, 10))
+                    : "—"}
+                </p>
+                <p className="mt-1.5 text-[12px] font-medium text-muted">
+                  ביקור אחרון
                 </p>
               </div>
             </Card>
