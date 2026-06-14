@@ -367,6 +367,13 @@ body {
 .brand-gradient {
   background-image: var(--gradient-accent);
 }
+/* Fixed brand-identity gradient for the logo tile — a premium navy→teal→cyan
+   that is deliberately theme-independent (and never the old flat green), so the
+   app mark stays consistent with the app icon / favicon in both light and dark.
+   This is the SAME palette baked into scripts/brand/generate-brand.mjs. */
+.brand-logo {
+  background-image: linear-gradient(145deg, #0a2a52 0%, #0e7e90 52%, #17c0d4 100%);
+}
 /* Feature gradients — declared after .brand-gradient so they win when both
    are present (components append a tone class to their brand default). */
 .strength-gradient {

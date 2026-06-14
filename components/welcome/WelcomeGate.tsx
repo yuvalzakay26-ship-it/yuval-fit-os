@@ -4,10 +4,10 @@ import { useId } from "react";
 import { markWelcomeSeen, useWelcomeSeen } from "@/lib/welcome";
 import {
   AppleIcon,
+  BrandMark,
   ChartIcon,
   DumbbellIcon,
   ListIcon,
-  SparkIcon,
 } from "@/components/ui/icons";
 
 /**
@@ -59,8 +59,8 @@ function WelcomeScreen() {
       }}
     >
       <div className="w-full max-w-sm">
-        <div className="mx-auto mb-7 flex h-20 w-20 items-center justify-center rounded-[1.6rem] brand-gradient text-[color:var(--accent-contrast)] shadow-glow">
-          <SparkIcon className="h-9 w-9" />
+        <div className="mx-auto mb-7 flex h-20 w-20 items-center justify-center rounded-[1.6rem] brand-logo text-white shadow-glow">
+          <BrandMark className="h-11 w-11" />
         </div>
 
         <h1

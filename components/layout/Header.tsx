@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
-import { MoonIcon, SettingsIcon, SunIcon } from "@/components/ui/icons";
+import { BrandMark, MoonIcon, SettingsIcon, SunIcon } from "@/components/ui/icons";
 
 export function Header() {
   const { resolved, setTheme } = useTheme();
@@ -16,8 +16,8 @@ export function Header() {
       >
         <div className="mx-auto flex h-[58px] max-w-md items-center justify-between px-4">
           <Link href="/" className="tap flex items-center gap-2.5">
-            <span className="brand-gradient flex h-9 w-9 items-center justify-center rounded-[0.7rem] text-[15px] font-black text-[color:var(--accent-contrast)] shadow-glow">
-              Y
+            <span className="brand-logo flex h-9 w-9 items-center justify-center rounded-[0.7rem] text-white shadow-glow">
+              <BrandMark className="h-[21px] w-[21px]" />
             </span>
             <span className="flex flex-col leading-none">
               <span className="text-[15px] font-extrabold tracking-tight text-foreground">

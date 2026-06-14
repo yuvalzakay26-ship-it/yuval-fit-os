@@ -238,6 +238,31 @@ export const StarIcon = ({
   </svg>
 );
 
+// Brand mark — the Fit OS identity glyph: a minimalist broad-shoulders /
+// upper-back V-taper silhouette (broad deltoids tapering to a narrow waist) with
+// a subtle centred spine groove. The body inherits `currentColor`; the groove is
+// a faint dark overlay that reads on the white-on-gradient logo tile. This is the
+// single source the app/PWA/favicon rasters are generated from — keep it in sync
+// with scripts/brand/generate-brand.mjs. viewBox 0 0 512 512.
+export const BrandMark = (p: IconProps) => (
+  <svg
+    viewBox="0 0 512 512"
+    fill="none"
+    className={p.className ?? "h-6 w-6"}
+    aria-hidden="true"
+  >
+    <path
+      d="M256 96 C266 96 274 98 281 104 C286 116 288 128 289 142 C317 148 347 158 375 176 C395 188 407 203 408 226 C409 250 400 272 383 296 C357 344 320 398 286 430 C278 437 268 441 256 442 C244 441 234 437 226 430 C192 398 155 344 129 296 C112 272 103 250 104 226 C105 203 117 188 137 176 C165 158 195 148 223 142 C224 128 226 116 231 104 C238 98 246 96 256 96 Z"
+      fill="currentColor"
+    />
+    <path
+      d="M256 190 C248 208 245 234 245 276 C245 322 248 360 251 396 L256 404 L261 396 C264 360 267 322 267 276 C267 234 264 208 256 190 Z"
+      fill="#04111f"
+      fillOpacity="0.16"
+    />
+  </svg>
+);
+
 export const SparkIcon = (p: IconProps) =>
   base(
     <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" />,
