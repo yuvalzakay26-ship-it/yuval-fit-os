@@ -285,7 +285,12 @@ export interface SupplementLog {
   takenAt: string;
 }
 
-export type ThemePreference = "light" | "dark" | "system";
+/**
+ * Appearance modes. The app supports exactly two — the user is in full control.
+ * A previous "system" mode was removed in Phase 3.xx; any legacy stored value is
+ * sanitized to "light" on read (see `sanitizeTheme` in `lib/storage.ts`).
+ */
+export type ThemePreference = "light" | "dark";
 
 export interface Settings {
   theme: ThemePreference;
@@ -314,7 +319,7 @@ export interface Settings {
 export const DEFAULT_WATER_GOAL_ML = 2500;
 
 export const DEFAULT_SETTINGS: Settings = {
-  theme: "system",
+  theme: "light",
   proteinGoal: 150,
   calorieGoal: 2200,
   weightUnit: "kg",

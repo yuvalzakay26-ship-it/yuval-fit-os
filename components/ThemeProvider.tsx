@@ -6,41 +6,30 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useSyncExternalStore,
 } from "react";
 import type { ThemePreference } from "@/lib/fitness-types";
 import { updateSettings, useSettings } from "@/lib/fitness-store";
 
 interface ThemeContextValue {
+  /** The user's saved appearance — only "light" or "dark" (no "system"). */
   theme: ThemePreference;
-  /** The actually-applied appearance after resolving "system". */
+  /**
+   * The actually-applied appearance. Kept as a distinct field (equal to `theme`)
+   * so existing callers like the header toggle keep working unchanged after the
+   * "system" mode was removed in Phase 3.xx.
+   */
   resolved: "light" | "dark";
   setTheme: (theme: ThemePreference) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function subscribeSystem(callback: () => void): () => void {
-  const media = window.matchMedia("(prefers-color-scheme: dark)");
-  media.addEventListener("change", callback);
-  return () => media.removeEventListener("change", callback);
-}
-
-function useSystemDark(): boolean {
-  return useSyncExternalStore(
-    subscribeSystem,
-    () => window.matchMedia("(prefers-color-scheme: dark)").matches,
-    () => false,
-  );
-}
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const settings = useSettings();
-  const systemDark = useSystemDark();
-
+  // `settings.theme` is already sanitized to "light" | "dark" on read
+  // (see lib/storage.ts), so there is no "system" value to resolve.
   const theme = settings.theme;
-  const resolved: "light" | "dark" =
-    theme === "system" ? (systemDark ? "dark" : "light") : theme;
+  const resolved: "light" | "dark" = theme;
 
   // Apply the resolved appearance to the DOM (external-system sync).
   useEffect(() => {
@@ -72,6 +61,10 @@ export function useTheme(): ThemeContextValue {
 
 /**
  * Inline script string that applies the saved theme before paint to avoid a
- * flash of the wrong theme. Injected in <head> in the root layout.
+ * flash of the wrong theme. Injected in <head> in the root layout. Only "light"
+ * and "dark" are supported; any legacy/unknown value (incl. the removed
+ * "system") falls back to "light", matching `sanitizeTheme` in `lib/storage.ts`
+ * so the pre-paint class and React's first render always agree (no hydration
+ * mismatch, no content flash).
  */
-export const THEME_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('yfos:settings');var t=s?JSON.parse(s).theme:'system';if(!t)t='system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
+export const THEME_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('yfos:settings');var t=s?JSON.parse(s).theme:'light';if(t!=='dark'&&t!=='light')t='light';if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();`;

@@ -34,7 +34,7 @@ components/
   layout/               AppShell, Header, BottomNav, ScrollToTop, nav-items
   today/ workouts/ exercises/ nutrition/ water/ supplements/ progress/ settings/
   ui/                   primitives (Card, Button, Field, Badge, icons, ProgressRing…)
-  ThemeProvider.tsx     light/dark/system theme
+  ThemeProvider.tsx     light/dark theme (no "system" mode)
 lib/
   fitness-types.ts      all domain types + DEFAULT_SETTINGS
   storage.ts            the ONLY localStorage access for app data (STORAGE_KEYS)
@@ -94,10 +94,18 @@ Each exposes a pre-paint init script injected in `<head>` that toggles a class o
 
 ## 5. Theme
 
-`ThemeProvider` reads `settings.theme` (`light`/`dark`/`system`), resolves
-`system` via `matchMedia`, and toggles `.dark` on `<html>`. `THEME_INIT_SCRIPT`
-applies the saved theme before paint. There is no separate theme key — it lives
-inside `yfos:settings`.
+`ThemeProvider` reads `settings.theme` — only `light` or `dark` (the "system"
+mode was removed in Phase 3.xx so the user has full control) — and toggles
+`.dark` on `<html>`. `THEME_INIT_SCRIPT` applies the saved theme before paint.
+There is no separate theme key — it lives inside `yfos:settings`.
+
+A legacy `theme: "system"` (or any unexpected value) is **sanitized to `light`**
+on read by `sanitizeTheme` in `lib/storage.ts`, so the rest of the app only ever
+sees a valid mode. The sanitizer and the pre-paint init script use the same
+fallback, so the migration is flash-free and never re-writes `system`. The
+header moon/sun button toggles `light`↔`dark` only. The Settings appearance
+control offers exactly two cards (בהיר / כהה) — see
+[`SETTINGS_CONTROL_CENTER.md`](SETTINGS_CONTROL_CENTER.md).
 
 ## 6. Testing & QA
 
@@ -134,6 +142,7 @@ Useful entry points:
 | `scripts/qa-water.mjs`, `scripts/qa-supplements.mjs` | Water, supplements |
 | `scripts/qa-water-presets.mjs` | Personal water presets (`:3326`) |
 | `scripts/qa-navigation.mjs` | Bottom nav shape, `/more` System Hub links, active-tab state, 360/390 overflow (`:3331`) |
+| `scripts/qa-settings.mjs` | Settings control center: two appearance modes only (no "מערכת"), header toggle, legacy `system` migration, separated danger section, 360/390 overflow (`:3332`) |
 
 ### Seeding the gates in QA
 

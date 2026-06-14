@@ -8,6 +8,7 @@ import {
   type FoodLog,
   type SavedFoodValue,
   type Settings,
+  type ThemePreference,
   type Supplement,
   type SupplementLog,
   type WaterEntry,
@@ -399,8 +400,24 @@ export function clearSupplementLogs(): void {
 
 /* ------------------------------ Settings ---------------------------- */
 
+/**
+ * Coerce any stored theme into one of the two supported modes. The app used to
+ * offer a "system" appearance mode (removed in Phase 3.xx); legacy settings may
+ * still hold `theme: "system"` (or some other unexpected value). We sanitize on
+ * read so the rest of the app only ever sees `light` / `dark` — old values are
+ * migrated to `light` without crashing and without wiping any other settings.
+ * We never persist "system" again: the next settings write stores the clean value.
+ */
+function sanitizeTheme(theme: unknown): ThemePreference {
+  return theme === "dark" ? "dark" : "light";
+}
+
 export function getSettings(): Settings {
-  return { ...DEFAULT_SETTINGS, ...readJSON<Partial<Settings>>(KEYS.settings, {}) };
+  const merged = {
+    ...DEFAULT_SETTINGS,
+    ...readJSON<Partial<Settings>>(KEYS.settings, {}),
+  };
+  return { ...merged, theme: sanitizeTheme(merged.theme) };
 }
 
 export function saveSettings(settings: Settings): Settings {

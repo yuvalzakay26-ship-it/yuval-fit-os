@@ -38,7 +38,7 @@ The Learn screen (`/learn`, מרכז ידע) holds short card-based educational
 articles and a daily protein goal calculator (g/kg/day). It is reachable from
 Today, Nutrition, Settings and the System Hub rather than the bottom nav.
 
-Fixed bottom navigation, light/dark/system themes (saved locally), and a
+Fixed bottom navigation, light/dark themes (saved locally), and a
 scroll-to-top button that appears on scroll and clears the bottom nav.
 
 ## Project structure

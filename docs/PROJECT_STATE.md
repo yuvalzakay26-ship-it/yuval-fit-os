@@ -21,7 +21,9 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 - **Code language:** English (types, functions, comments).
 - **Persistence:** `localStorage` + one `sessionStorage` key. No server, no auth,
   no database, no cloud sync, no AI, no external runtime APIs.
-- **Theme:** light / dark / system, applied pre-paint to avoid flashes.
+- **Theme:** light / dark only (the old "system" mode was removed in Phase 3.xx
+  — the user has full control), applied pre-paint to avoid flashes. See
+  [`SETTINGS_CONTROL_CENTER.md`](SETTINGS_CONTROL_CENTER.md).
 - **Future direction:** can later be wrapped with Capacitor for a native app and
   surfaced inside a larger "Life OS"; data models are kept clean for that.
 
@@ -40,7 +42,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | Water Tracking | Daily hydration log + goal + personal cup/bottle presets | `components/water/*`, `docs/WATER_TRACKING.md`, `docs/WATER_PRESETS.md` |
 | Supplements Tracker | Personal supplement/medication tracking (no advice); searchable starter-template library with already-tracked state | `components/supplements/*`, `docs/SUPPLEMENTS_TRACKER.md`, `docs/SUPPLEMENTS_LIBRARY_UX.md` |
 | Progress | Totals, weekly counts, protein average, PRs | `components/progress/*`, `lib/analytics.ts` |
-| Settings | Theme, goals, storage status, resets, re-show gates | `components/settings/SettingsView.tsx` |
+| Settings | Premium "control center": appearance (light/dark only), daily goals, water shortcuts, data & storage, access & privacy, separated sensitive actions, system info | `components/settings/SettingsView.tsx`, `docs/SETTINGS_CONTROL_CENTER.md` |
 | Learn (Knowledge Center) | Card-based Hebrew articles + protein calculator | `app/learn/*`, `lib/knowledge-content.ts`, `lib/protein.ts` |
 | Welcome screen | First-visit intro (gate) | `components/welcome/WelcomeGate.tsx`, `lib/welcome.ts` |
 | Private Access Notice | Per-session informational notice (gate) | `components/access/PrivateAccessNotice.tsx`, `lib/private-access.ts` |
@@ -117,7 +119,7 @@ existing user data is bound to them. See §5 for reset behavior.
 
 | Action (Settings) | What it clears | What it preserves |
 | --- | --- | --- |
-| **Reset all data** (`resetAll`) | All 9 `STORAGE_KEYS` data keys, incl. `yfos:settings` (theme returns to `system`) | All gate flags (`welcome-seen`, `private-access`, `admin-access`) — gates are not "data" |
+| **Reset all data** (`resetAll`) | All 9 `STORAGE_KEYS` data keys, incl. `yfos:settings` (theme returns to the default `light`) | All gate flags (`welcome-seen`, `private-access`, `admin-access`) — gates are not "data" |
 | Reset saved food values | `yfos:saved-food-values:v1` only | Food logs, favorites |
 | Reset favorite foods | `yfos:favorite-foods:v1` only | Food logs, saved values |
 | Reset supplements | `yfos:supplements:v1` (deleting a supplement also drops its logs) | Other modules |
@@ -159,8 +161,11 @@ deliberately do **not** touch user data. Keep these concerns separate.
   mirror that same `useSyncExternalStore` shape and expose pre-paint init
   scripts. The admin gate fails **closed** (storage hiccup keeps it up); the
   other two fail open.
-- **Theme (`components/ThemeProvider.tsx`)** resolves `system` via `matchMedia`
-  and toggles `.dark` on `<html>`; the saved value lives in settings.
+- **Theme (`components/ThemeProvider.tsx`)** supports only `light`/`dark` and
+  toggles `.dark` on `<html>`; the saved value lives in settings. A legacy
+  `theme: "system"` (or any unknown value) is sanitized to `light` on read
+  (`sanitizeTheme` in `lib/storage.ts`) — never crashing, never re-persisting
+  `system`, and matching the pre-paint `THEME_INIT_SCRIPT` so there is no flash.
 - All four `<head>` init scripts (theme + 3 gates) run before paint to prevent
   flashes; `RootLayout` nests
   `PrivateAccessNotice → AdminAccessCodeGate → WelcomeGate → AppShell`.
