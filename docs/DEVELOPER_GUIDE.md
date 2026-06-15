@@ -17,8 +17,14 @@ npm run start      # serve the production build
 npm run lint       # eslint
 ```
 
-Requirements: Node 20+. The app is client-data only — there is nothing to
-configure, no `.env`, no services to start.
+Requirements: Node 20+. The app's **fitness data** is client-only — nothing to
+configure for it. The **beta access system** (Phase 3.xx) adds Supabase Auth: it
+reads `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` (public anon
+key only — never the service-role key). The app **builds and runs with no env
+vars** — missing config fails closed in production and shows a dev setup screen
+locally. For local work without Supabase, set `NEXT_PUBLIC_BETA_DISABLE_GATE=1`
+(testing-only) to open the app. See
+[`BETA_ACCESS_SYSTEM.md`](BETA_ACCESS_SYSTEM.md) and `.env.local.example`.
 
 > ⚠️ **This is not a stock Next.js.** APIs/conventions may differ from what you
 > remember. Before writing framework code, read the relevant guide under
@@ -29,7 +35,10 @@ configure, no `.env`, no services to start.
 ```
 app/                    route segments (one folder per screen) + layout, manifest
 components/
-  access/               PrivateAccessNotice + AdminAccessCodeGate
+  access/               PrivateAccessNotice + BetaAuthGate/BetaAccessDenied/
+                        BetaAccountSection (Supabase beta gate) + legacy
+                        AdminAccessCodeGate (dev fallback, NOT in the gate chain)
+  admin/                BetaAdminView (the /admin/beta panel — admin-only, RLS-guarded)
   welcome/              WelcomeGate
   layout/               AppShell, Header, BottomNav, ScrollToTop, nav-items
   today/ workouts/ exercises/ nutrition/ water/ supplements/ progress/ settings/
@@ -46,7 +55,9 @@ lib/
   backup.ts             Local JSON backup/restore: build/validate/preview/restore + meta (mostly pure)
   welcome.ts            welcome gate state + init script
   private-access.ts     private-access gate state + init script
-  admin-access.ts       admin access-code gate state + init script
+  admin-access.ts       legacy admin access-code gate state (dev fallback, unused in chain)
+  supabase/client.ts    browser Supabase client + isSupabaseConfigured() (anon key only)
+  beta-access.ts        beta auth/session hooks + approved-email + admin checks + admin CRUD
   seed-exercises.ts     133-exercise library + Hebrew labels
   seed-templates.ts     starter workout templates
   food-library.ts       static food catalogue

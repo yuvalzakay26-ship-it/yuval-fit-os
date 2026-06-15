@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { SectionHeader } from "@/components/ui/PageHeader";
+import { BetaAdminHubLink } from "@/components/more/BetaAdminHubLink";
 import { cn } from "@/lib/utils";
 import {
   AppleIcon,
@@ -207,8 +208,8 @@ const SECTIONS: HubSection[] = [
       },
       {
         href: "/settings",
-        title: "נעילת מערכת",
-        description: "ניהול קוד גישה ופרטיות",
+        title: "חשבון בטא",
+        description: "התחברות, התנתקות וגישה",
         icon: LockIcon,
         tone: "system",
       },
@@ -329,6 +330,9 @@ export function SystemHubView() {
             </div>
           </section>
         ))}
+
+        {/* Admin-only — renders only when the signed-in user is a beta admin. */}
+        <BetaAdminHubLink />
       </div>
     </div>
   );

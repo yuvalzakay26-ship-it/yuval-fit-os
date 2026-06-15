@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/icons";
 import { resetWelcome } from "@/lib/welcome";
 import { resetPrivateAccess } from "@/lib/private-access";
-import { resetAdminAccess } from "@/lib/admin-access";
+import { BetaAccountSection } from "@/components/access/BetaAccountSection";
 import Link from "next/link";
 
 type IconCmp = (p: { className?: string }) => React.ReactElement;
@@ -391,6 +391,9 @@ export function SettingsView() {
         </Link>
       </section>
 
+      {/* ----------------------------- Beta account ------------------------- */}
+      <BetaAccountSection />
+
       {/* ------------------------ Access & privacy -------------------------- */}
       <section>
         <SectionHeader title="גישה ופרטיות" accent="var(--muted)" />
@@ -477,22 +480,6 @@ export function SettingsView() {
                 איפוס כל הנתונים
               </Button>
             )}
-          </div>
-
-          {/* Lock the system — clears the admin access-code grant, data preserved. */}
-          <div className="rounded-2xl border border-red-500/25 bg-surface p-3.5">
-            <p className="text-[13.5px] font-bold text-foreground">נעילת מערכת</p>
-            <p className="mt-0.5 text-[12px] leading-relaxed text-muted">
-              נעילת המערכת תדרוש קוד גישה מחדש בכניסה הבאה. זהו קוד גישה בצד הלקוח
-              בלבד, לא אימות שרת. הנתונים שלך נשמרים ולא יימחקו.
-            </p>
-            <Button
-              variant="danger"
-              className="mt-3"
-              onClick={() => resetAdminAccess()}
-            >
-              <LockIcon className="h-[18px] w-[18px]" /> נעל מערכת
-            </Button>
           </div>
 
           {/* Scoped resets — only surfaced once the user actually has such data. */}

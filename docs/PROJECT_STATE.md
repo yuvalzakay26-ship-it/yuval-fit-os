@@ -4,7 +4,26 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (Today **command-center polish**: a UI/UX hierarchy +
+> Last reviewed: Phase 3.xx (**Beta Access System**: real access control. A new
+> Supabase-Auth gate (`components/access/BetaAuthGate.tsx`, z-108) sits between
+> the private-access notice and the welcome screen and is now the REAL beta
+> boundary — a user must sign in (Google / email magic link) **and** be on the
+> approved-email list (`beta_allowed_users`, status `active`) to enter; not
+> approved → `BetaAccessDenied`, blocked → blocked screen. Admins
+> (`beta_admins`) manage the list from an in-app panel at **`/admin/beta`**
+> (`components/admin/BetaAdminView.tsx`); the entry point appears only for admins
+> in Settings → "חשבון בטא" and the System Hub. Enforcement is Row Level Security
+> (`supabase/beta-access.sql`); the browser uses only the public anon key; no
+> service-role key, no custom passwords. The app **builds/runs with no env vars**
+> — missing config fails **closed** in production (and shows a dev setup screen
+> with a continue button locally); `NEXT_PUBLIC_BETA_DISABLE_GATE=1` is a
+> testing-only seam. Sign-out (Settings) offers keep-or-clear local data. The
+> legacy client-side admin code gate (`yuvalzakay123`) was removed from the
+> production chain (files kept as a dev fallback). **No fitness data moved to the
+> cloud** — workouts/nutrition/water/supplements/gym/backup all stay
+> localStorage-only; no schema/storage/route/nav regressions. Added dependency:
+> `@supabase/supabase-js`. See [`BETA_ACCESS_SYSTEM.md`](BETA_ACCESS_SYSTEM.md).)
+> Prior: Phase 3.xx (Today **command-center polish**: a UI/UX hierarchy +
 > compactness pass that de-duplicates Today's CTAs and sharpens the top-down
 > order. A new **active-state slot** sits directly under the Next Action card: a
 > **live gym visit** is promoted there (`GymTodayCard`'s `אתה במכון עכשיו` live

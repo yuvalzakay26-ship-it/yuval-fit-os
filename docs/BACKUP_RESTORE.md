@@ -9,6 +9,13 @@ Fit OS stores everything in the browser under `yfos:*` keys (see
 data, the app must be honest about local-only storage and give them a safe way
 to protect it. Backup & Restore is that safety net — nothing more.
 
+> **Beta access vs. backup (Phase 3.xx).** The Beta Access System added Supabase
+> Auth for *who may use the beta*, but it changed **nothing** here: the backup
+> still covers only this device's local fitness data (workouts, nutrition, water,
+> supplements, gym). Beta permissions and the approved-user list live in the
+> access system (Supabase) and are **not** part of the local backup. No backup
+> schema change. See [`BETA_ACCESS_SYSTEM.md`](BETA_ACCESS_SYSTEM.md).
+
 ## Route & entry points
 
 - **Route:** `/backup` (`app/backup/page.tsx` → `components/backup/BackupView.tsx`).

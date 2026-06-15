@@ -7,8 +7,7 @@ import { WelcomeGate } from "@/components/welcome/WelcomeGate";
 import { WELCOME_INIT_SCRIPT } from "@/lib/welcome";
 import { PrivateAccessNotice } from "@/components/access/PrivateAccessNotice";
 import { PRIVATE_ACCESS_INIT_SCRIPT } from "@/lib/private-access";
-import { AdminAccessCodeGate } from "@/components/access/AdminAccessCodeGate";
-import { ADMIN_ACCESS_INIT_SCRIPT } from "@/lib/admin-access";
+import { BetaAuthGate } from "@/components/access/BetaAuthGate";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
 const heebo = Heebo({
@@ -59,23 +58,27 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{ __html: PRIVATE_ACCESS_INIT_SCRIPT }}
         />
-        {/* Hide the admin access-code gate before paint on already-granted devices. */}
-        <script
-          dangerouslySetInnerHTML={{ __html: ADMIN_ACCESS_INIT_SCRIPT }}
-        />
       </head>
       <body className="min-h-dvh">
         <ThemeProvider>
           {/* Gate order (highest z-index seen first): the private-access notice
-              sits above the admin access-code gate, which sits above the welcome
-              screen. Accepting the notice reveals the admin gate; entering the
-              correct code reveals the welcome screen for new users, then the app. */}
+              (z-110) sits above the Supabase beta auth gate (z-108), which sits
+              above the welcome screen (z-100). Accepting the notice reveals the
+              beta gate; signing in with an approved email reveals the welcome
+              screen for new users, then the app.
+
+              The Supabase beta auth gate is the REAL access boundary for the
+              beta. The legacy client-side admin access-code gate
+              (components/access/AdminAccessCodeGate.tsx) is retained in the repo
+              as a development-only fallback reference but is intentionally no
+              longer part of the production gate chain — see
+              docs/BETA_ACCESS_SYSTEM.md. */}
           <PrivateAccessNotice>
-            <AdminAccessCodeGate>
+            <BetaAuthGate>
               <WelcomeGate>
                 <AppShell>{children}</AppShell>
               </WelcomeGate>
-            </AdminAccessCodeGate>
+            </BetaAuthGate>
           </PrivateAccessNotice>
         </ThemeProvider>
         <ServiceWorkerRegister />
