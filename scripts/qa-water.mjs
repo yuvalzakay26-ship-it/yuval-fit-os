@@ -68,13 +68,22 @@ for (const scheme of ["dark", "light"]) {
   page.on("console", (m) => m.type() === "error" && errors.push(`[${scheme}] ${m.text()}`));
   page.on("pageerror", (e) => errors.push(`[${scheme}] pageerror: ${e.message}`));
 
-  /* 1. Today shows the hydration card with the default goal; quick-add works. */
+  /* 1. Today command-center behaviour (Phase 3.xx polish): a FRESH day surfaces
+     water as the single Next Action and does NOT duplicate it with a full water
+     card. Once water is logged, the compact Today water card returns with the
+     default goal and a working quick-add. */
   await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-  check(`[${scheme}] Today shows הרגלים יומיים section`, await page.getByText("הרגלים יומיים", { exact: true }).isVisible());
-  check(`[${scheme}] Today water card shows default goal`, await page.getByText("מתוך 2.5 ליטר").first().isVisible());
+  check(`[${scheme}] fresh Today surfaces water as the Next Action`, await page.getByText("שתה כוס מים ראשונה").first().isVisible());
+  check(`[${scheme}] fresh Today does NOT duplicate the full water card`, !(await page.getByText("הרגלים יומיים", { exact: true }).isVisible()));
+  // Log the first 500 from the water screen, then return to Today.
+  await page.goto(WATER, { waitUntil: "networkidle" });
   await page.getByRole("button", { name: ADD_500, exact: true }).click();
   await page.waitForTimeout(150);
-  check(`[${scheme}] Today total updates to 0.5 ליטר after +500`, await page.getByText("0.5 ליטר").first().isVisible());
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  check(`[${scheme}] Today water card returns once water is logged`, await page.getByText("הרגלים יומיים", { exact: true }).isVisible());
+  check(`[${scheme}] Today water card shows default goal`, await page.getByText("מתוך 2.5 ליטר").first().isVisible());
+  check(`[${scheme}] Today total shows 0.5 ליטר`, await page.getByText("0.5 ליטר").first().isVisible());
+  check(`[${scheme}] Today water card keeps a working quick-add`, await page.getByRole("button", { name: ADD_500, exact: true }).isVisible());
   check(`[${scheme}] no horizontal overflow on Today`, (await noOverflow(page)) === 0);
   await page.screenshot({ path: `${OUT}/water-${scheme}-today.png` });
 

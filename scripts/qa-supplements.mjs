@@ -63,10 +63,13 @@ for (const scheme of ["dark", "light"]) {
   page.on("console", (m) => m.type() === "error" && errors.push(`[${scheme}] ${m.text()}`));
   page.on("pageerror", (e) => errors.push(`[${scheme}] pageerror: ${e.message}`));
 
-  /* 1. Today shows the supplements section with the empty prompt. */
+  /* 1. Today command-center polish (Phase 3.xx): when no supplements are
+     configured, Today does NOT show the big supplements empty card (it would
+     dominate). The compact "אופציונלי" status shows in the quick-glance strip
+     instead; the full empty state lives on the dedicated screen (step 2). */
   await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-  check(`[${scheme}] Today shows תוספים section`, await page.getByText("תוספים", { exact: true }).first().isVisible());
-  check(`[${scheme}] Today shows empty prompt`, await page.getByText(EMPTY).first().isVisible());
+  check(`[${scheme}] Today shows supplements status as אופציונלי`, await page.getByText("אופציונלי").first().isVisible());
+  check(`[${scheme}] Today does NOT show the supplements empty card`, !(await page.getByText(EMPTY).first().isVisible()));
   check(`[${scheme}] no horizontal overflow on Today`, (await noOverflow(page)) === 0);
 
   /* 2. Full screen: header, helper, safety note, empty state. */

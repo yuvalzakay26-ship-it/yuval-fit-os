@@ -4,7 +4,24 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (**Nutrition Quick Reuse**: the Nutrition screen
+> Last reviewed: Phase 3.xx (Today **command-center polish**: a UI/UX hierarchy +
+> compactness pass that de-duplicates Today's CTAs and sharpens the top-down
+> order. A new **active-state slot** sits directly under the Next Action card: a
+> **live gym visit** is promoted there (`GymTodayCard`'s `אתה במכון עכשיו` live
+> state — and the lower `נוכחות במכון` idle section is then suppressed so it never
+> shows twice), alongside a read-only `ActiveWorkoutResumeCard` (`אימון בתהליך`)
+> for an in-progress workout draft. The full water card is hidden while water is
+> the current Next Action (status stays in the `מבט מהיר` strip; the compact card
+> returns once water is logged); the supplements card mounts only when supplements
+> are configured (no dominating empty state); the nutrition summary lost its
+> duplicate `הוסף אוכל` CTA grid; quick actions are compacted. TodayView only
+> *reads* `useActiveGymVisit()` for placement — gym check-in/out logic, and
+> `lib/today.ts` (Next Action + completion), are unchanged. No storage keys /
+> schemas / routes / save behaviour / nav / gates changed; no
+> backend/auth/AI/API/database/cloud/GPS/native and no new dependencies. All
+> actions remain reachable. See
+> [`TODAY_COMMAND_CENTER_POLISH.md`](TODAY_COMMAND_CENTER_POLISH.md).
+> Prior: Phase 3.xx (**Nutrition Quick Reuse**: the Nutrition screen
 > (`components/nutrition/NutritionView.tsx`) now makes daily logging fast with
 > one-tap reuse. A new **`אכלת לאחרונה`** section shows a compact, scrollable row
 > of recently-logged foods (name, meal-type, quantity, calories, P/C/F) each with

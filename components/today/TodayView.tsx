@@ -38,9 +38,11 @@ import {
   PlusWaterIcon,
   SparkIcon,
 } from "@/components/ui/icons";
+import { useActiveGymVisit } from "@/lib/gym-attendance";
 import { WaterCard } from "@/components/water/WaterCard";
 import { SupplementsCard } from "@/components/supplements/SupplementsCard";
 import { GymTodayCard } from "@/components/gym/GymTodayCard";
+import { ActiveWorkoutResumeCard } from "./ActiveWorkoutResumeCard";
 
 /* ----------------------------- Daily copy ----------------------------- */
 // Calm, motivating, non-medical. Drives the hero's headline from how many of
@@ -192,13 +194,13 @@ function QuickAction({
 }) {
   return (
     <Link href={href} className="tap block">
-      <Card className="sheen flex h-full flex-col items-center gap-2 p-3 text-center">
+      <Card className="sheen flex h-full flex-col items-center gap-1.5 p-2.5 text-center">
         <span
-          className={`${TONE_TINTS[tint]} sheen flex h-11 w-11 items-center justify-center rounded-2xl text-[color:var(--accent-contrast)]`}
+          className={`${TONE_TINTS[tint]} sheen flex h-9 w-9 items-center justify-center rounded-xl text-[color:var(--accent-contrast)]`}
         >
           {icon}
         </span>
-        <span className="text-[11.5px] font-bold leading-tight text-foreground">
+        <span className="text-[11px] font-bold leading-tight text-foreground">
           {label}
         </span>
       </Card>
@@ -310,8 +312,23 @@ export function TodayView() {
   };
   const barPillars = completion.pillars.filter((p) => !p.optional);
 
+  // Active right now — surfaced high on the page (under Next Action). The gym
+  // card is promoted to the active-state slot only while a visit is LIVE; idle
+  // it stays lower. Placement only — gym check-in/out logic is untouched.
+  const activeGymVisit = useActiveGymVisit();
+
+  // Duplicate-CTA reduction (hierarchy only — no logic/data change):
+  //  • Hide the full water card when water is the *current* Next Action, so the
+  //    page never shows a second giant water CTA right under the primary one.
+  //    Water status stays visible in the compact "מבט מהיר" strip above.
+  //  • Only mount the full supplements card once supplements are configured, so
+  //    its empty state never dominates Today for users who don't track them
+  //    (their status still reads "אופציונלי" in the strip).
+  const showWaterCard = nextAction.key !== "water";
+  const showSupplementsCard = hasSupplements;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Greeting */}
       <div suppressHydrationWarning>
         <p className="text-[13px] font-medium text-muted">
@@ -379,6 +396,14 @@ export function TodayView() {
       {/* Next action — the single most important step right now */}
       <NextActionCard action={nextAction} />
 
+      {/* Active right now — what's live takes priority and sits high on the page:
+          a gym visit in progress (live timer) and/or an unsaved workout draft.
+          Each self-hides when not relevant, so this slot only appears when there
+          is genuinely something active. Gym check-in/out logic is unchanged —
+          this only promotes the live card's placement. */}
+      {activeGymVisit && <GymTodayCard />}
+      <ActiveWorkoutResumeCard />
+
       {/* Daily status strip */}
       <section>
         <SectionHeader title="מבט מהיר" accent="var(--accent)" />
@@ -420,18 +445,28 @@ export function TodayView() {
         </div>
       </section>
 
-      {/* Gym attendance — quick check-in / live visit */}
-      <section className="space-y-4">
-        <SectionHeader title="נוכחות במכון" accent="var(--accent-energy)" />
-        <GymTodayCard />
-      </section>
+      {/* Gym attendance — idle entry point. When a visit is LIVE the card is
+          promoted to the active-state slot above, so here it only renders the
+          idle check-in (and same-day status), keeping it from showing twice. */}
+      {!activeGymVisit && (
+        <section className="space-y-4">
+          <SectionHeader title="נוכחות במכון" accent="var(--accent-energy)" />
+          <GymTodayCard />
+        </section>
+      )}
 
-      {/* Daily habits — water + supplements */}
-      <section className="space-y-4">
-        <SectionHeader title="הרגלים יומיים" accent="var(--accent-water)" />
-        <WaterCard />
-        <SupplementsCard />
-      </section>
+      {/* Daily habits — water + supplements. Each card is shown only when it
+          adds something the page isn't already saying (see showWaterCard /
+          showSupplementsCard), so the section stays compact and never repeats
+          the Next Action's CTA. The whole section drops out when neither
+          applies (e.g. a fresh user whose next action is water). */}
+      {(showWaterCard || showSupplementsCard) && (
+        <section className="space-y-4">
+          <SectionHeader title="הרגלים יומיים" accent="var(--accent-water)" />
+          {showWaterCard && <WaterCard />}
+          {showSupplementsCard && <SupplementsCard />}
+        </section>
+      )}
 
       {/* Daily summary — nutrition + workout */}
       <section className="space-y-4">
@@ -493,19 +528,6 @@ export function TodayView() {
                 </span>
               </div>
             </div>
-          </div>
-          <div className="relative mt-3.5 grid grid-cols-2 gap-2.5">
-            <Link href="/nutrition/add" className="tap block">
-              <div className="nutrition-gradient sheen flex items-center justify-center gap-1.5 rounded-2xl px-3 py-2.5 text-[13px] font-bold text-[color:var(--accent-contrast)] shadow-glow-nutrition">
-                <PlusIcon className="h-4 w-4" /> הוסף אוכל
-              </div>
-            </Link>
-            <Link href="/nutrition/library?view=favorites" className="tap block">
-              <div className="flex items-center justify-center gap-1.5 rounded-2xl border border-border bg-surface-2 px-3 py-2.5 text-[13px] font-bold text-foreground">
-                מועדפים
-                <ChevronIcon className="h-3.5 w-3.5 rotate-180 text-faint" />
-              </div>
-            </Link>
           </div>
         </Card>
 

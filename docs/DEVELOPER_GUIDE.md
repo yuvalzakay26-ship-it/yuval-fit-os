@@ -155,6 +155,7 @@ Useful entry points:
 | `qa/admin-access-check.mjs` | Admin access-code gate: wrong/correct code, persistence, Settings lock |
 | `qa/welcome-check.mjs` | Welcome screen + persistence + reset |
 | `qa/today-dashboard-check.mjs` | Today dashboard: completion ratio (`0/3` empty, `3/4` rich), next-action card, optional supplements, 360/390 + dark |
+| `scripts/qa-today-command-center.mjs` | Today **command-center polish**: fresh user is short/non-repetitive (water is the only Next Action, no duplicate full water card, no dominating supplements empty state), active-workout draft `אימון בתהליך` resume card and a **live gym visit** both sit above the `מבט מהיר` strip (live gym suppresses the idle `נוכחות במכון` section), engaged-user water+supplements cards return, quick actions navigate; 360/390 × light/dark, no overflow/console errors (`:3100`) |
 | `scripts/qa-progress-insights.mjs` | Progress insights: empty / one-workout / rich-week states — weekly hero (`השבוע שלך`), human empty states (no cold dashes), `תובנות השבוע` / `מגמות שבועיות` / `שיאים אישיים` sections, heaviest record value, 360/390 overflow, no console errors, light+dark (`:3331`) |
 | `qa/food-library-check.mjs`, `qa/*-food-check.mjs` | Food library + per-category data |
 | `qa/templates-check.mjs` | Workout templates |
