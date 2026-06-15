@@ -28,7 +28,7 @@ import {
   ChevronIcon,
   DatabaseIcon,
   DropletIcon,
-  LockIcon,
+  HeartIcon,
   MoonIcon,
   PencilIcon,
   PillIcon,
@@ -39,7 +39,7 @@ import {
   TrashIcon,
 } from "@/components/ui/icons";
 import { resetWelcome } from "@/lib/welcome";
-import { resetPrivateAccess } from "@/lib/private-access";
+import { resetBetaWelcome } from "@/lib/beta-welcome";
 import { BetaAccountSection } from "@/components/access/BetaAccountSection";
 import Link from "next/link";
 
@@ -183,7 +183,7 @@ export function SettingsView() {
         </div>
         <div className="flex flex-wrap gap-2">
           <StatusChip icon={DatabaseIcon} label="שמירה מקומית" />
-          <StatusChip icon={LockIcon} label="גישה פרטית" />
+          <StatusChip icon={SparkIcon} label="גרסת בטא" />
           <StatusChip icon={ShieldIcon} label="ללא שרת" />
         </div>
       </Card>
@@ -394,13 +394,13 @@ export function SettingsView() {
       {/* ----------------------------- Beta account ------------------------- */}
       <BetaAccountSection />
 
-      {/* ------------------------ Access & privacy -------------------------- */}
+      {/* ------------------------- Welcome screens -------------------------- */}
       <section>
-        <SectionHeader title="גישה ופרטיות" accent="var(--muted)" />
+        <SectionHeader title="מסכי פתיחה" accent="var(--muted)" />
         <Card className="space-y-3">
           <p className="text-[12.5px] leading-relaxed text-muted">
-            מסכי הגישה מיועדים להזכיר שהמערכת פרטית ושמורה לשימוש מורשה בלבד.
-            הנתונים נשמרים במכשיר זה בלבד.
+            אפשר להציג מחדש את מסכי הפתיחה של המערכת. אלה הודעות בלבד — הנתונים
+            שלך נשמרים במכשיר זה ולא יימחקו.
           </p>
           <div className="space-y-2.5">
             <div className="rounded-2xl border border-border bg-surface-2 p-3.5">
@@ -419,19 +419,18 @@ export function SettingsView() {
             </div>
             <div className="rounded-2xl border border-border bg-surface-2 p-3.5">
               <p className="text-[13.5px] font-bold text-foreground">
-                מסך גישה פרטית
+                הודעת בטא
               </p>
               <p className="mt-0.5 text-[12px] leading-relaxed text-muted">
-                הצגת הודעת הגישה הפרטית מחדש. זוהי הודעה בלבד ללא סיסמה — היא תופיע
-                שוב ממילא בפתיחה הבאה של המערכת.
+                הצגת הודעת הברוכים הבאים לבטא מחדש, כולל פרטי הקשר ליובל.
               </p>
               <Button
                 variant="secondary"
                 size="sm"
                 className="mt-2.5"
-                onClick={() => resetPrivateAccess()}
+                onClick={() => resetBetaWelcome()}
               >
-                <LockIcon className="h-[16px] w-[16px]" /> הצג מסך גישה פרטית
+                <HeartIcon className="h-[16px] w-[16px]" /> הצג הודעת בטא שוב
               </Button>
             </div>
           </div>

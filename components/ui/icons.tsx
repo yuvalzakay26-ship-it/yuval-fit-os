@@ -302,6 +302,25 @@ export const SparkIcon = (p: IconProps) =>
 export const XIcon = (p: IconProps) =>
   base(<path d="M6 6l12 12M18 6 6 18" />, p);
 
+// Handset — the "call Yuval" affordance on the beta welcome notice. Outline,
+// friendly, never alarming.
+export const PhoneIcon = (p: IconProps) =>
+  base(
+    <path d="M6.5 3.5 9 4l1 3.5-1.8 1.4a12 12 0 0 0 5.4 5.4L15 7.5l3.5 1 .5 2.5c0 .8-.6 1.5-1.4 1.6A14 14 0 0 1 4.4 5.4 1.5 1.5 0 0 1 6 4l.5-.5Z" />,
+    p,
+  );
+
+// Speech bubble — the "send a message to Yuval" / WhatsApp affordance. A rounded
+// chat bubble with a small tail; reads as messaging, never as a phone call.
+export const ChatIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H9l-4 3.5v-3.5H6.5A2.5 2.5 0 0 1 4 13.5v-7Z" />
+      <path d="M8.5 9h7M8.5 12h4" />
+    </>,
+    p,
+  );
+
 export const SearchIcon = (p: IconProps) =>
   base(
     <>

@@ -11,7 +11,7 @@ Each section is a `SectionHeader` (with a calm leading accent dot) followed by
 premium cards:
 
 1. **Hero strip** — a raised card with the brand mark, a one-line intro, and
-   three trust chips: `שמירה מקומית`, `גישה פרטית`, `ללא שרת`. The page title
+   three trust chips: `שמירה מקומית`, `גרסת בטא`, `ללא שרת`. The page title
    (`הגדרות` / `העדפות, יעדים וניהול נתונים`) is the route `PageHeader`.
 2. **מצב תצוגה (Appearance)** — two large selectable cards, `בהיר` / `כהה`, each
    with a theme-independent mini preview and an icon. The selected card is
@@ -25,8 +25,10 @@ premium cards:
 5. **נתונים ואחסון (Data & local storage)** — a trust card: "המידע שלך נשמר
    מקומית במכשיר הזה. אין שרת, אין חשבון, ואין סנכרון ענן." plus the local
    storage status (active, saved workouts, nutrition entries, approx size).
-6. **גישה ופרטיות (Access & privacy)** — re-show the welcome screen and re-show
-   the private-access notice. Wording stays within the boundaries below.
+6. **מסכי פתיחה (Welcome screens)** — re-show the first-visit welcome screen
+   (`resetWelcome`) and re-show the friendly beta welcome notice
+   (`resetBetaWelcome`, "הצג הודעת בטא שוב"). Wording stays within the boundaries
+   below. (Replaced the old "גישה ופרטיות" private-access reset.)
 7. **פעולות רגישות (Sensitive actions)** — visually separated in a red-tinted
    container: **reset all data** (two-step confirm), **lock system**, and the
    scoped resets (saved values, favorites, supplements) which only appear when

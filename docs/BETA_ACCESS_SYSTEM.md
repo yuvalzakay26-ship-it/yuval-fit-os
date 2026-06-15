@@ -16,11 +16,17 @@
 ## 1. How it works
 
 ```
-PrivateAccessNotice  (z-110)  → existing per-session private notice
-  BetaAuthGate       (z-108)  → NEW: Supabase auth + approved-email gate (REAL gate)
+BetaAuthGate         (z-108)  → Supabase auth + approved-email gate (REAL gate)
+  BetaWelcomeNotice  (z-104)  → friendly one-time "welcome to the beta" greeting
     WelcomeGate      (z-100)  → existing first-run intro
       AppShell                → the app
 ```
+
+> The old `PrivateAccessNotice` ("מערכת פרטית / do not share the link", z-110)
+> was **removed from the gate chain**. Access is now controlled by Google login +
+> the approved-email gate, so the onboarding message is a warm beta welcome, not a
+> security warning — see [`BETA_WELCOME_NOTICE.md`](BETA_WELCOME_NOTICE.md). No
+> auth, security, database or user-data schema changed when it was replaced.
 
 `BetaAuthGate` (`components/access/BetaAuthGate.tsx`) resolves, top-down:
 

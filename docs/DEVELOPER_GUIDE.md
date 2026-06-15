@@ -38,9 +38,10 @@ admin approves in `/admin/beta`); the queue never grants access on its own —
 ```
 app/                    route segments (one folder per screen) + layout, manifest
 components/
-  access/               PrivateAccessNotice + BetaAuthGate/BetaAccessDenied/
-                        BetaAccountSection (Supabase beta gate) + legacy
-                        AdminAccessCodeGate (dev fallback, NOT in the gate chain)
+  access/               BetaAuthGate/BetaAccessDenied/BetaAccountSection (Supabase
+                        beta gate) + BetaWelcomeNotice (friendly beta greeting) +
+                        legacy PrivateAccessNotice & AdminAccessCodeGate (kept as
+                        references, NOT in the gate chain)
   admin/                BetaAdminView (the /admin/beta panel — admin-only, RLS-guarded)
   welcome/              WelcomeGate
   layout/               AppShell, Header, BottomNav, ScrollToTop, nav-items
@@ -57,7 +58,8 @@ lib/
   progress-insights.ts  Progress weekly hero / insight cards / 7-day activity / PRs (pure)
   backup.ts             Local JSON backup/restore: build/validate/preview/restore + meta (mostly pure)
   welcome.ts            welcome gate state + init script
-  private-access.ts     private-access gate state + init script
+  beta-welcome.ts       beta welcome notice state + init script
+  private-access.ts     legacy private-access gate state (unused in chain)
   admin-access.ts       legacy admin access-code gate state (dev fallback, unused in chain)
   supabase/client.ts    browser Supabase client + isSupabaseConfigured() (anon key only)
   beta-access.ts        beta auth/session hooks + approved-email + admin checks + admin CRUD
@@ -115,17 +117,16 @@ docs/                   feature docs + this guide + PROJECT_STATE.md
 
 ## 4. Gate / welcome behavior
 
-Three gates wrap the app in `app/layout.tsx`, highest z-index seen first
-(`PrivateAccessNotice → AdminAccessCodeGate → WelcomeGate → AppShell`):
+The gates wrap the app in `app/layout.tsx`, highest z-index seen first
+(`BetaAuthGate → BetaWelcomeNotice → WelcomeGate → AppShell`):
 
-- **Private Access Notice** — `sessionStorage` key
-  `yfos:private-access-notice-accepted:session`. Re-appears every fresh session.
-  Informational only (no password/auth). Fails open.
-- **Admin Access Code Gate** — `localStorage` key `yfos:admin-access-granted:v1`.
-  A **client-side access-code gate** (code `yuvalzakay123`, in the bundle — not
-  real auth, no backend, no tracking). Persists per device until locked from
-  Settings ("נעל מערכת"). Fails **closed** (a storage hiccup keeps the gate up).
-  See `docs/ADMIN_ACCESS_GATE.md`.
+- **Beta Auth Gate** — the REAL access boundary (Supabase login + approved-email
+  gate, or a local guest session). See `docs/BETA_ACCESS_SYSTEM.md`.
+- **Beta Welcome Notice** — `localStorage` key `yfos:beta-welcome-seen:v1`. A
+  warm one-time "welcome to the beta" greeting shown only AFTER the access gate
+  lets a user (approved or guest) in. Informational only (no password/auth);
+  fails open. Replaced the old `PrivateAccessNotice` (kept in the repo as a
+  reference, no longer mounted). See `docs/BETA_WELCOME_NOTICE.md`.
 - **Welcome screen** — `localStorage` key `yfos:welcome-seen:v1`. Shown once, then
   re-showable from Settings. Fails open.
 
@@ -166,7 +167,7 @@ Useful entry points:
 | `qa/qa.mjs` | Broad mobile sweep: overflow, bottom-nav clearance, real flows, light+dark shots |
 | `qa/check360.mjs` | 360px-width pass across routes |
 | `qa/console-check.mjs` | Asserts no console errors across routes |
-| `qa/private-access-check.mjs` | Private Access Notice gate behavior |
+| `qa/beta-welcome-check.mjs` | Beta Welcome Notice: granted user sees it once, copy/contact/WhatsApp, persistence, reset, non-granted never sees it |
 | `qa/admin-access-check.mjs` | Admin access-code gate: wrong/correct code, persistence, Settings lock |
 | `qa/welcome-check.mjs` | Welcome screen + persistence + reset |
 | `qa/today-dashboard-check.mjs` | Today dashboard: completion ratio (`0/3` empty, `3/4` rich), next-action card, optional supplements, 360/390 + dark |
@@ -195,24 +196,30 @@ Useful entry points:
 
 ### Seeding the gates in QA
 
-Because all three gates wrap the app, QA scripts must pre-seed them before
-asserting inner UI, via an init script:
+QA runs against a server built with `NEXT_PUBLIC_BETA_DISABLE_GATE=1` (the
+documented testing seam) so the **Beta Auth Gate** is bypassed and app screens
+are reachable without a live Supabase project. In that mode the **Beta Welcome
+Notice** greets only when a local guest session is seeded, so feature-test
+scripts reach app screens unobstructed. Scripts should still pre-seed the
+welcome flag before asserting inner UI, via an init script:
 
 ```js
 await page.addInitScript(() => {
   try {
     localStorage.setItem("yfos:welcome-seen:v1", "1");
-    sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
     localStorage.setItem("yfos:admin-access-granted:v1", "1");
+    // (legacy no-op, harmless to leave in older scripts:)
+    // sessionStorage.setItem("yfos:private-access-notice-accepted:session", "1");
   } catch {}
 });
 ```
 
-`qa/nutrition-helpers.mjs` (`seedAndResetNutrition`) already does this for the
-nutrition flow and is the reference pattern. Reuse those exact key strings —
-they are the contract from `lib/welcome.ts` / `lib/private-access.ts` /
-`lib/admin-access.ts`. (The dedicated `qa/admin-access-check.mjs` deliberately
-does NOT seed the admin key, so it can exercise the gate itself.)
+`qa/nutrition-helpers.mjs` (`seedAndResetNutrition`) already seeds the welcome
+flag and is the reference pattern. Reuse the exact key strings — they are the
+contract from `lib/welcome.ts` / `lib/admin-access.ts`. The dedicated
+`qa/beta-welcome-check.mjs` deliberately leaves `yfos:beta-welcome-seen:v1`
+**clean** and seeds a guest session so it can exercise the notice itself; the
+dedicated `qa/admin-access-check.mjs` likewise does NOT seed the admin key.
 
 **Seed date-keyed data with the LOCAL ISO date, not UTC.** Water logs and
 supplement-logs are keyed/filtered by `lib/utils` `toISODate` (local

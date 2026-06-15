@@ -24,10 +24,19 @@
 > moved to the cloud** — only request/access metadata lives in Supabase. Rerun the
 > SQL to upgrade existing installs (`create table if not exists` + safe
 > `drop/create policy`). See [`BETA_ACCESS_SYSTEM.md`](BETA_ACCESS_SYSTEM.md).)
+> Latest: Phase 3.xx (**Beta Welcome Notice**: the old `PrivateAccessNotice`
+> ("מערכת פרטית / do not share the link") was removed from the active gate chain
+> and replaced by a warm, friendly `BetaWelcomeNotice`
+> (`components/access/BetaWelcomeNotice.tsx`, z-104, `lib/beta-welcome.ts`,
+> `yfos:beta-welcome-seen:v1`) shown once AFTER the real access gate lets a user
+> (approved or guest) in. Access is now controlled by login + approved emails, so
+> the onboarding message welcomes testers and shares Yuval's contact
+> (053-333-9341 / wa.me/972533339341) instead of warning about sharing links. No
+> auth/security/database/user-data schema changed. See
+> [`BETA_WELCOME_NOTICE.md`](BETA_WELCOME_NOTICE.md).)
 > Prior: Phase 3.xx (**Beta Access System**: real access control. A new
-> Supabase-Auth gate (`components/access/BetaAuthGate.tsx`, z-108) sits between
-> the private-access notice and the welcome screen and is now the REAL beta
-> boundary — a user must sign in (Google / email magic link) **and** be on the
+> Supabase-Auth gate (`components/access/BetaAuthGate.tsx`, z-108) is now the REAL
+> beta boundary — a user must sign in (Google / email magic link) **and** be on the
 > approved-email list (`beta_allowed_users`, status `active`) to enter; not
 > approved → `BetaAccessDenied`, blocked → blocked screen. Admins
 > (`beta_admins`) manage the list from an in-app panel at **`/admin/beta`**
@@ -247,7 +256,8 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | Backup & Restore | Local JSON export/import of all Fit OS data: Blob download (+ copy/paste fallback), validated import with counts preview + confirm, last-backup status. No backend/auth/cloud/encryption | `components/backup/BackupView.tsx`, `lib/backup.ts`, `docs/BACKUP_RESTORE.md` |
 | Learn (Knowledge Center) | Card-based Hebrew articles + protein calculator | `app/learn/*`, `lib/knowledge-content.ts`, `lib/protein.ts` |
 | Welcome screen | First-visit intro (gate) | `components/welcome/WelcomeGate.tsx`, `lib/welcome.ts` |
-| Private Access Notice | Per-session informational notice (gate) | `components/access/PrivateAccessNotice.tsx`, `lib/private-access.ts` |
+| Beta Welcome Notice | One-time friendly beta greeting after the access gate (gate) | `components/access/BetaWelcomeNotice.tsx`, `lib/beta-welcome.ts`, `docs/BETA_WELCOME_NOTICE.md` |
+| Private Access Notice | _Removed from the active flow_ — superseded by the Beta Welcome Notice; files kept only as a reference | `components/access/PrivateAccessNotice.tsx`, `lib/private-access.ts` |
 | Admin Access Code Gate | Client-side access-code gate (not real auth) | `components/access/AdminAccessCodeGate.tsx`, `lib/admin-access.ts`, `docs/ADMIN_ACCESS_GATE.md` |
 | PWA | Installable app shell + service worker | `app/manifest.ts`, `components/ServiceWorkerRegister.tsx`, `public/sw.js` |
 
@@ -310,7 +320,8 @@ existing user data is bound to them. See §5 for reset behavior.
 | Key | Type | Purpose | Owner |
 | --- | --- | --- | --- |
 | `yfos:welcome-seen:v1` | localStorage | First-visit welcome screen seen flag (`"1"`) | `lib/welcome.ts` |
-| `yfos:private-access-notice-accepted:session` | **sessionStorage** | Private-access notice accepted **this session** (`"1"`) | `lib/private-access.ts` |
+| `yfos:beta-welcome-seen:v1` | localStorage | Friendly beta welcome notice acknowledged (`"1"`) — shown once after the access gate | `lib/beta-welcome.ts` |
+| `yfos:private-access-notice-accepted:session` | **sessionStorage** | _Defunct_ — old private-access notice flag, no longer read (notice removed from the flow) | `lib/private-access.ts` |
 | `yfos:admin-access-granted:v1` | localStorage | Admin access-code gate unlocked on this device (`"1"`) | `lib/admin-access.ts` |
 | `yfos:active-workout-draft:v1` | localStorage | **Single** in-progress active-workout draft (auto-saved). NOT history — separate from `yfos:workouts`; cleared on final save / explicit discard | `lib/active-workout-draft.ts` |
 | `yfos:gym-visits:v1` | localStorage | Gym **attendance** history (`GymVisit[]`). Separate from `yfos:workouts` — being at the gym, not training. Each visit may carry an optional, additive `workouts?` display-only snapshot (no format/version change). Included in backups; cleared by `resetAll` | `lib/gym-attendance.ts` |
@@ -324,21 +335,21 @@ existing user data is bound to them. See §5 for reset behavior.
 > The theme has **no separate key** — it is a field inside `yfos:settings`. The
 > pre-paint `THEME_INIT_SCRIPT` reads `yfos:settings` directly. The three gates
 > use pre-paint init scripts that toggle `.welcome-seen` /
-> `.private-access-accepted` / `.admin-access-granted` on `<html>` so returning
+> `.beta-welcome-seen` / `.admin-access-granted` on `<html>` so returning
 > users never see a flash.
 
 ## 5. Reset behavior
 
 | Action (Settings) | What it clears | What it preserves |
 | --- | --- | --- |
-| **Reset all data** (`resetAll`) | All 9 `STORAGE_KEYS` data keys, incl. `yfos:settings` (theme returns to the default `light`), **plus** the gym keys (`yfos:gym-visits:v1`, `yfos:active-gym-visit:v1`) via `clearAllGymData()` | All gate flags (`welcome-seen`, `private-access`, `admin-access`) — gates are not "data" |
+| **Reset all data** (`resetAll`) | All 9 `STORAGE_KEYS` data keys, incl. `yfos:settings` (theme returns to the default `light`), **plus** the gym keys (`yfos:gym-visits:v1`, `yfos:active-gym-visit:v1`) via `clearAllGymData()` | All gate flags (`welcome-seen`, `beta-welcome-seen`, `admin-access`) — gates are not "data" |
 | Reset saved food values | `yfos:saved-food-values:v1` only | Food logs, favorites |
 | Reset favorite foods | `yfos:favorite-foods:v1` only | Food logs, saved values |
 | Reset supplements | `yfos:supplements:v1` (deleting a supplement also drops its logs) | Other modules |
 | Reset supplement log | `yfos:supplement-logs:v1` only | The supplement catalogue |
 | Reset water day | One date inside `yfos:water-logs:v1` | All other days |
 | Show welcome again (`resetWelcome`) | `yfos:welcome-seen:v1` only | All real data |
-| Show private notice again (`resetPrivateAccess`) | `yfos:private-access-notice-accepted:session` only | All real data |
+| Show beta notice again (`resetBetaWelcome`) | `yfos:beta-welcome-seen:v1` only | All real data |
 | Lock system — "נעל מערכת" (`resetAdminAccess`) | `yfos:admin-access-granted:v1` only — re-shows the access-code gate | All real data |
 
 `resetAll` deliberately does **not** clear the gate flags, and the gate resets
@@ -373,7 +384,7 @@ deliberately do **not** touch user data. Keep these concerns separate.
   deterministic next-action logic; `lib/progress-insights.ts` adds the Progress
   weekly hero / insight cards / 7-day activity / personal records. Both are
   deterministic, no AI, no advice.
-- **Gates (`lib/welcome.ts`, `lib/private-access.ts`, `lib/admin-access.ts`)**
+- **Gates (`lib/welcome.ts`, `lib/beta-welcome.ts`, `lib/admin-access.ts`)**
   mirror that same `useSyncExternalStore` shape and expose pre-paint init
   scripts. The admin gate fails **closed** (storage hiccup keeps it up); the
   other two fail open.
@@ -382,9 +393,9 @@ deliberately do **not** touch user data. Keep these concerns separate.
   `theme: "system"` (or any unknown value) is sanitized to `light` on read
   (`sanitizeTheme` in `lib/storage.ts`) — never crashing, never re-persisting
   `system`, and matching the pre-paint `THEME_INIT_SCRIPT` so there is no flash.
-- All four `<head>` init scripts (theme + 3 gates) run before paint to prevent
-  flashes; `RootLayout` nests
-  `PrivateAccessNotice → AdminAccessCodeGate → WelcomeGate → AppShell`.
+- The `<head>` init scripts (theme + welcome + beta-welcome) run before paint to
+  prevent flashes; `RootLayout` nests
+  `BetaAuthGate → BetaWelcomeNotice → WelcomeGate → AppShell`.
 
 ## 8. Product boundaries — what must NOT be broken
 

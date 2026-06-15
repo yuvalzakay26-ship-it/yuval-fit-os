@@ -1,5 +1,17 @@
 # Private Access Notice
 
+> ⚠️ **Deprecated / removed from the active flow.** This notice ("מערכת פרטית /
+> do not share the link") was the right onboarding message when access was
+> link/code based. Now that access is controlled by Google login + an approved-
+> email gate (`components/access/BetaAuthGate.tsx`), it has been **removed from
+> the production gate chain** and replaced by the warm, friendly
+> [`BetaWelcomeNotice`](BETA_WELCOME_NOTICE.md). The component
+> (`components/access/PrivateAccessNotice.tsx`) and store (`lib/private-access.ts`)
+> are kept in the repo as a reference only — nothing mounts them, and the
+> `yfos:private-access-notice-accepted:session` flag is no longer read. This
+> document is retained for history. No auth/security/database/user-data schema
+> changed when it was retired.
+
 A premium, full-screen notice shown when entering Yuval Fit OS. It tells the
 user the app is private and intended only for people who received a direct link.
 

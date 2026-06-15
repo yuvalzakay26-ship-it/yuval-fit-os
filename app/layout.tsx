@@ -5,8 +5,8 @@ import { ThemeProvider, THEME_INIT_SCRIPT } from "@/components/ThemeProvider";
 import { AppShell } from "@/components/layout/AppShell";
 import { WelcomeGate } from "@/components/welcome/WelcomeGate";
 import { WELCOME_INIT_SCRIPT } from "@/lib/welcome";
-import { PrivateAccessNotice } from "@/components/access/PrivateAccessNotice";
-import { PRIVATE_ACCESS_INIT_SCRIPT } from "@/lib/private-access";
+import { BetaWelcomeNotice } from "@/components/access/BetaWelcomeNotice";
+import { BETA_WELCOME_INIT_SCRIPT } from "@/lib/beta-welcome";
 import { BetaAuthGate } from "@/components/access/BetaAuthGate";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
@@ -54,32 +54,33 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         {/* Hide the welcome screen before paint for returning users. */}
         <script dangerouslySetInnerHTML={{ __html: WELCOME_INIT_SCRIPT }} />
-        {/* Hide the private-access notice before paint within an accepted session. */}
+        {/* Hide the beta welcome notice before paint for testers who saw it. */}
         <script
-          dangerouslySetInnerHTML={{ __html: PRIVATE_ACCESS_INIT_SCRIPT }}
+          dangerouslySetInnerHTML={{ __html: BETA_WELCOME_INIT_SCRIPT }}
         />
       </head>
       <body className="min-h-dvh">
         <ThemeProvider>
-          {/* Gate order (highest z-index seen first): the private-access notice
-              (z-110) sits above the Supabase beta auth gate (z-108), which sits
-              above the welcome screen (z-100). Accepting the notice reveals the
-              beta gate; signing in with an approved email reveals the welcome
-              screen for new users, then the app.
+          {/* Gate order (highest z-index seen first): the Supabase beta auth
+              gate (z-108) is the REAL access boundary — sign in with an approved
+              email, or continue as a local guest. Once the user is in, the
+              friendly beta welcome notice (z-104) greets them once, and finally
+              the first-visit welcome screen (z-100) sits above the app.
 
-              The Supabase beta auth gate is the REAL access boundary for the
-              beta. The legacy client-side admin access-code gate
-              (components/access/AdminAccessCodeGate.tsx) is retained in the repo
-              as a development-only fallback reference but is intentionally no
-              longer part of the production gate chain — see
-              docs/BETA_ACCESS_SYSTEM.md. */}
-          <PrivateAccessNotice>
-            <BetaAuthGate>
+              The old "private system / do not share the link" notice
+              (PrivateAccessNotice) was removed from this chain: access is now
+              controlled by login + approved emails, so the onboarding message is
+              a warm beta welcome, not a security warning — see
+              docs/BETA_WELCOME_NOTICE.md. The legacy admin access-code gate
+              (components/access/AdminAccessCodeGate.tsx) likewise remains in the
+              repo only as a dev reference, not in the production chain. */}
+          <BetaAuthGate>
+            <BetaWelcomeNotice>
               <WelcomeGate>
                 <AppShell>{children}</AppShell>
               </WelcomeGate>
-            </BetaAuthGate>
-          </PrivateAccessNotice>
+            </BetaWelcomeNotice>
+          </BetaAuthGate>
         </ThemeProvider>
         <ServiceWorkerRegister />
       </body>

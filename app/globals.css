@@ -318,12 +318,12 @@ body {
   display: none;
 }
 
-/* Private-access notice: when PRIVATE_ACCESS_INIT_SCRIPT detects the notice was
-   already accepted this session it adds this class before paint, hiding the
-   server-rendered notice overlay so there is no flash on same-session
-   navigations/refreshes. Kept in sync at runtime by accept/reset
-   (lib/private-access.ts), so "show notice again" re-reveals it immediately. */
-.private-access-accepted [data-private-access-gate] {
+/* Beta welcome notice: when BETA_WELCOME_INIT_SCRIPT detects the friendly beta
+   greeting was already seen it adds this class before paint, hiding the
+   server-rendered notice overlay so approved testers never see a flash of it on
+   later loads. Kept in sync at runtime by mark/reset (lib/beta-welcome.ts), so
+   "show beta notice again" re-reveals it immediately. */
+.beta-welcome-seen [data-beta-welcome-gate] {
   display: none;
 }
 
