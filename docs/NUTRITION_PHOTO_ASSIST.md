@@ -7,8 +7,10 @@ written to the **existing** nutrition journal.
 > **Mental model:** `תצלם → המערכת יוצרת טיוטה → המשתמש בודק/עורך → מוסיף ליומן`
 >
 > Photo scan is the **default** action; manual add and "add again" remain as
-> always-available fallbacks. When AI is not configured the scan card is hidden
-> and the page degrades cleanly to manual/recent logging.
+> always-available fallbacks. When AI is not configured the scan card stays
+> **visible in a calm "coming soon" (`בקרוב`) state** — so users see the feature
+> exists — but it is fully inert, and the page degrades cleanly to manual/recent
+> logging.
 
 ---
 
@@ -34,15 +36,40 @@ written to the **existing** nutrition journal.
 ## `/nutrition` hierarchy (scan-first)
 
 1. **Today summary** — `MacroSummary` (unchanged).
-2. **Primary action** — large `סרוק צלחת` card (**only when AI is configured**).
+2. **Primary action** — large `סרוק צלחת` card. **Active** when AI is configured;
+   **disabled / coming-soon** (`בקרוב`) when it is not. The slot is always present.
 3. **Fallback actions** — `הוסף שוב` (reveals recent foods) + `הוסף ידנית`
    (`/nutrition/add`). Below: compact **favorites** chips when any exist.
 4. **Today's journal** — `היומן של היום`.
 5. **More tracking** (`מעקבים נוספים`) — water + supplements, subordinate.
 6. **Tools** (`כלים נוספים`) — protein calculator + full food library.
 
-When `aiEnabled` is false, section 2 is omitted and the page is a clean
-manual-first layout; nothing is broken and no "coming soon" CTA appears.
+The hierarchy is identical in both states — only section 2's card swaps between
+the active flow and the inert `בקרוב` card. Nothing below it ever changes, and the
+manual / recent fallbacks stay visible and usable in both states.
+
+### Active vs disabled scan card
+
+| | AI enabled | AI disabled / no key |
+|---|---|---|
+| Component | `PhotoScanCard` (full state machine) | `PhotoScanCardDisabled` (inert `<div>`) |
+| Title | `סרוק צלחת` | `סרוק צלחת` |
+| Subtitle | `צלם את הארוחה ונבנה לך טיוטת תזונה לעריכה` | `ניתוח ארוחה מתמונה יופעל בקרוב` |
+| Trust line | `הערכה בלבד · אפשר לערוך לפני שמירה` | `בינתיים אפשר להוסיף ידנית או להשתמש ב־הוסף שוב` |
+| Badge / CTA | `סרוק עכשיו` (opens capture) | `בקרוב` badge + disabled `לא פעיל כרגע` button |
+| File input | two hidden `<input type=file>` mounted | **none mounted** |
+| On tap | opens the pre-capture sheet | **nothing** (no handler, no overlay) |
+| Network | `POST /api/nutrition/analyze-photo` on analyze | **never called** |
+
+The disabled card never opens upload, never calls the analyze route, never throws
+a console error, and never blocks manual logging. Because `/nutrition` is
+`force-dynamic`, adding an AI key later flips the page to the **active** card on
+the next request with **no rebuild**.
+
+**Dev/admin helper.** Outside production the disabled card shows one extra dashed
+line — `הפיצ׳ר מוכן, אבל עדיין לא חובר מפתח AI בסביבת הפרודקשן.` — gated by
+`showSetupHint` (`process.env.NODE_ENV !== "production"`, computed in
+`app/nutrition/page.tsx`). Normal production users only ever see the clean `בקרוב`.
 
 ---
 
@@ -74,8 +101,9 @@ Every failure state offers a way forward — `נסה שוב`, `הוסף ידני
 | API route | `app/api/nutrition/analyze-photo/route.ts` | `GET` capability + `POST` analyze. `nodejs` runtime, `force-dynamic`. |
 | Scan card + flow | `components/nutrition/PhotoScanCard.tsx` | state machine: idle → precapture → analyzing → review/error. |
 | Review screen | `components/nutrition/PhotoDraftReview.tsx` | editable rows, portion chips, confidence labels, confirm. |
-| Page gating | `app/nutrition/page.tsx` | reads `isNutritionAiConfigured()` (server) → passes `aiEnabled`. |
-| Hierarchy | `components/nutrition/NutritionView.tsx` | scan-first layout, fallback actions, recents folded into `הוסף שוב`. |
+| Disabled scan card | `components/nutrition/PhotoScanCard.tsx` (`PhotoScanCardDisabled`) | inert `בקרוב` card shown when AI is off — no inputs, no overlay, no fetch. |
+| Page gating | `app/nutrition/page.tsx` | reads `isNutritionAiConfigured()` (server) → passes `aiEnabled`; also passes `showSetupHint` (non-prod dev/admin helper). |
+| Hierarchy | `components/nutrition/NutritionView.tsx` | scan-first layout; renders active vs disabled card by `aiEnabled`; fallback actions, recents folded into `הוסף שוב`. |
 
 ### API: `POST /api/nutrition/analyze-photo`
 
@@ -123,9 +151,12 @@ isolated behind `analyzePhoto()` so it can later be swapped (e.g. to the Vercel 
 Gateway) without touching the route or UI. Results are always estimates; food-photo
 macro/portion estimation is inherently approximate.
 
-**No key configured →** `isNutritionAiConfigured()` is false → scan card hidden,
-route `POST` returns `{ ok:false, error:"disabled" }`, manual/recent logging works
-normally. **No broken CTA, no console errors.**
+**No key configured →** `isNutritionAiConfigured()` is false → scan card shows the
+inert `בקרוב` state (the feature stays **visible**, not hidden), route `POST`
+returns `{ ok:false, error:"disabled" }`, manual/recent logging works normally.
+**No broken CTA, no upload, no analyze call, no console errors.** Real scanning
+still requires the server-only env vars below; a missing key is a disabled visual
+state, never a hidden feature — and **no** schema/storage/auth change is involved.
 
 ---
 
@@ -180,3 +211,10 @@ Run the app with `NUTRITION_AI_MOCK=1` (and `NEXT_PUBLIC_BETA_DISABLE_GATE=1` to
 bypass the access gate locally) to exercise the entire flow — capture → analyzing →
 review → confirm → journal — without a real key or network call. See
 `e2e/nutrition-photo.spec.ts`.
+
+`npm run test:e2e` builds once (with the gate seam baked in) then runs two
+production servers from that build (`playwright.config.ts`): **:3939** with
+`NUTRITION_AI_MOCK=1` exercises the **active** card, and **:3940** with no AI env
+exercises the **disabled** `בקרוב` card (`e2e/nutrition-photo-disabled.spec.ts`),
+asserting it never mounts a file input, never POSTs to the analyze route, logs no
+console errors, and leaves the manual / add-again fallbacks usable.

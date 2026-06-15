@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:e2e": "playwright test"
+    "test:e2e": "node scripts/e2e.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",

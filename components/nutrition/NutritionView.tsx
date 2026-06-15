@@ -36,7 +36,7 @@ import { WaterCard } from "@/components/water/WaterCard";
 import { SupplementsCard } from "@/components/supplements/SupplementsCard";
 import { FoodImage } from "./FoodImage";
 import { MacroSummary } from "./MacroSummary";
-import { PhotoScanCard } from "./PhotoScanCard";
+import { PhotoScanCard, PhotoScanCardDisabled } from "./PhotoScanCard";
 import { ProteinCalculator } from "./ProteinCalculator";
 import { cn } from "@/lib/utils";
 import { MEAL_TYPE_LABELS } from "./nutrition-labels";
@@ -46,7 +46,15 @@ function macroLine(log: FoodLog): string {
   return `${Math.round(log.protein)} חלבון · ${Math.round(log.carbs)} פחמ׳ · ${Math.round(log.fat)} שומן`;
 }
 
-export function NutritionView({ aiEnabled }: { aiEnabled: boolean }) {
+export function NutritionView({
+  aiEnabled,
+  showSetupHint = false,
+}: {
+  /** Whether server-side AI is configured — gates active vs coming-soon scan card. */
+  aiEnabled: boolean;
+  /** Dev/admin-only "feature ready, no key yet" helper on the disabled card. */
+  showSetupHint?: boolean;
+}) {
   const logs = useFoodLogs();
   const settings = useSettings();
   const favorites = useFavoriteFoods();
@@ -103,16 +111,20 @@ export function NutritionView({ aiEnabled }: { aiEnabled: boolean }) {
         calorieGoal={settings.calorieGoal}
       />
 
-      {/* 2 — Primary default action: photo scan (only when AI is configured).
-          When it's not, the page degrades cleanly to the fallback actions. */}
-      {aiEnabled && (
-        <section>
+      {/* 2 — Primary default action: photo scan. Active when AI is configured;
+          otherwise a calm "בקרוב" card so users still see the feature exists.
+          The disabled card is inert (no upload, no fetch) and never blocks the
+          manual / "add again" fallbacks directly below. */}
+      <section>
+        {aiEnabled ? (
           <PhotoScanCard
             hasRecents={hasRecents}
             onSaved={() => showFlash("נוסף ליומן של היום")}
           />
-        </section>
-      )}
+        ) : (
+          <PhotoScanCardDisabled showSetupHint={showSetupHint} />
+        )}
+      </section>
 
       {/* 3 — Fast fallback actions: add again + manual. Always visible. */}
       <section>

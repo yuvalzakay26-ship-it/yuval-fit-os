@@ -2,13 +2,20 @@
 
 // Photo-first nutrition — the primary "סרוק צלחת" card + capture flow (Phase 3.xx).
 //
-// This is the DEFAULT logging action on /nutrition (rendered only when AI is
-// configured). It owns the whole client flow as a small state machine:
+// This is the DEFAULT logging action on /nutrition. When AI is configured the
+// active `PhotoScanCard` owns the whole client flow as a small state machine:
 //   idle → precapture → analyzing → review | error
 // Nothing is ever saved automatically: the journal is written only after the
 // user confirms on the review screen. The image is sent to the server route for
 // analysis and is never stored. Manual add and "add again" stay reachable from
 // every error state so the user is never stuck.
+//
+// When AI is NOT configured the page renders `PhotoScanCardDisabled` instead — a
+// calm "coming soon" (`בקרוב`) card so users still see the feature exists. It is
+// inert: no inputs, no overlay, no fetch — it never opens upload or calls the
+// analyze route. Manual add and "add again" remain the working fallbacks below.
+// Because /nutrition is force-dynamic, adding a key later flips the page to the
+// active card automatically with no rebuild. See `docs/NUTRITION_PHOTO_ASSIST.md`.
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -26,6 +33,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import {
   CameraIcon,
+  LockIcon,
   PencilIcon,
   PlusIcon,
   RefreshIcon,
@@ -292,5 +300,67 @@ export function PhotoScanCard({
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * The "coming soon" scan card shown when AI is NOT configured. It mirrors the
+ * active card's shape so the feature reads as a real, polished part of the app,
+ * but it is fully inert — a plain `<div>` with no inputs, no overlay, no click
+ * handler, and no fetch. It can never open upload or call the analyze route, and
+ * it never blocks the manual / "add again" fallbacks that sit directly below it.
+ *
+ * `showSetupHint` is a dev/admin-only helper (off for normal users): in
+ * non-production it explains that the feature is built but no AI key is wired in
+ * the production environment yet. Normal users only ever see the clean `בקרוב`.
+ */
+export function PhotoScanCardDisabled({
+  showSetupHint = false,
+}: {
+  /** Show the dev/admin "feature ready, no key yet" helper line. Off by default. */
+  showSetupHint?: boolean;
+}) {
+  return (
+    <div
+      aria-disabled="true"
+      className="w-full overflow-hidden rounded-3xl border border-border bg-surface-raised p-4 text-right shadow-soft"
+    >
+      <div className="flex items-center gap-3.5">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-surface-2 text-faint">
+          <CameraIcon className="h-7 w-7" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[17px] font-extrabold text-foreground">סרוק צלחת</p>
+          <p className="mt-0.5 text-[12.5px] leading-snug text-muted">
+            ניתוח ארוחה מתמונה יופעל בקרוב
+          </p>
+        </div>
+        {/* "בקרוב" badge — sits at the row's end, clear of the icon and text. */}
+        <span className="inline-flex shrink-0 items-center self-start rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[11px] font-bold text-muted">
+          בקרוב
+        </span>
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <span className="inline-flex min-w-0 items-center gap-1.5 text-[11px] font-semibold text-faint">
+          <ShieldIcon className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">בינתיים אפשר להוסיף ידנית או להשתמש ב־הוסף שוב</span>
+        </span>
+        {/* A real disabled button: never fires, shows the not-interactive cursor. */}
+        <button
+          type="button"
+          disabled
+          className="inline-flex shrink-0 cursor-not-allowed items-center gap-1.5 rounded-xl border border-border bg-surface-2 px-3.5 py-2 text-[13px] font-bold text-faint"
+        >
+          <LockIcon className="h-4 w-4" /> לא פעיל כרגע
+        </button>
+      </div>
+
+      {showSetupHint && (
+        <p className="mt-3 rounded-xl border border-dashed border-border bg-surface-2 px-3 py-2 text-[11.5px] leading-snug text-faint">
+          הפיצ׳ר מוכן, אבל עדיין לא חובר מפתח AI בסביבת הפרודקשן.
+        </p>
+      )}
+    </div>
   );
 }

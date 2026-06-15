@@ -21,11 +21,18 @@ npm run test:e2e   # Playwright e2e (first run: npx playwright install chromium)
 **Nutrition Photo Assist** (Phase 3.xx) adds an optional server-side vision
 feature for photo-first logging. It is **server-only** and **off by default**:
 set `NUTRITION_AI_API_KEY` (or `ANTHROPIC_API_KEY`) to enable it — never a
-`NEXT_PUBLIC_*` var. With no key the `סרוק צלחת` card is hidden and manual/recent
-logging works normally. For local UI work without a real key, set
-`NUTRITION_AI_MOCK=1` to get a deterministic mock draft (no network). The Playwright
-suite (`e2e/nutrition-photo.spec.ts`) runs with both `NEXT_PUBLIC_BETA_DISABLE_GATE=1`
-and `NUTRITION_AI_MOCK=1` (wired in `playwright.config.ts`). See
+`NEXT_PUBLIC_*` var. With no key the `סרוק צלחת` card stays **visible** in a calm
+"coming soon" (`בקרוב`) state but is fully inert (no upload, no analyze call), and
+manual/recent logging works normally; outside production it shows a small dev/admin
+helper line noting no AI key is wired yet. Because `/nutrition` is `force-dynamic`,
+adding a key later flips the card to active with no rebuild. For local UI work
+without a real key, set `NUTRITION_AI_MOCK=1` to get a deterministic mock draft (no
+network). `npm run test:e2e` builds once then runs two production servers from that
+build: **:3939** (`NUTRITION_AI_MOCK=1`) for the active card and **:3940** (no AI
+env) for the disabled card — `e2e/nutrition-photo.spec.ts` +
+`e2e/nutrition-photo-disabled.spec.ts`, wired in `playwright.config.ts`. The gate
+bypass (`NEXT_PUBLIC_BETA_DISABLE_GATE=1`) is baked at build time by
+`scripts/e2e.mjs` because `next start` inlines `NEXT_PUBLIC_*` vars. See
 [`NUTRITION_PHOTO_ASSIST.md`](NUTRITION_PHOTO_ASSIST.md).
 
 Requirements: Node 20+. The app's **fitness data** is client-only — nothing to

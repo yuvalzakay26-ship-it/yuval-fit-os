@@ -24,7 +24,25 @@
 > moved to the cloud** — only request/access metadata lives in Supabase. Rerun the
 > SQL to upgrade existing installs (`create table if not exists` + safe
 > `drop/create policy`). See [`BETA_ACCESS_SYSTEM.md`](BETA_ACCESS_SYSTEM.md).)
-> Latest: Phase 3.xx (**Nutrition Photo Assist — photo-first logging**: `/nutrition`
+> Latest: Phase 3.xx (**Disabled nutrition scan card**: when AI is **not**
+> configured, `/nutrition` no longer hides the scan slot — it shows a calm,
+> inert **`בקרוב`** "coming soon" card (`PhotoScanCardDisabled` in
+> `components/nutrition/PhotoScanCard.tsx`) so users see the feature exists.
+> Active vs disabled is chosen by `aiEnabled` in `NutritionView`; the disabled
+> card mounts **no** file input, has **no** click handler/overlay, and **never**
+> calls `POST /api/nutrition/analyze-photo` — manual add + `הוסף שוב` stay visible
+> and usable directly below. Copy: title `סרוק צלחת`, subtitle
+> `ניתוח ארוחה מתמונה יופעל בקרוב`, trust line
+> `בינתיים אפשר להוסיף ידנית או להשתמש ב־הוסף שוב`, `בקרוב` badge, disabled
+> `לא פעיל כרגע` button; a non-prod-only dev/admin helper
+> (`showSetupHint` from `app/nutrition/page.tsx`) adds
+> `הפיצ׳ר מוכן, אבל עדיין לא חובר מפתח AI בסביבת הפרודקשן.`. `/nutrition` stays
+> `force-dynamic`, so adding a key later flips the card to active with no rebuild.
+> **No** AI provider/route/server-env/`FoodLog`/localStorage/backup/Supabase/auth
+> change. e2e now builds once then runs two `next start` servers — :3939 (mock,
+> active) + :3940 (no AI, disabled, `e2e/nutrition-photo-disabled.spec.ts`) via
+> `scripts/e2e.mjs`. See [`NUTRITION_PHOTO_ASSIST.md`](NUTRITION_PHOTO_ASSIST.md).)
+> Prior: Phase 3.xx (**Nutrition Photo Assist — photo-first logging**: `/nutrition`
 > is now **scan-first**. When AI is configured a large **`סרוק צלחת`** card is the
 > primary action (under `MacroSummary`); the user photographs a meal, a server
 > route returns an **editable draft**, and only on **`נראה טוב, הוסף ליומן`** is the
@@ -37,8 +55,9 @@
 > + `PhotoDraftReview.tsx`. Hard rules enforced: **estimate-only** (`הערכה בלבד`,
 > per-item confidence), **no auto-save**, **no image storage**, **no AI key in the
 > client** (server-only `NUTRITION_AI_API_KEY`/`ANTHROPIC_API_KEY`; `NUTRITION_AI_MODEL`;
-> `NUTRITION_AI_MOCK=1` dev seam). **No key → scan card hidden** (`isNutritionAiConfigured`
-> gates the page via `aiEnabled`), no dead CTA, manual/recent work normally. A
+> `NUTRITION_AI_MOCK=1` dev seam). **No key → scan card shows an inert `בקרוב`
+> state** (see the Latest entry; `isNutritionAiConfigured` gates active vs
+> disabled via `aiEnabled`), no dead CTA, manual/recent work normally. A
 > confirmed draft maps onto the existing `FoodLog` and is written via the existing
 > `addFoodLog` → `yfos:foodLogs`: **no new storage key, no schema change, no
 > Supabase/DB change, no backup change**; photo entries appear in the summary,
