@@ -20,6 +20,7 @@ import {
 import { DEFAULT_WATER_GOAL_ML } from "@/lib/fitness-types";
 import { dailyOverview, type NextAction } from "@/lib/today";
 import { formatHebrewDate, hebrewGreeting, todayISO } from "@/lib/utils";
+import { greetingFor, useAppIdentity } from "@/lib/app-identity";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/PageHeader";
 import { ProgressRing } from "@/components/ui/ProgressRing";
@@ -217,6 +218,7 @@ export function TodayView() {
   const waterLogs = useWaterLogs();
   const supplements = useSupplements();
   const supplementLogs = useSupplementLogs();
+  const identity = useAppIdentity();
 
   const today = todayISO();
 
@@ -335,7 +337,8 @@ export function TodayView() {
           {formatHebrewDate(today)}
         </p>
         <h1 className="mt-1 text-[28px] font-extrabold leading-tight tracking-tight text-foreground">
-          {hebrewGreeting()}, יובל <span className="inline-block">👋</span>
+          {greetingFor(identity) ?? `${hebrewGreeting()}, יובל`}{" "}
+          <span className="inline-block">👋</span>
         </h1>
       </div>
 

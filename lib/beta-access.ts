@@ -28,6 +28,26 @@ export function normalizeEmail(email: string | null | undefined): string {
   return (email ?? "").trim().toLowerCase();
 }
 
+/**
+ * Resolve a human-friendly display name for an authenticated Supabase user, in
+ * the order: user_metadata.full_name → user_metadata.name → email → "משתמש".
+ * Pure (no I/O) so it can be reused by the session store and unit-tested. The
+ * email here is the already-known authenticated email (never client input).
+ */
+export function resolveDisplayName(
+  metadata: Record<string, unknown> | null | undefined,
+  email: string | null | undefined,
+): string {
+  const meta = metadata ?? {};
+  const fullName = typeof meta.full_name === "string" ? meta.full_name.trim() : "";
+  if (fullName) return fullName;
+  const name = typeof meta.name === "string" ? meta.name.trim() : "";
+  if (name) return name;
+  const mail = (email ?? "").trim();
+  if (mail) return mail;
+  return "משתמש";
+}
+
 /* --------------------------- Allowed-user model ------------------------- */
 
 export type AllowedUserStatus = "active" | "blocked";
@@ -75,11 +95,33 @@ interface SessionSnapshot {
   loading: boolean;
   /** Authenticated email (already lowercased by the provider) or null. */
   email: string | null;
+  /** Resolved display name for the authenticated user, or null when signed out. */
+  displayName: string | null;
 }
 
 // Stable references so useSyncExternalStore never loops.
-const SERVER_SNAPSHOT: SessionSnapshot = { loading: true, email: null };
-const UNCONFIGURED_SNAPSHOT: SessionSnapshot = { loading: false, email: null };
+const SERVER_SNAPSHOT: SessionSnapshot = {
+  loading: true,
+  email: null,
+  displayName: null,
+};
+const UNCONFIGURED_SNAPSHOT: SessionSnapshot = {
+  loading: false,
+  email: null,
+  displayName: null,
+};
+
+/** Build a signed-in snapshot from a Supabase user (or signed-out when absent). */
+function snapshotFromUser(
+  user: { email?: string | null; user_metadata?: Record<string, unknown> | null } | null | undefined,
+): SessionSnapshot {
+  const email = normalizeEmail(user?.email) || null;
+  return {
+    loading: false,
+    email,
+    displayName: email ? resolveDisplayName(user?.user_metadata, email) : null,
+  };
+}
 
 let snapshot: SessionSnapshot = SERVER_SNAPSHOT;
 let initialized = false;
@@ -109,19 +151,13 @@ function ensureInit(): void {
   supabase.auth
     .getSession()
     .then(({ data }) => {
-      setSnapshot({
-        loading: false,
-        email: normalizeEmail(data.session?.user?.email) || null,
-      });
+      setSnapshot(snapshotFromUser(data.session?.user));
     })
     .catch(() => setSnapshot(UNCONFIGURED_SNAPSHOT));
 
   // Reflect later sign-in / sign-out / token-refresh / OAuth-callback events.
   supabase.auth.onAuthStateChange((_event, session) => {
-    setSnapshot({
-      loading: false,
-      email: normalizeEmail(session?.user?.email) || null,
-    });
+    setSnapshot(snapshotFromUser(session?.user));
   });
 }
 

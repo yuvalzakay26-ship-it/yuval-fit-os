@@ -198,6 +198,183 @@ async function forEachViewport(browser, path, label, assertFn, setup) {
   return errors;
 }
 
+// Read the local guest-session flag from the page's localStorage.
+const readGuestFlag = (page) =>
+  page.evaluate(() =>
+    window.localStorage.getItem("yuval-fit-os:guest-session:v1"),
+  );
+
+// Whether ANY Supabase auth-token key exists in localStorage (i.e. a real
+// session was created). Guest mode must never create one.
+const hasSupabaseSession = (page) =>
+  page.evaluate(() =>
+    Object.keys(window.localStorage).some(
+      (k) => k.startsWith("sb-") && k.endsWith("-auth-token"),
+    ),
+  );
+
+// Mock the Supabase backend so an authenticated user resolves as APPROVED
+// (active row) and non-admin — used to verify the authenticated greeting.
+async function mockSupabaseApproved(ctx) {
+  await ctx.route("**/rest/v1/beta_allowed_users**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([{ status: "active" }]),
+    }),
+  );
+  await ctx.route("**/rest/v1/beta_admins**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
+  await ctx.route("**/rest/v1/rpc/touch_beta_last_seen**", (route) =>
+    route.fulfill({ status: 204, body: "" }),
+  );
+  await ctx.route("**/auth/v1/user**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(FAKE_USER),
+    }),
+  );
+}
+
+// A single-context walk through guest mode (configured/dummy-env server):
+//   click "המשך כאורח" → app opens locally, "שלום אורח", guest banner, NO
+//   Supabase session; /admin/beta stays locked; signing in clears guest and
+//   greets by name; exiting guest from Settings returns to the sign-in screen.
+async function runGuestFlow(browser) {
+  const errors = [];
+  const attach = (page, tag) => {
+    page.on("console", (m) => {
+      if (m.type() !== "error") return;
+      const text = m.text();
+      if (text.includes(DUMMY_HOST) || text.includes("net::") ||
+          text.includes("Failed to load resource")) return;
+      errors.push(`[${tag}] ${text}`);
+    });
+    page.on("pageerror", (e) => errors.push(`[${tag}] pageerror: ${e.message}`));
+  };
+
+  /* --- Enter as guest -------------------------------------------------- */
+  const ctx = await browser.newContext({
+    viewport: { width: 390, height: 900 },
+    colorScheme: "dark",
+  });
+  await ctx.addInitScript(seedGates);
+  const page = await ctx.newPage();
+  attach(page, "guest");
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(250);
+
+  const guestBtn = page.getByRole("button", { name: /המשך כאורח/ });
+  check("[guest] guest button on sign-in screen", await guestBtn.isVisible());
+  await guestBtn.click();
+  await page.waitForTimeout(400);
+
+  check(
+    "[guest] app reachable after guest (היום tab)",
+    await page.getByRole("link", { name: /היום/ }).first().isVisible(),
+  );
+  check(
+    "[guest] greeting shows שלום אורח",
+    await page.getByText("שלום אורח").first().isVisible(),
+  );
+  check(
+    "[guest] guest banner visible",
+    await page.locator("[data-guest-banner]").isVisible(),
+  );
+  check("[guest] guest flag set", (await readGuestFlag(page)) === "1");
+  check(
+    "[guest] no Supabase session created",
+    (await hasSupabaseSession(page)) === false,
+  );
+
+  /* --- Guest cannot reach the admin panel ------------------------------ */
+  await page.goto(`${BASE}/admin/beta`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(500);
+  const adminText = await page.locator("main").innerText();
+  check(
+    "[guest] admin panel NOT shown (no add-user form)",
+    !adminText.includes("הוסף משתמש"),
+  );
+  check(
+    "[guest] admin route denied for guest",
+    adminText.includes("אין לך גישת ניהול") ||
+      adminText.includes("מערכת הגישה אינה מוקנפגת"),
+  );
+  await ctx.close();
+
+  /* --- Signing in clears guest mode + greets by name ------------------- */
+  const ctx2 = await browser.newContext({
+    viewport: { width: 390, height: 900 },
+    colorScheme: "dark",
+  });
+  await ctx2.addInitScript(seedGates);
+  // Pre-set a guest flag, then also seed a real (approved) session: the real
+  // sign-in must win and clear the guest flag.
+  await ctx2.addInitScript(() => {
+    try {
+      localStorage.setItem("yuval-fit-os:guest-session:v1", "1");
+    } catch {}
+  });
+  await ctx2.addInitScript(seedSession, {
+    key: SESSION_STORAGE_KEY,
+    user: FAKE_USER,
+  });
+  await mockSupabaseApproved(ctx2);
+  const page2 = await ctx2.newPage();
+  attach(page2, "guest→auth");
+  await page2.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  const named = page2.getByText(`שלום, ${FAKE_USER.user_metadata.full_name}`);
+  await named.waitFor({ state: "visible", timeout: 6000 }).catch(() => {});
+  check(
+    "[guest→auth] authenticated greeting שלום, <name>",
+    await named.isVisible(),
+  );
+  check(
+    "[guest→auth] guest flag cleared after real sign-in",
+    (await readGuestFlag(page2)) === null,
+  );
+  check(
+    "[guest→auth] no guest banner for authenticated user",
+    (await page2.locator("[data-guest-banner]").count()) === 0,
+  );
+  await ctx2.close();
+
+  /* --- Exiting guest from Settings returns to the sign-in screen ------- */
+  const ctx3 = await browser.newContext({
+    viewport: { width: 390, height: 900 },
+    colorScheme: "dark",
+  });
+  await ctx3.addInitScript(seedGates);
+  await ctx3.addInitScript(() => {
+    try {
+      localStorage.setItem("yuval-fit-os:guest-session:v1", "1");
+    } catch {}
+  });
+  const page3 = await ctx3.newPage();
+  attach(page3, "guest-exit");
+  await page3.goto(`${BASE}/settings`, { waitUntil: "networkidle" });
+  await page3.waitForTimeout(400);
+  const exitBtn = page3.getByRole("button", { name: /צא ממצב אורח/ });
+  check("[guest-exit] exit-guest button in Settings", await exitBtn.isVisible());
+  await exitBtn.click();
+  await page3.waitForTimeout(500);
+  check(
+    "[guest-exit] sign-in screen returns after exit",
+    await page3
+      .getByRole("heading", { name: "כניסה לבטא של Fit OS" })
+      .isVisible(),
+  );
+  check(
+    "[guest-exit] guest flag cleared after exit",
+    (await readGuestFlag(page3)) === null,
+  );
+  await ctx3.close();
+
+  return errors;
+}
+
 const browser = await chromium.launch();
 const allConsole = [];
 
@@ -252,6 +429,17 @@ try {
         `[${tag}] email magic-link button present`,
         await page.getByRole("button", { name: /שלח קישור כניסה לאימייל/ }).isVisible(),
       );
+      // Guest escape: the "המשך כאורח" button + its helper text are present.
+      check(
+        `[${tag}] guest button present`,
+        await page.getByRole("button", { name: /המשך כאורח/ }).isVisible(),
+      );
+      check(
+        `[${tag}] guest helper text present`,
+        await page
+          .getByText("כניסה כאורח שומרת נתונים במכשיר הזה בלבד.")
+          .isVisible(),
+      );
       check(
         `[${tag}] document is RTL`,
         (await page.evaluate(() => document.documentElement.dir)) === "rtl",
@@ -299,6 +487,13 @@ try {
       },
     );
     allConsole.push(...errs);
+  }
+
+  /* ----- Scenario 2c: continue as guest (local-only session) ----------------- */
+  console.log("\n=== Scenario 2c: guest mode — local session, no Supabase user ===");
+  {
+    const guestErrs = await runGuestFlow(browser);
+    allConsole.push(...guestErrs);
   }
 
   await stopServer(server);

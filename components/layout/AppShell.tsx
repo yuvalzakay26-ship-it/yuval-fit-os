@@ -2,6 +2,7 @@ import { BottomNav } from "./BottomNav";
 import { Header } from "./Header";
 import { RouteTransition } from "./RouteTransition";
 import { ScrollToTop } from "./ScrollToTop";
+import { GuestModeBanner } from "@/components/access/GuestModeBanner";
 
 /**
  * App-wide chrome: sticky header, scrollable content area, fixed bottom nav,
@@ -12,6 +13,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh">
       <Header />
+      <GuestModeBanner />
       <main className="mx-auto w-full max-w-md px-4 pb-32 pt-6">
         <RouteTransition>{children}</RouteTransition>
       </main>

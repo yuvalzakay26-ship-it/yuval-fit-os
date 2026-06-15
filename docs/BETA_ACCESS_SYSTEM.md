@@ -30,10 +30,13 @@ PrivateAccessNotice  (z-110)  → existing per-session private notice
    local work isn't blocked.
 2. **Loading**: the session (then the approval check) is resolving — a calm
    branded loader.
-3. **Signed out**: the Fit OS sign-in screen — **Continue with Google** and an
-   **email magic-link** option.
-4. **Signed in + approved + active**: the overlay disappears, the app is revealed.
-5. **Signed in but not approved / blocked / errored**: `BetaAccessDenied`.
+3. **Signed out**: the Fit OS sign-in screen — **Continue with Google**, an
+   **email magic-link** option, and a **"continue as guest"** (`המשך כאורח`)
+   escape (see *Guest mode* below).
+4. **Guest session active (no real user)**: the overlay disappears and the
+   **normal app shell only** is revealed — local-only, no admin.
+5. **Signed in + approved + active**: the overlay disappears, the app is revealed.
+6. **Signed in but not approved / blocked / errored**: `BetaAccessDenied`.
 
 Like the other gates, the app shell is always mounted underneath (instant entry,
 no remount); overlays are `fixed` + scroll-locked and ordered by z-index.
@@ -68,6 +71,40 @@ The old client-side admin access-code gate (`yuvalzakay123`,
 longer in the production gate chain**. The files are kept in the repo as a
 development-only fallback reference, but the Supabase beta gate is now the real
 boundary. Nothing in production depends on the old code.
+
+### Guest mode (`המשך כאורח`)
+The sign-in screen offers a secondary **"continue as guest"** button beneath an
+`או` divider, with the helper text *"כניסה כאורח שומרת נתונים במכשיר הזה בלבד."*
+It enters a **purely local** guest session — there is **no** auth here:
+
+- A single device flag — `localStorage["yuval-fit-os:guest-session:v1"] = "1"`
+  (see `lib/guest-session.ts`) — is the *only* state. Guest mode creates **no**
+  Supabase user, **no** `beta_allowed_users` row, and **no** `beta_access_requests`
+  row.
+- The gate treats an active guest flag as "allowed for the **normal app shell
+  only**". It never grants admin: `/admin/beta` (`BetaAdminView`) independently
+  requires a real authenticated admin via Supabase RLS, so a guest hits the
+  "אין לך גישת ניהול" screen.
+- **A real Supabase sign-in always wins**: as soon as an authenticated email
+  appears, the gate clears the guest flag (`exitGuestSession`) so the user is
+  governed purely by their real approval status.
+- Guest mode is **clearly identified**: a thin `data-guest-banner` strip under
+  the header reads *"גישה כאורח · הנתונים נשמרים במכשיר בלבד"*, and Settings shows
+  a **"צא ממצב אורח"** action that drops the flag and returns to the sign-in screen.
+- All fitness data stays `localStorage`-only — identical to every other user.
+- Guest mode is reachable only from the **sign-in screen** (configured state).
+  The not-configured screen still **fails closed** for real sign-in.
+
+### Identity & greeting
+`lib/app-identity.ts` (`useAppIdentity` / `greetingFor`) is the single place the
+UI resolves "who is using the app":
+
+- **guest** → greeting `שלום אורח`.
+- **authenticated** → greeting `שלום, {displayName}`, where `displayName`
+  resolves in order: `user_metadata.full_name` → `user_metadata.name` → `email`
+  → `"משתמש"` (`resolveDisplayName` in `lib/beta-access.ts`).
+- **none** (loading / signed out) → the Today screen falls back to its original
+  time-of-day greeting.
 
 ---
 
@@ -240,6 +277,12 @@ layers (it spawns its own `next start` with controlled env):
   screen** shows the **`בקש גישה`** CTA, and filing a request shows the
   **`הבקשה נשלחה`** success state — verified at 360/390 in light + dark with no
   overflow and no console errors.
+- **Guest mode** (configured/dummy env): the sign-in screen shows the
+  **`המשך כאורח`** button + helper text; clicking it opens the app locally with
+  the **`שלום אורח`** greeting and the guest banner, creates **no** Supabase
+  session, and **`/admin/beta` stays locked**. Seeding a real (approved) session
+  clears the guest flag and greets by name (**`שלום, {name}`**); the Settings
+  **`צא ממצב אורח`** action returns to the sign-in screen.
 
 > Running the **other** QA scripts (`qa-settings.mjs`, etc.) against a build
 > without Supabase now requires `NEXT_PUBLIC_BETA_DISABLE_GATE=1` so they can

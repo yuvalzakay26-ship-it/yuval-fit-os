@@ -10,11 +10,17 @@ import {
   useBetaSession,
 } from "@/lib/beta-access";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import {
+  enterGuestSession,
+  exitGuestSession,
+  useGuestSession,
+} from "@/lib/guest-session";
 import { BetaAccessDenied } from "./BetaAccessDenied";
 import { Input, Label } from "@/components/ui/Field";
 import {
   BrandMark,
   CheckCircleIcon,
+  DoorEnterIcon,
   LockIcon,
   ShieldIcon,
   SparkIcon,
@@ -29,9 +35,16 @@ import {
  *     notice; development shows the notice with a "continue anyway" escape so
  *     local work isn't blocked. Never silently opens the app in production.
  *  2. Loading: the session (and then the approval check) is resolving.
- *  3. Signed out: the Fit OS sign-in screen (Google + email magic link).
+ *  3. Signed out: the Fit OS sign-in screen (Google + email magic link + a
+ *     "continue as guest" escape that opens the app locally only).
  *  4. Signed in + approved + active: overlay disappears, the app is revealed.
  *  5. Signed in but not approved / blocked / errored: the BetaAccessDenied screen.
+ *
+ * GUEST MODE: a purely local "continue as guest" flag (lib/guest-session.ts)
+ * opens the normal app shell ONLY — it creates no Supabase user / approved row /
+ * access request and grants no admin rights. A real Supabase sign-in always wins
+ * (and clears the guest flag); the admin panel still requires a real admin via
+ * RLS, so a guest can never reach /admin/beta.
  *
  * Like the other gates, the app shell is always mounted underneath so entering
  * is instant (no remount). Overlays are fixed and scroll-locked; z-index sits
@@ -69,6 +82,7 @@ function isGateDisabledForTesting(): boolean {
 function BetaGateOverlay() {
   const configured = isSupabaseConfigured();
   const { loading: sessionLoading, email } = useBetaSession();
+  const guest = useGuestSession();
   // The decision is stored together with the email it was computed for, so a
   // stale result (after the email changed) is treated as "still checking"
   // purely by derivation — no synchronous reset/setState inside the effect.
@@ -94,6 +108,13 @@ function BetaGateOverlay() {
     };
   }, [configured, email, sessionLoading]);
 
+  // A real Supabase sign-in always wins over guest mode: once an authenticated
+  // email appears, drop the local guest flag so the user is governed purely by
+  // their real approval status (and so admin checks aren't shadowed by guest).
+  useEffect(() => {
+    if (email && guest) exitGuestSession();
+  }, [email, guest]);
+
   // Only trust a decision that belongs to the currently authenticated email.
   const decision =
     resolved && resolved.email === email ? resolved.decision : null;
@@ -111,8 +132,14 @@ function BetaGateOverlay() {
   // --- Loading session ------------------------------------------------------
   if (sessionLoading) return <BetaGateLoading />;
 
+  // --- Guest session (no real user) ----------------------------------------
+  // An active guest flag opens the normal app shell only. This is checked before
+  // the signed-out screen so a returning guest goes straight in, and it never
+  // applies once a real email is present (handled below + cleared by the effect).
+  if (!email && guest) return null;
+
   // --- Signed out -----------------------------------------------------------
-  if (!email) return <BetaSignInScreen />;
+  if (!email) return <BetaSignInScreen onGuest={enterGuestSession} />;
 
   // --- Signed in, checking approval ----------------------------------------
   if (decision === null) return <BetaGateLoading label="בודק הרשאות גישה…" />;
@@ -166,7 +193,7 @@ function BetaGateLoading({ label = "טוען את Fit OS…" }: { label?: string
 
 /* ------------------------------ Sign-in screen -------------------------- */
 
-function BetaSignInScreen() {
+function BetaSignInScreen({ onGuest }: { onGuest: () => void }) {
   useLockBodyScroll();
   const titleId = useId();
   const [email, setEmail] = useState("");
@@ -323,6 +350,28 @@ function BetaSignInScreen() {
               {error}
             </p>
           )}
+
+          {/* Divider before the local guest escape. */}
+          <div className="my-5 flex items-center gap-3">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-[11.5px] font-semibold text-faint">או</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+
+          {/* Continue as guest — a purely local session (no Supabase account). */}
+          <button
+            type="button"
+            data-guest-continue
+            onClick={onGuest}
+            disabled={busy !== null}
+            className="tap flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl border border-border-strong bg-surface px-4 text-[15px] font-bold text-foreground outline-none hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] disabled:opacity-60"
+          >
+            <DoorEnterIcon className="h-[18px] w-[18px] text-accent" />
+            המשך כאורח
+          </button>
+          <p className="mt-3 text-center text-[12px] leading-relaxed text-muted">
+            כניסה כאורח שומרת נתונים במכשיר הזה בלבד.
+          </p>
         </div>
 
         <div className="mt-6 flex items-start gap-2.5 rounded-2xl border border-border bg-surface-2/60 px-4 py-3 text-right">
