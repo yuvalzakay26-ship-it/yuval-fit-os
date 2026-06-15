@@ -15,7 +15,18 @@ npm run dev:no-open # dev server without opening a browser
 npm run build      # production build — also typechecks
 npm run start      # serve the production build
 npm run lint       # eslint
+npm run test:e2e   # Playwright e2e (first run: npx playwright install chromium)
 ```
+
+**Nutrition Photo Assist** (Phase 3.xx) adds an optional server-side vision
+feature for photo-first logging. It is **server-only** and **off by default**:
+set `NUTRITION_AI_API_KEY` (or `ANTHROPIC_API_KEY`) to enable it — never a
+`NEXT_PUBLIC_*` var. With no key the `סרוק צלחת` card is hidden and manual/recent
+logging works normally. For local UI work without a real key, set
+`NUTRITION_AI_MOCK=1` to get a deterministic mock draft (no network). The Playwright
+suite (`e2e/nutrition-photo.spec.ts`) runs with both `NEXT_PUBLIC_BETA_DISABLE_GATE=1`
+and `NUTRITION_AI_MOCK=1` (wired in `playwright.config.ts`). See
+[`NUTRITION_PHOTO_ASSIST.md`](NUTRITION_PHOTO_ASSIST.md).
 
 Requirements: Node 20+. The app's **fitness data** is client-only — nothing to
 configure for it. The **beta access system** (Phase 3.xx) adds Supabase Auth: it

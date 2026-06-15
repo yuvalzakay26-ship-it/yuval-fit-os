@@ -24,7 +24,28 @@
 > moved to the cloud** — only request/access metadata lives in Supabase. Rerun the
 > SQL to upgrade existing installs (`create table if not exists` + safe
 > `drop/create policy`). See [`BETA_ACCESS_SYSTEM.md`](BETA_ACCESS_SYSTEM.md).)
-> Latest: Phase 3.xx (**Beta Welcome Notice**: the old `PrivateAccessNotice`
+> Latest: Phase 3.xx (**Nutrition Photo Assist — photo-first logging**: `/nutrition`
+> is now **scan-first**. When AI is configured a large **`סרוק צלחת`** card is the
+> primary action (under `MacroSummary`); the user photographs a meal, a server
+> route returns an **editable draft**, and only on **`נראה טוב, הוסף ליומן`** is the
+> entry saved. Manual add + **`הוסף שוב`** (recents folded in) stay as always-visible
+> fallbacks; water/supplements/protein/library move into lower `מעקבים נוספים` /
+> `כלים נוספים` bands. New: `app/api/nutrition/analyze-photo/route.ts` (GET
+> capability + POST analyze, `nodejs`/`force-dynamic`), `lib/nutrition-ai.ts`
+> (**server-only** adapter, `fetch` to a vision model, mock seam), `lib/nutrition-photo.ts`
+> (client-safe types/validation/mapping), `components/nutrition/PhotoScanCard.tsx`
+> + `PhotoDraftReview.tsx`. Hard rules enforced: **estimate-only** (`הערכה בלבד`,
+> per-item confidence), **no auto-save**, **no image storage**, **no AI key in the
+> client** (server-only `NUTRITION_AI_API_KEY`/`ANTHROPIC_API_KEY`; `NUTRITION_AI_MODEL`;
+> `NUTRITION_AI_MOCK=1` dev seam). **No key → scan card hidden** (`isNutritionAiConfigured`
+> gates the page via `aiEnabled`), no dead CTA, manual/recent work normally. A
+> confirmed draft maps onto the existing `FoodLog` and is written via the existing
+> `addFoodLog` → `yfos:foodLogs`: **no new storage key, no schema change, no
+> Supabase/DB change, no backup change**; photo entries appear in the summary,
+> diary, recents and export like any other. `BetaAuthGate`/guest/admin rules
+> unchanged. Added devDependency usage: Playwright e2e (`e2e/nutrition-photo.spec.ts`,
+> `playwright.config.ts`). See [`NUTRITION_PHOTO_ASSIST.md`](NUTRITION_PHOTO_ASSIST.md).)
+> Prior: Phase 3.xx (**Beta Welcome Notice**: the old `PrivateAccessNotice`
 > ("מערכת פרטית / do not share the link") was removed from the active gate chain
 > and replaced by a warm, friendly `BetaWelcomeNotice`
 > (`components/access/BetaWelcomeNotice.tsx`, z-104, `lib/beta-welcome.ts`,

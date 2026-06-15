@@ -46,6 +46,12 @@ next-env.d.ts
 /qa/screens/
 /.qa-shots/
 
+# Playwright e2e — keep specs (e2e/*.spec.ts) + config, ignore generated output
+/test-results/
+/playwright-report/
+/playwright/.cache/
+.devserver.log
+
 # Raw exercise image sources (~60MB of PNGs) — kept locally as originals only;
 # optimized WebP copies live in public/exercises/. See docs/EXERCISE_MEDIA_IMPORT.md.
 /public/training exercises/

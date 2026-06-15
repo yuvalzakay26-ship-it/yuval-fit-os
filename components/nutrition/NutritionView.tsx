@@ -24,8 +24,11 @@ import { EmptyState, SectionHeader } from "@/components/ui/PageHeader";
 import {
   AppleIcon,
   CheckIcon,
+  ChevronDownIcon,
   DatabaseIcon,
+  PencilIcon,
   PlusIcon,
+  RefreshIcon,
   StarIcon,
   TrashIcon,
 } from "@/components/ui/icons";
@@ -33,7 +36,9 @@ import { WaterCard } from "@/components/water/WaterCard";
 import { SupplementsCard } from "@/components/supplements/SupplementsCard";
 import { FoodImage } from "./FoodImage";
 import { MacroSummary } from "./MacroSummary";
+import { PhotoScanCard } from "./PhotoScanCard";
 import { ProteinCalculator } from "./ProteinCalculator";
+import { cn } from "@/lib/utils";
 import { MEAL_TYPE_LABELS } from "./nutrition-labels";
 
 /** Compact macro line, e.g. "18 חלבון · 30 פחמ׳ · 12 שומן". */
@@ -41,7 +46,7 @@ function macroLine(log: FoodLog): string {
   return `${Math.round(log.protein)} חלבון · ${Math.round(log.carbs)} פחמ׳ · ${Math.round(log.fat)} שומן`;
 }
 
-export function NutritionView() {
+export function NutritionView({ aiEnabled }: { aiEnabled: boolean }) {
   const logs = useFoodLogs();
   const settings = useSettings();
   const favorites = useFavoriteFoods();
@@ -51,21 +56,33 @@ export function NutritionView() {
   // "אכלת לאחרונה" — recent unique foods derived purely from the log history.
   const recents = getRecentFoodEntries(logs);
 
-  // Calm, transient success feedback for "הוסף שוב". One small toast, announced
-  // politely, auto-dismissed; component-local only (no storage, no data model).
+  // Calm, transient success feedback for "הוסף שוב" and photo saves. One small
+  // toast, announced politely, auto-dismissed; component-local only.
   const [flash, setFlash] = useState<string | null>(null);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
     if (flashTimer.current) clearTimeout(flashTimer.current);
   }, []);
 
-  const addAgain = useCallback((entry: FoodLog) => {
-    // Duplicate into today's journal: a new id + today's date, original intact.
-    addFoodLog(duplicateFoodLogForToday(entry));
-    setFlash("נוסף ליומן של היום");
+  const showFlash = useCallback((message: string) => {
+    setFlash(message);
     if (flashTimer.current) clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setFlash(null), 2200);
   }, []);
+
+  const addAgain = useCallback(
+    (entry: FoodLog) => {
+      // Duplicate into today's journal: a new id + today's date, original intact.
+      addFoodLog(duplicateFoodLogForToday(entry));
+      showFlash("נוסף ליומן של היום");
+    },
+    [showFlash],
+  );
+
+  // "הוסף שוב" is the fast, no-AI fallback: it reveals the recent foods so a
+  // known meal is one tap. Recents folded into this action keeps the page calm.
+  const [showRecents, setShowRecents] = useState(true);
+  const hasRecents = recents.length > 0;
 
   // Resolve favorite ids to library items (newest first), dropping any whose
   // source food no longer exists. Capped to keep the Nutrition screen compact.
@@ -86,111 +103,64 @@ export function NutritionView() {
         calorieGoal={settings.calorieGoal}
       />
 
-      {/* 2 — Water tracking (compact entry point into /nutrition/water) */}
-      <section>
-        <SectionHeader title="מעקב מים" />
-        <WaterCard title="מעקב מים" />
-      </section>
+      {/* 2 — Primary default action: photo scan (only when AI is configured).
+          When it's not, the page degrades cleanly to the fallback actions. */}
+      {aiEnabled && (
+        <section>
+          <PhotoScanCard
+            hasRecents={hasRecents}
+            onSaved={() => showFlash("נוסף ליומן של היום")}
+          />
+        </section>
+      )}
 
-      {/* 2b — Supplements (compact entry point into /nutrition/supplements) */}
+      {/* 3 — Fast fallback actions: add again + manual. Always visible. */}
       <section>
-        <SectionHeader title="תוספים" />
-        <SupplementsCard />
-      </section>
-
-      {/* 3 — Protein goal */}
-      <section>
-        <SectionHeader title="יעד חלבון מותאם" />
-        <ProteinCalculator defaultOpen={false} showArticleLink />
-      </section>
-
-      {/* 4 — Quick actions (entry points into the full-screen flows) */}
-      <section>
-        <SectionHeader title="הוספה מהירה" />
         <div className="grid grid-cols-2 gap-2.5">
-          <Link
-            href="/nutrition/library"
-            className="tap flex flex-col items-start gap-2 rounded-2xl border border-border bg-surface p-4 text-right shadow-soft transition-[border-color] hover:border-border-strong"
+          <button
+            type="button"
+            onClick={() => hasRecents && setShowRecents((v) => !v)}
+            disabled={!hasRecents}
+            aria-expanded={hasRecents ? showRecents : undefined}
+            className="tap flex flex-col items-start gap-2 rounded-2xl border border-border bg-surface p-4 text-right shadow-soft transition-[border-color] hover:border-border-strong disabled:opacity-60 disabled:hover:border-border"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--accent-nutrition-soft)] text-[color:var(--accent-nutrition)]">
-              <DatabaseIcon className="h-5 w-5" />
+              <RefreshIcon className="h-5 w-5" />
             </span>
-            <span className="text-[14px] font-bold text-foreground">בחר מהמאגר</span>
+            <span className="flex w-full items-center justify-between gap-1">
+              <span className="text-[14px] font-bold text-foreground">הוסף שוב</span>
+              {hasRecents && (
+                <ChevronDownIcon
+                  className={cn(
+                    "h-4 w-4 text-faint transition-transform",
+                    showRecents && "rotate-180",
+                  )}
+                />
+              )}
+            </span>
             <span className="text-[11.5px] leading-snug text-muted">
-              בחר מאכל עם תמונה והוסף ליומן
+              מהארוחות האחרונות שלך
             </span>
-          </Link>
+          </button>
 
           <Link
             href="/nutrition/add"
             className="tap flex flex-col items-start gap-2 rounded-2xl border border-border bg-surface p-4 text-right shadow-soft transition-[border-color] hover:border-border-strong"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--accent-soft)] text-accent">
-              <PlusIcon className="h-5 w-5" />
+              <PencilIcon className="h-5 w-5" />
             </span>
             <span className="text-[14px] font-bold text-foreground">הוסף ידנית</span>
             <span className="text-[11.5px] leading-snug text-muted">
-              רשום מאכל וערכים תזונתיים בעצמך
+              בחירה מהמאגר או הזנה חופשית
             </span>
           </Link>
         </div>
 
-        {/* "מועדפים" — quick chips for favorited library foods. Compact and
-            shown only when at least one favorite exists. Identity only — no
-            macros are stored or inferred here (see docs/NUTRITION_FAVORITES.md). */}
-        {favoriteFoods.length > 0 && (
-          <div className="mt-3">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="flex items-center gap-1.5 text-[12px] font-semibold text-muted">
-                <StarIcon filled className="h-3.5 w-3.5 text-amber-400" />
-                מועדפים
-              </p>
-              <Link
-                href="/nutrition/library?view=favorites"
-                className="tap text-[12px] font-semibold text-[color:var(--accent-nutrition)]"
-              >
-                הצג הכל
-              </Link>
-            </div>
-            <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-              {favoriteFoods.map((food) => (
-                <Link
-                  key={food.id}
-                  href={`/nutrition/add?foodId=${encodeURIComponent(food.id)}`}
-                  className="tap flex shrink-0 items-center gap-2 rounded-full border border-border bg-surface py-1.5 pe-3 ps-1.5 text-[12.5px] font-semibold text-foreground hover:border-border-strong"
-                >
-                  <FoodImage
-                    imagePath={food.imagePath}
-                    alt={food.nameHe}
-                    category={food.category}
-                    label={food.nameHe}
-                    sizes="28px"
-                    className="h-7 w-7 shrink-0 rounded-full"
-                  />
-                  <span className="max-w-[8rem] truncate">{food.nameHe}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* 5 — "אכלת לאחרונה" — quick reuse of previously logged foods. Recent
-          items are derived from the log history and carry the macros the user
-          already entered, so re-logging is one tap. Nothing is inferred. */}
-      <section>
-        <SectionHeader title="אכלת לאחרונה" />
-        {recents.length === 0 ? (
-          <Card className="p-4 text-center">
-            <p className="text-[13.5px] font-semibold text-foreground">
-              עדיין אין מאכלים אחרונים
-            </p>
-            <p className="mt-1 text-[12px] leading-snug text-muted">
-              אחרי שתוסיף אוכל ליומן, תוכל להוסיף אותו שוב בלחיצה אחת.
-            </p>
-          </Card>
-        ) : (
-          <div className="no-scrollbar -mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1">
+        {/* Recent foods, revealed under "הוסף שוב". Derived from log history; the
+            macros are exactly what the user entered before — nothing inferred. */}
+        {hasRecents && showRecents && (
+          <div className="no-scrollbar -mx-4 mt-3 flex gap-2.5 overflow-x-auto px-4 pb-1">
             {recents.map((food) => (
               <Card
                 key={food.id}
@@ -235,9 +205,47 @@ export function NutritionView() {
             ))}
           </div>
         )}
+
+        {/* "מועדפים" — quick chips for favorited library foods. Identity only —
+            no macros are stored or inferred here (see docs/NUTRITION_FAVORITES.md). */}
+        {favoriteFoods.length > 0 && (
+          <div className="mt-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="flex items-center gap-1.5 text-[12px] font-semibold text-muted">
+                <StarIcon filled className="h-3.5 w-3.5 text-amber-400" />
+                מועדפים
+              </p>
+              <Link
+                href="/nutrition/library?view=favorites"
+                className="tap text-[12px] font-semibold text-[color:var(--accent-nutrition)]"
+              >
+                הצג הכל
+              </Link>
+            </div>
+            <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+              {favoriteFoods.map((food) => (
+                <Link
+                  key={food.id}
+                  href={`/nutrition/add?foodId=${encodeURIComponent(food.id)}`}
+                  className="tap flex shrink-0 items-center gap-2 rounded-full border border-border bg-surface py-1.5 pe-3 ps-1.5 text-[12.5px] font-semibold text-foreground hover:border-border-strong"
+                >
+                  <FoodImage
+                    imagePath={food.imagePath}
+                    alt={food.nameHe}
+                    category={food.category}
+                    label={food.nameHe}
+                    sizes="28px"
+                    className="h-7 w-7 shrink-0 rounded-full"
+                  />
+                  <span className="max-w-[8rem] truncate">{food.nameHe}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
-      {/* 6 — Today's diary */}
+      {/* 4 — Today's diary */}
       <section>
         <SectionHeader title={`היומן של היום${today.length ? ` · ${today.length}` : ""}`} />
         {today.length === 0 ? (
@@ -246,17 +254,17 @@ export function NutritionView() {
             accentSoft="var(--accent-nutrition-soft)"
             icon={<AppleIcon className="h-7 w-7" />}
             title="עדיין לא נרשם אוכל היום"
-            description="בחר מאכל מהמאגר או הוסף ידנית כדי להתחיל לעקוב."
+            description="סרוק צלחת או הוסף ידנית כדי להתחיל לעקוב."
             action={
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <Link href="/nutrition/library">
-                  <Button size="sm">
-                    <DatabaseIcon className="h-4 w-4" /> בחר מהמאגר
-                  </Button>
-                </Link>
                 <Link href="/nutrition/add">
                   <Button size="sm" variant="secondary">
-                    <PlusIcon className="h-4 w-4" /> הוסף ידנית
+                    <PencilIcon className="h-4 w-4" /> הוסף ידנית
+                  </Button>
+                </Link>
+                <Link href="/nutrition/library">
+                  <Button size="sm" variant="secondary">
+                    <DatabaseIcon className="h-4 w-4" /> בחר מהמאגר
                   </Button>
                 </Link>
               </div>
@@ -314,8 +322,41 @@ export function NutritionView() {
         )}
       </section>
 
-      {/* Calm transient confirmation for "הוסף שוב". Fixed above the bottom nav,
-          announced politely. Presentation only — no data is stored here. */}
+      {/* 5 — More tracking: water + supplements, subordinate to food logging. */}
+      <section>
+        <SectionHeader title="מעקבים נוספים" />
+        <div className="space-y-3">
+          <WaterCard title="מעקב מים" />
+          <SupplementsCard />
+        </div>
+      </section>
+
+      {/* 6 — Tools / advanced: protein goal + the full food library. */}
+      <section>
+        <SectionHeader title="כלים נוספים" />
+        <div className="space-y-3">
+          <ProteinCalculator defaultOpen={false} showArticleLink />
+          <Link
+            href="/nutrition/library"
+            className="tap flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-soft transition-[border-color] hover:border-border-strong"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--accent-nutrition-soft)] text-[color:var(--accent-nutrition)]">
+              <DatabaseIcon className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-bold text-foreground">
+                עיון במאגר המלא
+              </span>
+              <span className="block text-[11.5px] leading-snug text-muted">
+                בחר מאכל עם תמונה והוסף ליומן
+              </span>
+            </span>
+          </Link>
+        </div>
+      </section>
+
+      {/* Calm transient confirmation. Fixed above the bottom nav, announced
+          politely. Presentation only — no data is stored here. */}
       <div
         aria-live="polite"
         className="pointer-events-none fixed inset-x-0 z-40 flex justify-center px-4"

@@ -330,6 +330,17 @@ export const SearchIcon = (p: IconProps) =>
     p,
   );
 
+// Camera — the photo-first "סרוק צלחת" affordance. A body with a lens and a
+// small top viewfinder bump; reads as "take a photo", never as video/scan-laser.
+export const CameraIcon = (p: IconProps) =>
+  base(
+    <>
+      <path d="M4 8.5A2 2 0 0 1 6 6.5h1.6l1-1.6a1.5 1.5 0 0 1 1.3-.7h4.2a1.5 1.5 0 0 1 1.3.7l1 1.6H18a2 2 0 0 1 2 2v8A2 2 0 0 1 18 18.5H6a2 2 0 0 1-2-2v-8Z" />
+      <circle cx="12" cy="12.5" r="3.2" />
+    </>,
+    p,
+  );
+
 export const ExpandIcon = (p: IconProps) =>
   base(
     <path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5" />,

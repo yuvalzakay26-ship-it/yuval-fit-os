@@ -10,6 +10,15 @@
 > still lives **only in this device's `localStorage`** (see `lib/storage.ts`).
 > After login, the data is still on this device unless a future phase adds
 > per-user cloud sync.
+>
+> **Nutrition Photo Assist (Phase 3.xx) does not change this.** The photo-scan
+> route (`/api/nutrition/analyze-photo`) sends an image to a server-side vision
+> model **for analysis only** — the image is never stored (no disk/DB/Supabase),
+> and the confirmed draft is saved to the same device-local `yfos:foodLogs`. It
+> uses a **server-only** key (`NUTRITION_AI_API_KEY`/`ANTHROPIC_API_KEY`), never a
+> `NEXT_PUBLIC_*` var. It does **not** touch `BetaAuthGate`, guest, or admin rules;
+> a guest already inside the app may use it when AI is configured. See
+> [`NUTRITION_PHOTO_ASSIST.md`](NUTRITION_PHOTO_ASSIST.md).
 
 ---
 
