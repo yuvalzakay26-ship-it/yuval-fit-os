@@ -4,7 +4,27 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (**Beta Access System**: real access control. A new
+> Last reviewed: Phase 3.xx (**Beta Access Requests**: the Beta Access System
+> gained a self-service request + approval loop. An unapproved signed-in user now
+> sees a **`בקש גישה`** CTA on the denied screen (`BetaAccessDenied`) that files a
+> row in a new **`beta_access_requests`** queue (status `pending`); the screen
+> then shows a calm pending / already-sent / rejected state. Admins see a
+> **`בקשות גישה ממתינות`** section and a `ממתינים` count in `/admin/beta`
+> (`BetaAdminView`) and can **אשר** (approve — atomically writes/reactivates an
+> active `beta_allowed_users` row via the SECURITY DEFINER `approve_beta_request`
+> RPC, marks the request approved), **דחה** (reject — `reject_beta_request` RPC,
+> no access granted), or **מחק**. The request table is a **queue only** —
+> `beta_allowed_users` stays the single source of truth for entry, so a forged
+> request row grants nothing. RLS: a user reads/inserts only their OWN request and
+> only as `pending` (no update/delete), and **cannot self-approve** (status
+> changes are admin-only RPCs that re-check `is_beta_admin()` server-side). Blocked
+> users still see the blocked screen (no request CTA), so they cannot bypass by
+> re-requesting. Enforcement is Row Level Security (`supabase/beta-access.sql`);
+> browser uses only the public anon key; no service-role key. **No fitness data
+> moved to the cloud** — only request/access metadata lives in Supabase. Rerun the
+> SQL to upgrade existing installs (`create table if not exists` + safe
+> `drop/create policy`). See [`BETA_ACCESS_SYSTEM.md`](BETA_ACCESS_SYSTEM.md).)
+> Prior: Phase 3.xx (**Beta Access System**: real access control. A new
 > Supabase-Auth gate (`components/access/BetaAuthGate.tsx`, z-108) sits between
 > the private-access notice and the welcome screen and is now the REAL beta
 > boundary — a user must sign in (Google / email magic link) **and** be on the

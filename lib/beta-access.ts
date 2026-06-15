@@ -44,6 +44,27 @@ export interface AllowedUser {
   last_seen_at: string | null;
 }
 
+/* --------------------------- Access-request model ----------------------- */
+// The request queue (`beta_access_requests`). This is NOT the access boundary —
+// `beta_allowed_users` remains the source of truth. A request only signals to
+// the admin that an unapproved user wants in; approving it writes the active
+// allowed-user row (server-side, via an admin-only RPC).
+
+export type AccessRequestStatus = "pending" | "approved" | "rejected";
+
+export interface AccessRequest {
+  id: string;
+  email: string;
+  status: AccessRequestStatus;
+  display_name: string | null;
+  provider: string | null;
+  notes: string | null;
+  requested_at: string;
+  updated_at: string;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+}
+
 /* ------------------------------ Session store --------------------------- */
 // A single shared subscription to Supabase auth so every consumer (the gate,
 // Settings, the admin link) reflects the same session without each mounting its
@@ -232,6 +253,80 @@ export async function touchLastSeen(): Promise<void> {
   }
 }
 
+/* ------------------------ Access requests (user) ------------------------ */
+// What an unapproved-but-signed-in user can do: read their own request and file
+// one. RLS restricts both to the authenticated email; a user can only ever
+// create a 'pending' row and can never change its status.
+
+/**
+ * Read the current user's OWN access request, if any. Returns null when there
+ * is no request (or Supabase isn't configured). RLS guarantees the result is
+ * the caller's own row only.
+ */
+export async function fetchMyAccessRequest(
+  email: string,
+): Promise<AccessRequest | null> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("beta_access_requests")
+    .select("*")
+    .eq("email", normalizeEmail(email))
+    .maybeSingle();
+  if (error) return null;
+  return (data as AccessRequest) ?? null;
+}
+
+export interface SubmitRequestResult {
+  /** True if a request now exists for this user (created or already present). */
+  ok: boolean;
+  /** True when an identical request already existed (no new row created). */
+  alreadyExists?: boolean;
+  /** Present on hard failure (not-configured / network / unexpected). */
+  error?: string;
+}
+
+/**
+ * File an access request for the CURRENTLY AUTHENTICATED user. The email,
+ * display name and provider are taken from the live Supabase session (never
+ * from client input) so they can't be spoofed; status is always 'pending'
+ * (enforced again by the insert policy). A duplicate (unique-email) insert is
+ * treated as success — the user already has a request.
+ */
+export async function submitAccessRequest(): Promise<SubmitRequestResult> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { ok: false, error: "not-configured" };
+
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user;
+  const email = normalizeEmail(user?.email);
+  if (!email) return { ok: false, error: "not-signed-in" };
+
+  const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
+  const displayName =
+    (typeof meta.full_name === "string" && meta.full_name) ||
+    (typeof meta.name === "string" && meta.name) ||
+    null;
+  const provider =
+    typeof user?.app_metadata?.provider === "string"
+      ? user.app_metadata.provider
+      : null;
+
+  const { error } = await supabase.from("beta_access_requests").insert({
+    email,
+    display_name: displayName,
+    provider,
+    status: "pending",
+  });
+
+  if (error) {
+    // 23505 = unique_violation → a request already exists; treat as success.
+    if (error.code === "23505") return { ok: true, alreadyExists: true };
+    return { ok: false, error: error.message };
+  }
+  return { ok: true };
+}
+
 /* ------------------------- Admin management (RLS) ----------------------- */
 // All of these are additionally guarded by RLS: only an authenticated user
 // whose email is in `beta_admins` can read the full list or mutate rows. A
@@ -284,6 +379,57 @@ export async function deleteAllowedUser(id: string): Promise<void> {
   if (!supabase) throw new Error("not-configured");
   const { error } = await supabase
     .from("beta_allowed_users")
+    .delete()
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+/* ----------------------- Access requests (admin) ------------------------ */
+// Reading and resolving the request queue. All RLS-guarded: only an admin sees
+// the full list, and approve/reject run through SECURITY DEFINER RPCs that
+// re-check admin rights server-side, so a non-admin can approve no one.
+
+/** List every access request, newest first. Admin-only (RLS). */
+export async function listAccessRequests(): Promise<AccessRequest[]> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("beta_access_requests")
+    .select("*")
+    .order("requested_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data as AccessRequest[]) ?? [];
+}
+
+/**
+ * Approve a request: adds/reactivates the user in `beta_allowed_users` as active
+ * and marks the request approved — atomically, server-side. Admin-only.
+ */
+export async function approveAccessRequest(id: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (!supabase) throw new Error("not-configured");
+  const { error } = await supabase.rpc("approve_beta_request", {
+    p_request_id: id,
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Reject a request (does not grant access). Admin-only. */
+export async function rejectAccessRequest(id: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (!supabase) throw new Error("not-configured");
+  const { error } = await supabase.rpc("reject_beta_request", {
+    p_request_id: id,
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Permanently remove a request row. Admin-only (RLS). */
+export async function deleteAccessRequest(id: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (!supabase) throw new Error("not-configured");
+  const { error } = await supabase
+    .from("beta_access_requests")
     .delete()
     .eq("id", id);
   if (error) throw new Error(error.message);

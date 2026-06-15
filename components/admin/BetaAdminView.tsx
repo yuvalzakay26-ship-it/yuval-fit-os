@@ -3,10 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
+  type AccessRequest,
   type AllowedUser,
   addAllowedUser,
+  approveAccessRequest,
+  deleteAccessRequest,
   deleteAllowedUser,
+  listAccessRequests,
   listAllowedUsers,
+  rejectAccessRequest,
   setAllowedUserStatus,
   useBetaAdmin,
 } from "@/lib/beta-access";
@@ -18,11 +23,13 @@ import { cn } from "@/lib/utils";
 import {
   CheckCircleIcon,
   ClockIcon,
+  DoorEnterIcon,
   LockIcon,
   PlusIcon,
   ShieldIcon,
   TrashIcon,
   WarningIcon,
+  XIcon,
 } from "@/components/ui/icons";
 
 /**
@@ -46,6 +53,7 @@ export function BetaAdminView() {
 
 function AdminPanel({ adminEmail }: { adminEmail: string | null }) {
   const [users, setUsers] = useState<AllowedUser[]>([]);
+  const [requests, setRequests] = useState<AccessRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -54,20 +62,23 @@ function AdminPanel({ adminEmail }: { adminEmail: string | null }) {
   // from inside an effect), and from child components after a mutation.
   const refresh = useCallback(() => setReloadKey((k) => k + 1), []);
 
-  // Load the list whenever the reload key changes. All state updates live inside
-  // the promise callbacks so nothing is set synchronously in the effect body.
+  // Load both lists whenever the reload key changes (approving a request also
+  // changes the allowed-users list, so they always reload together). All state
+  // updates live inside the promise callbacks so nothing is set synchronously
+  // in the effect body.
   useEffect(() => {
     let active = true;
-    listAllowedUsers()
-      .then((data) => {
+    Promise.all([listAllowedUsers(), listAccessRequests()])
+      .then(([userRows, requestRows]) => {
         if (active) {
-          setUsers(data);
+          setUsers(userRows);
+          setRequests(requestRows);
           setError(null);
         }
       })
       .catch((err: unknown) => {
         if (active) {
-          setError(err instanceof Error ? err.message : "טעינת המשתמשים נכשלה");
+          setError(err instanceof Error ? err.message : "טעינת הנתונים נכשלה");
         }
       })
       .finally(() => {
@@ -80,6 +91,7 @@ function AdminPanel({ adminEmail }: { adminEmail: string | null }) {
 
   const active = users.filter((u) => u.status === "active");
   const blocked = users.filter((u) => u.status === "blocked");
+  const pendingRequests = requests.filter((r) => r.status === "pending");
 
   return (
     <div className="space-y-8 pb-4">
@@ -100,15 +112,10 @@ function AdminPanel({ adminEmail }: { adminEmail: string | null }) {
         </div>
         <div className="flex flex-wrap gap-2 text-[11.5px] font-semibold">
           <Stat label="מאושרים" value={active.length} />
+          <Stat label="ממתינים" value={pendingRequests.length} tone="pending" />
           <Stat label="חסומים" value={blocked.length} tone="muted" />
         </div>
       </Card>
-
-      <AddUserForm
-        adminEmail={adminEmail}
-        existing={users}
-        onAdded={refresh}
-      />
 
       {error && (
         <p className="flex items-center gap-2 rounded-2xl border border-red-500/30 bg-red-500/[0.06] px-4 py-3 text-[13px] font-semibold text-red-500">
@@ -116,6 +123,31 @@ function AdminPanel({ adminEmail }: { adminEmail: string | null }) {
           {error}
         </p>
       )}
+
+      <section>
+        <SectionHeader title="בקשות גישה ממתינות" accent="#f59e0b" />
+        {loading ? (
+          <ListSkeleton />
+        ) : pendingRequests.length === 0 ? (
+          <EmptyHint text="אין בקשות גישה ממתינות." />
+        ) : (
+          <div className="space-y-2.5">
+            {pendingRequests.map((request) => (
+              <RequestRow
+                key={request.id}
+                request={request}
+                onChanged={refresh}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <AddUserForm
+        adminEmail={adminEmail}
+        existing={users}
+        onAdded={refresh}
+      />
 
       <section>
         <SectionHeader title="משתמשים מאושרים" accent="var(--accent)" />
@@ -393,6 +425,111 @@ function UserRow({
   );
 }
 
+/* ----------------------------- Request row ------------------------------ */
+
+function RequestRow({
+  request,
+  onChanged,
+}: {
+  request: AccessRequest;
+  onChanged: () => Promise<void> | void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+
+  const run = async (action: () => Promise<void>) => {
+    setBusy(true);
+    try {
+      await action();
+      await onChanged();
+    } catch {
+      // Soft-fail inline rather than crashing the whole panel.
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card className="space-y-3 border-amber-500/25">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+          <DoorEnterIcon className="h-[18px] w-[18px]" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <CardTitle dir="ltr" className="truncate text-left">
+            {request.email}
+          </CardTitle>
+          {request.display_name && (
+            <p className="mt-0.5 truncate text-[12.5px] text-muted">
+              {request.display_name}
+            </p>
+          )}
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-faint">
+            <span className="inline-flex items-center gap-1">
+              <ClockIcon className="h-3 w-3" />
+              ביקש {formatDate(request.requested_at)}
+            </span>
+            {request.provider && (
+              <span dir="ltr" className="inline-flex items-center gap-1">
+                {request.provider}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="primary"
+          size="sm"
+          disabled={busy}
+          onClick={() => run(() => approveAccessRequest(request.id))}
+        >
+          <CheckCircleIcon className="h-[16px] w-[16px]" /> אשר
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={busy}
+          onClick={() => run(() => rejectAccessRequest(request.id))}
+        >
+          <XIcon className="h-[16px] w-[16px]" /> דחה
+        </Button>
+
+        {confirmRemove ? (
+          <>
+            <Button
+              variant="danger"
+              size="sm"
+              disabled={busy}
+              onClick={() => run(() => deleteAccessRequest(request.id))}
+            >
+              <TrashIcon className="h-[16px] w-[16px]" /> כן, מחק
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={busy}
+              onClick={() => setConfirmRemove(false)}
+            >
+              ביטול
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={busy}
+            onClick={() => setConfirmRemove(true)}
+            className="text-red-500"
+          >
+            <TrashIcon className="h-[16px] w-[16px]" /> מחק
+          </Button>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 /* ------------------------------ Sub-states ------------------------------ */
 
 function Stat({
@@ -402,14 +539,16 @@ function Stat({
 }: {
   label: string;
   value: number;
-  tone?: "accent" | "muted";
+  tone?: "accent" | "muted" | "pending";
 }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1">
       <span
         className={cn(
           "tabular-nums font-bold",
-          tone === "accent" ? "text-accent" : "text-muted",
+          tone === "accent" && "text-accent",
+          tone === "muted" && "text-muted",
+          tone === "pending" && "text-amber-500",
         )}
       >
         {value}

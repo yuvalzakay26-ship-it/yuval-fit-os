@@ -38,6 +38,30 @@ PrivateAccessNotice  (z-110)  → existing per-session private notice
 Like the other gates, the app shell is always mounted underneath (instant entry,
 no remount); overlays are `fixed` + scroll-locked and ordered by z-index.
 
+### Approved users vs access requests
+There are two separate concepts — don't conflate them:
+
+- **`beta_allowed_users`** is the **source of truth** for entering the app. The
+  gate reads *only* this table. `active` → in, `blocked` → blocked, absent → denied.
+- **`beta_access_requests`** is a **request queue**. An unapproved user files a
+  request here so the admin can see them; a row here **never grants access by
+  itself**. Approving a request is what writes the `active` row into
+  `beta_allowed_users`.
+
+### Request-access flow (denied screen)
+When a signed-in user is **not approved** (the `denied` variant only — never
+`blocked`, never `error`), `BetaAccessDenied` shows a request panel:
+
+- **No request yet** → a **`בקש גישה`** button. Clicking it files a `pending`
+  request for the authenticated email (taken from the live session, never typed)
+  and shows **`הבקשה נשלחה`** / "האדמין יוכל לאשר אותך מתוך מערכת הניהול."
+- **A request already exists** (loaded on mount) → **`כבר נשלחה בקשת גישה`** /
+  "נעדכן אותך לאחר אישור האדמין."
+- **Rejected** → **`הבקשה נדחתה`** / "אפשר לפנות ליובל אם לדעתך זו טעות." (no
+  auto re-request — calm, no spam).
+- **Blocked** users see the **blocked** screen, which has **no** request button,
+  so they cannot bypass a block by repeatedly requesting access.
+
 ### The legacy admin code gate
 The old client-side admin access-code gate (`yuvalzakay123`,
 `components/access/AdminAccessCodeGate.tsx` + `lib/admin-access.ts`) is **no
@@ -92,6 +116,26 @@ Supabase SQL editor. It creates:
     (`auth.jwt() ->> 'email'`), so it can't be spoofed.
 - **`touch_beta_last_seen()`** — a `SECURITY DEFINER` RPC that updates only the
   caller's `last_seen_at`, so tracking works without granting a broad UPDATE.
+- **`beta_access_requests`** — the access-request queue: `id, email (unique),
+  status ('pending'|'approved'|'rejected'), display_name, provider, notes,
+  requested_at, updated_at, reviewed_at, reviewed_by`. Indexes on `email`
+  (unique) and `status`; a trigger normalizes `email`/`reviewed_by` and maintains
+  `updated_at`.
+  - **RLS** (enabled): a user can read **only their own** request and may
+    **insert only** a request for their own email **and only with status
+    `pending`** — they have **no** update/delete policy, so they can never flip
+    their own request to `approved` (and even if they could, the gate ignores this
+    table). Admins can **read all** requests and **delete** them.
+  - **`approve_beta_request(p_request_id)`** — `SECURITY DEFINER`, admin-only
+    (re-checks `is_beta_admin()`). Atomically upserts the user into
+    `beta_allowed_users` as `active` (reactivating a previously-blocked user,
+    `added_by` = admin, notes "Approved from access request") **and** marks the
+    request `approved` with `reviewed_at`/`reviewed_by`.
+  - **`reject_beta_request(p_request_id)`** — `SECURITY DEFINER`, admin-only.
+    Marks the request `rejected`; does **not** add the user to
+    `beta_allowed_users`.
+  - Because status changes go only through these admin-only RPCs, a non-admin
+    **cannot approve anyone — including themselves.**
 
 ### Email normalization
 Emails are always compared and stored **trimmed + lowercased** — in the client
@@ -111,6 +155,9 @@ Emails are always compared and stored **trimmed + lowercased** — in the client
 3. **Add env vars** to local `.env.local` and to Vercel (the two `NEXT_PUBLIC_*`
    values above).
 4. **Run the SQL**: paste `supabase/beta-access.sql` into the SQL editor and run.
+   It is **idempotent** — safe to rerun to upgrade an existing project (it uses
+   `create table if not exists` + `drop policy if exists` / `create policy`), so
+   installs that predate the access-request queue just need a rerun.
 5. **Insert the first admin** (SQL editor — see the bottom of the SQL file):
    ```sql
    insert into public.beta_admins (email)
@@ -132,10 +179,19 @@ renders for admins (verified against `beta_admins`); every operation is **also**
 RLS-guarded, so a non-admin who reaches the route sees no data and can mutate
 nothing. Capabilities:
 
+- Summary chips: **מאושרים** / **ממתינים** / **חסומים** counts.
+- **`בקשות גישה ממתינות`** — pending access requests (email, display name,
+  request date, provider) with **אשר** (approve → adds/reactivates the user as
+  active and marks the request approved), **דחה** (reject), and **מחק** (delete,
+  inline confirm).
 - View approved + blocked users (with `created_at` and `last_seen_at`).
-- **Add** an email (with optional display name / notes) → approves it.
+- **Add** an email manually (with optional display name / notes) → approves it.
 - **Block** / **Reactivate** a user.
 - **Remove** a user (with inline confirm).
+
+> Approving a request whose email was previously **blocked** reactivates them to
+> `active` (the admin's explicit click is the intent). Existing display name on
+> the allowed row is preserved.
 
 ---
 
@@ -179,18 +235,33 @@ layers (it spawns its own `next start` with controlled env):
 - **Gate disabled** (`NEXT_PUBLIC_BETA_DISABLE_GATE=1`): the app shell is
   reachable — confirming the testing seam that lets the rest of the QA harness
   run.
+- **Signed-in unapproved → request access**: with a seeded session + a mocked
+  Supabase backend (no row in `beta_allowed_users` / no request), the **denied
+  screen** shows the **`בקש גישה`** CTA, and filing a request shows the
+  **`הבקשה נשלחה`** success state — verified at 360/390 in light + dark with no
+  overflow and no console errors.
 
 > Running the **other** QA scripts (`qa-settings.mjs`, etc.) against a build
 > without Supabase now requires `NEXT_PUBLIC_BETA_DISABLE_GATE=1` so they can
 > reach app screens past the real gate.
 
 ### Manual QA with a real Supabase project
-1. Configure env + run the SQL + insert the first admin (above).
+1. Configure env + **rerun** `supabase/beta-access.sql` + insert the first admin
+   (above). The rerun adds the `beta_access_requests` table/policies/RPCs.
 2. Sign in as the admin → you reach the app and see "ניהול בטא".
-3. Add a test email in the panel; sign in as that user (Google/magic link) → app.
-4. Block that user in the panel → on their next load they see the denied screen.
-5. Sign in with a never-approved email → denied screen.
-6. Confirm local data (a workout, a water log) persists across sign-out (keep) and
+3. **Request flow**: sign in with a **never-approved** Google account → denied
+   screen → tap **`בקש גישה`** → **`הבקשה נשלחה`**. Reload → **`כבר נשלחה בקשת
+   גישה`** (no duplicate row).
+4. Sign in as the admin → `/admin/beta` shows the request under **בקשות גישה
+   ממתינות** with a `ממתינים` count.
+5. Tap **אשר** → the user appears under approved users; sign in again as that user
+   (or refresh) → they enter the app.
+6. Repeat with another account and tap **דחה** → the user stays denied and (on
+   their denied screen) sees **`הבקשה נדחתה`**.
+7. **Block bypass**: block a user, then as that user confirm the **blocked**
+   screen has **no** `בקש גישה` button.
+8. Add a test email manually in the panel; sign in as that user → app.
+9. Confirm local data (a workout, a water log) persists across sign-out (keep) and
    that "sign out and clear" wipes local fitness data only.
 
 ---

@@ -23,7 +23,10 @@ reads `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` (public anon
 key only — never the service-role key). The app **builds and runs with no env
 vars** — missing config fails closed in production and shows a dev setup screen
 locally. For local work without Supabase, set `NEXT_PUBLIC_BETA_DISABLE_GATE=1`
-(testing-only) to open the app. See
+(testing-only) to open the app. Unapproved users can self-serve via the **access
+request** flow (`בקש גישה` on the denied screen → `beta_access_requests` queue →
+admin approves in `/admin/beta`); the queue never grants access on its own —
+`beta_allowed_users` stays the source of truth. See
 [`BETA_ACCESS_SYSTEM.md`](BETA_ACCESS_SYSTEM.md) and `.env.local.example`.
 
 > ⚠️ **This is not a stock Next.js.** APIs/conventions may differ from what you
@@ -58,6 +61,7 @@ lib/
   admin-access.ts       legacy admin access-code gate state (dev fallback, unused in chain)
   supabase/client.ts    browser Supabase client + isSupabaseConfigured() (anon key only)
   beta-access.ts        beta auth/session hooks + approved-email + admin checks + admin CRUD
+                        + access-request queue (submit/list/approve/reject)
   seed-exercises.ts     133-exercise library + Hebrew labels
   seed-templates.ts     starter workout templates
   food-library.ts       static food catalogue

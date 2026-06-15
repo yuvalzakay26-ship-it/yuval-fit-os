@@ -55,6 +55,60 @@ const seedGates = () => {
   } catch {}
 };
 
+// A signed-in (but unapproved) Supabase session for the dummy host, written to
+// the SDK's storage key (`sb-<ref>-auth-token`, ref = first label of the host).
+// Far-future expiry so the client never tries to refresh over the network.
+const SESSION_STORAGE_KEY = `sb-${DUMMY_HOST.split(".")[0]}-auth-token`;
+const FAKE_USER = {
+  id: "00000000-0000-0000-0000-000000000000",
+  aud: "authenticated",
+  role: "authenticated",
+  email: "qa-unapproved@example.com",
+  app_metadata: { provider: "email", providers: ["email"] },
+  user_metadata: { full_name: "QA Tester" },
+  created_at: "2024-01-01T00:00:00.000Z",
+};
+const seedSession = ({ key, user }) => {
+  try {
+    const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365;
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        access_token: "qa.fake.jwt",
+        token_type: "bearer",
+        expires_in: 3600,
+        expires_at: expiresAt,
+        refresh_token: "qa-fake-refresh",
+        user,
+      }),
+    );
+  } catch {}
+};
+
+// Mock the Supabase backend so the gate resolves to "signed in, not approved,
+// no request" and an access-request insert succeeds. `maybeSingle()` fetches as
+// a list, so an empty array means "no row".
+async function mockSupabase(ctx) {
+  await ctx.route("**/rest/v1/beta_allowed_users**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
+  await ctx.route("**/rest/v1/beta_admins**", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
+  await ctx.route("**/rest/v1/beta_access_requests**", (route) =>
+    route.request().method() === "POST"
+      ? route.fulfill({ status: 201, contentType: "application/json", body: "[]" })
+      : route.fulfill({ status: 200, contentType: "application/json", body: "[]" }),
+  );
+  await ctx.route("**/auth/v1/user**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(FAKE_USER),
+    }),
+  );
+}
+
 function buildWith(env) {
   return new Promise((resolve, reject) => {
     const proc = spawn(process.execPath, [NEXT_BIN, "build"], {
@@ -105,8 +159,10 @@ async function stopServer(proc) {
 }
 
 // Drive a fresh browser context across the mobile widths/themes for one page,
-// running the supplied per-page assertions. Returns collected console errors.
-async function forEachViewport(browser, path, label, assertFn) {
+// running the supplied per-page assertions. An optional `setup(ctx)` runs after
+// the gate seed and before the page opens (used to seed a session + mock the
+// Supabase backend). Returns collected console errors.
+async function forEachViewport(browser, path, label, assertFn, setup) {
   const errors = [];
   for (const scheme of ["dark", "light"]) {
     for (const width of [360, 390]) {
@@ -118,6 +174,7 @@ async function forEachViewport(browser, path, label, assertFn) {
         colorScheme: scheme,
       });
       await ctx.addInitScript(seedGates);
+      if (setup) await setup(ctx);
       const page = await ctx.newPage();
       const tag = `${label} ${scheme}/${width}`;
       page.on("console", (m) => {
@@ -205,6 +262,45 @@ try {
     });
     allConsole.push(...errs);
   }
+
+  /* ----- Scenario 2b: signed-in but unapproved → denied + request access ----- */
+  console.log("\n=== Scenario 2b: signed-in unapproved — denied screen + בקש גישה ===");
+  {
+    const errs = await forEachViewport(
+      browser,
+      "/",
+      "request",
+      async (page, tag, shot) => {
+        // The denied screen (not the sign-in screen) is shown.
+        check(
+          `[${tag}] denied heading visible`,
+          await page.getByRole("heading", { name: "אין לך גישה לבטא כרגע" }).isVisible(),
+        );
+        // The request-access CTA is offered (no request exists yet).
+        const requestBtn = page.getByRole("button", { name: /בקש גישה/ });
+        check(`[${tag}] "בקש גישה" button visible`, await requestBtn.isVisible());
+
+        // Filing a request shows the success state (the request is mocked, so
+        // give the getUser + insert round-trip a moment to resolve).
+        await requestBtn.click();
+        const sent = page.getByText("הבקשה נשלחה");
+        await sent.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+        check(`[${tag}] success state after request`, await sent.isVisible());
+        if (shot) {
+          await page.screenshot({ path: `${OUT}/beta-request-sent.png`, fullPage: true });
+        }
+      },
+      async (ctx) => {
+        await ctx.addInitScript(seedSession, {
+          key: SESSION_STORAGE_KEY,
+          user: FAKE_USER,
+        });
+        await mockSupabase(ctx);
+      },
+    );
+    allConsole.push(...errs);
+  }
+
   await stopServer(server);
 
   /* ============================ Scenario 3 ============================ */

@@ -1,8 +1,21 @@
 "use client";
 
-import { useId, useState } from "react";
-import { signOut } from "@/lib/beta-access";
-import { LockIcon, ShieldIcon, WarningIcon } from "@/components/ui/icons";
+import { useEffect, useId, useState } from "react";
+import {
+  type AccessRequest,
+  fetchMyAccessRequest,
+  signOut,
+  submitAccessRequest,
+} from "@/lib/beta-access";
+import {
+  CheckCircleIcon,
+  ClockIcon,
+  DoorEnterIcon,
+  LockIcon,
+  ShieldIcon,
+  WarningIcon,
+} from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 
 /**
  * Full-screen "no beta access" overlay. Shown to a signed-in user whose email
@@ -107,6 +120,10 @@ export function BetaAccessDenied({
             </div>
           )}
 
+          {/* Request access — only for plain "not approved" (never for blocked,
+              which must not be bypassable, nor for a transient error). */}
+          {variant === "denied" && <RequestAccessPanel email={email} />}
+
           <button
             type="button"
             onClick={handleSignOut}
@@ -134,13 +151,165 @@ export function BetaAccessDenied({
   );
 }
 
+/* --------------------------- Request access panel ----------------------- */
+// Shown under the "not approved" screen. Loads the user's existing request (if
+// any) then offers a single "בקש גישה" CTA, or a calm status when a request
+// already exists / was just sent / was rejected. The submitted email is taken
+// from the live session inside submitAccessRequest, never from this component.
+
+type RequestView =
+  | { kind: "loading" }
+  | { kind: "none" }
+  | { kind: "sent" } // just submitted in this session
+  | { kind: "pending" } // a request already existed on load
+  | { kind: "approved" }
+  | { kind: "rejected" };
+
+function RequestAccessPanel({ email }: { email: string | null }) {
+  const [view, setView] = useState<RequestView>({ kind: "loading" });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load any existing request for this email once. The denied screen only mounts
+  // for a signed-in user, so `email` is present; state is set only inside the
+  // async callback so nothing renders synchronously from the effect body.
+  useEffect(() => {
+    if (!email) return;
+    let active = true;
+    void fetchMyAccessRequest(email).then((req) => {
+      if (!active) return;
+      setView(viewForRequest(req));
+    });
+    return () => {
+      active = false;
+    };
+  }, [email]);
+
+  const handleRequest = async () => {
+    setError(null);
+    setBusy(true);
+    const result = await submitAccessRequest();
+    setBusy(false);
+    if (!result.ok) {
+      setError(
+        result.error === "not-configured"
+          ? "מערכת הגישה אינה מוקנפגת."
+          : "שליחת הבקשה נכשלה. נסה שוב בעוד רגע.",
+      );
+      return;
+    }
+    setView({ kind: result.alreadyExists ? "pending" : "sent" });
+  };
+
+  if (view.kind === "loading") {
+    return (
+      <div className="mt-6 flex items-center justify-center">
+        <span
+          aria-hidden="true"
+          className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-accent"
+        />
+      </div>
+    );
+  }
+
+  // No request yet → the call-to-action button.
+  if (view.kind === "none") {
+    return (
+      <div className="mt-6">
+        <button
+          type="button"
+          onClick={handleRequest}
+          disabled={busy}
+          className="tap flex h-14 w-full items-center justify-center gap-2 rounded-2xl brand-gradient text-[15px] font-bold text-[color:var(--accent-contrast)] shadow-glow outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--ring)] disabled:opacity-60"
+        >
+          <DoorEnterIcon className="h-[18px] w-[18px]" />
+          {busy ? "שולח…" : "בקש גישה"}
+        </button>
+        {error && (
+          <p
+            role="alert"
+            className="mt-3 flex items-center justify-center gap-1.5 text-center text-[13px] font-semibold text-red-500"
+          >
+            <WarningIcon className="h-4 w-4 shrink-0" />
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // A request exists (or was just sent) → calm status box.
+  const status = REQUEST_STATUS_COPY[view.kind];
+  return (
+    <div
+      className="mt-6 flex items-start gap-2.5 rounded-2xl border border-border bg-surface-2/70 px-4 py-3.5 text-right"
+    >
+      <span
+        className={cn(
+          "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl",
+          status.tone === "rejected"
+            ? "bg-red-500/10 text-red-500"
+            : "bg-[color:var(--accent-soft)] text-accent",
+        )}
+      >
+        {status.tone === "rejected" ? (
+          <WarningIcon className="h-[16px] w-[16px]" />
+        ) : view.kind === "pending" ? (
+          <ClockIcon className="h-[16px] w-[16px]" />
+        ) : (
+          <CheckCircleIcon className="h-[16px] w-[16px]" filled />
+        )}
+      </span>
+      <div className="min-w-0">
+        <p className="text-[13.5px] font-bold text-foreground">{status.title}</p>
+        <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">
+          {status.body}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function viewForRequest(req: AccessRequest | null): RequestView {
+  if (!req) return { kind: "none" };
+  if (req.status === "rejected") return { kind: "rejected" };
+  if (req.status === "approved") return { kind: "approved" };
+  return { kind: "pending" };
+}
+
+const REQUEST_STATUS_COPY: Record<
+  "sent" | "pending" | "approved" | "rejected",
+  { title: string; body: string; tone: "accent" | "rejected" }
+> = {
+  sent: {
+    title: "הבקשה נשלחה",
+    body: "האדמין יוכל לאשר אותך מתוך מערכת הניהול.",
+    tone: "accent",
+  },
+  pending: {
+    title: "כבר נשלחה בקשת גישה",
+    body: "נעדכן אותך לאחר אישור האדמין.",
+    tone: "accent",
+  },
+  approved: {
+    title: "הבקשה אושרה",
+    body: "התחבר מחדש או רענן את הדף כדי להיכנס.",
+    tone: "accent",
+  },
+  rejected: {
+    title: "הבקשה נדחתה",
+    body: "אפשר לפנות ליובל אם לדעתך זו טעות.",
+    tone: "rejected",
+  },
+};
+
 const COPY: Record<
   "denied" | "blocked" | "error",
   { title: string; body: string }
 > = {
   denied: {
     title: "אין לך גישה לבטא כרגע",
-    body: "המערכת פתוחה כרגע רק למשתמשים שאושרו מראש. אם קיבלת הזמנה, ודא שהתחברת עם האימייל שאושר.",
+    body: "המערכת פתוחה כרגע רק למשתמשים שאושרו מראש. אפשר לשלוח בקשת גישה לאדמין.",
   },
   blocked: {
     title: "הגישה שלך לבטא הושהתה",
