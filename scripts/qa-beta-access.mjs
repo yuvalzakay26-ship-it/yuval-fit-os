@@ -45,9 +45,14 @@ const noOverflow = (page) =>
   );
 
 // Seed the private-access + welcome gates so only the beta gate is under test.
+// Both welcome notices are dismissed: the original onboarding welcome
+// (`yfos:welcome-seen:v1`) AND the newer Beta Welcome Notice
+// (`yfos:beta-welcome-seen:v1`); otherwise the latter's overlay (z-104) sits on
+// top of non-overlay pages (e.g. Settings) and intercepts clicks.
 const seedGates = () => {
   try {
     localStorage.setItem("yfos:welcome-seen:v1", "1");
+    localStorage.setItem("yfos:beta-welcome-seen:v1", "1");
     sessionStorage.setItem(
       "yfos:private-access-notice-accepted:session",
       "1",
