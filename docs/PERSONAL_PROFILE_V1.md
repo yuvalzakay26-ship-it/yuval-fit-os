@@ -551,3 +551,141 @@ heavier parallel suite), `docs/PERSONAL_PROFILE_V1.md`, `docs/PROJECT_STATE.md`.
 - `npm run lint`, `npm run build`, and `npm run test:e2e` all pass — **93 e2e specs
   green** (a latent race in `nutrition-photo.spec.ts`, surfaced by the heavier
   parallel suite, was hardened in the same change).
+
+---
+
+# V4 — Required core wizard answers (prevent empty profiles)
+
+V4 is a **validation / UX change only**. It does **not** touch the profile schema,
+the stored fields, their meanings, `yfos:personal-profile:v1`, backup/restore, the
+onboarding session gating, or the beta-welcome ordering. Everything in
+V1/V2/V3 above still holds. It fixes one problem: in the V3 wizard a user could
+press **"הבא"** repeatedly without answering anything, reach the summary, and save
+an empty / almost-empty profile that carries no useful detail for future
+recommendations.
+
+## The product rule
+
+The profile onboarding stays **optional at the app-entry level** — the first modal
+still offers **"לא עכשיו"**, and the wizard intro still offers **"דלג בינתיים"**.
+But **once the user clicks "בוא נתחיל" / "התחל" and is inside the questionnaire**,
+the **core training questions are required** before they can advance, so we never
+store a useless profile. Personal / sensitive fields stay optional.
+
+## Required vs optional
+
+**Required core steps** — **"הבא"** is disabled until an answer is selected:
+
+| # (code index) | Field | Question |
+| --- | --- | --- |
+| 0 | `goal` | מה המטרה המרכזית שלך? |
+| 1 | `location` | איפה אתה מתאמן בדרך כלל? |
+| 2 | `weeklyFrequency` | כמה פעמים בשבוע תרצה להתאמן? |
+| 3 | `workoutDuration` | כמה זמן יש לך לאימון? |
+| 4 | `experience` | מה רמת הניסיון שלך? |
+| 5 | `equipment` | איזה ציוד זמין לך? (**multi-select — at least one option**) |
+| 7 | `trainingPreference` | איזה סגנון אימון מתאים לך יותר? |
+| 8 | `guidanceStyle` | איך תרצה להתחיל? |
+
+**Optional steps** — never block; **"הבא"** stays enabled and they can be passed
+empty:
+
+- **Step 6 — Personal adaptation:** `adaptation` (מין / התאמה), `age` (גיל),
+  `heightCm` (גובה), `weightKg` (משקל).
+- **Step 9 — Notes:** "יש משהו שכדאי לקחת בחשבון?" (`notes`).
+
+### Why body-related fields stay optional
+
+Sex/adaptation, age, height, and weight are **personal and sensitive**, and they
+are **not needed** to build a workout direction or recommendation — goal, location,
+frequency, duration, experience, equipment, style, and guidance preference are. The
+product direction explicitly avoids body pressure: **no BMI, no body-shape labels,
+no "תקין/לא תקין", no medical/diet logic, no judgmental copy.** Requiring weight or
+age would add pressure for zero personalization benefit, so they remain optional by
+design. Notes also stay optional (free text, stored verbatim, never acted on).
+
+### "לא בטוח" / "לא בטוח עדיין" count as answers
+
+Where an option list offers an "unsure" choice — `equipment` → "לא בטוח",
+`weeklyFrequency` / `trainingPreference` / `guidanceStyle` → "לא בטוח עדיין" — that
+choice is a **valid answer** and unblocks the step. The goal is a meaningful
+response, not pressure: the user is never stuck.
+
+## Validation behaviour (preferred UX)
+
+- **Disabled "הבא".** On a required step, the primary button is **disabled** (using
+  the design system's existing `disabled:opacity-50` state — no harsh red) until an
+  answer is selected. Multi-select equipment needs **≥ 1** option.
+- **Calm helper under the question.** Required-but-unanswered shows a muted
+  **"בחר תשובה כדי להמשיך"**; optional steps show
+  **"השלב הזה אופציונלי ואפשר להמשיך גם בלי למלא."** No scary validation language.
+- **Defensive guard in `goNext`.** Even if the disabled state is bypassed, a
+  required step with no answer will not advance.
+- **Summary reachable only when complete.** Because each required step gates
+  advancing, the summary is only reachable once all required core answers exist.
+- **Defensive pre-save check.** `handleSave` runs `firstMissingRequiredStep(draft)`
+  before writing. If anything is missing (e.g. an **older saved profile** lacking the
+  now-required `trainingPreference` / `guidanceStyle`), it shows the calm notice
+  **"חסרות כמה תשובות בסיסיות לפני שמירת הפרופיל."** and **jumps the user back to the
+  first missing required step** instead of saving. An empty profile can never be
+  saved.
+
+## Skip / navigation
+
+- **"דלג בינתיים" stays only at the intro / create-mode entry point** (and the
+  app-entry modal's "לא עכשיו"). Skipping before starting leaves the app fully usable
+  with no profile.
+- **Inside the questionnaire there is no per-step skip** — navigation is **back /
+  next only** (the previous per-step and summary "דלג בינתיים" buttons were removed),
+  so required steps actually gate progress. Optional steps are simply passed with
+  "הבא".
+
+## Edit behaviour (older data)
+
+A saved profile that predates the newly-required fields still **renders its summary
+as usual** (the saved view shows whatever it has — never crashes, never erases). When
+the user taps **"ערוך פרופיל"**, the wizard guides them to complete the missing
+required fields: they cannot advance past a now-required step that has no answer, and
+the defensive pre-save check backstops the summary. Existing data is preserved.
+
+## V4 — what stayed unchanged
+
+`yfos:personal-profile:v1`, the profile schema / field names / field meanings, the
+sanitizer and `savePersonalProfile`/`getPersonalProfile`/`clearPersonalProfile`,
+backup/restore (`personalProfile` module, `backupVersion` 1), the onboarding session
+gating, the beta-welcome ordering/flow, the profile onboarding modal gating,
+sessionStorage keys, the More/Workouts entry points, auth/beta/guest/admin/Supabase,
+AI routes, public info pages, and all Today/Nutrition/Workouts/Water/Supplement/
+Protein layouts and celebrations. **No schema, storage, or backup change** — this is
+purely a validation/UX layer in `TrainingProfileView.tsx`. No new dependencies. No
+BMI, no body-shape labels, no medical/diet logic were added.
+
+## V4 files
+
+**Modified:** `components/profile/TrainingProfileView.tsx` (required-step model,
+disabled "הבא", calm hints, defensive `goNext` + `handleSave`, removed per-step /
+summary skip), `e2e/training-profile.spec.ts` (new required-gate / equipment-≥1 /
+"לא בטוח" / optional-pass / edit-missing-fields tests; existing flows updated to
+answer required steps), `docs/PERSONAL_PROFILE_V1.md`, `docs/PROJECT_STATE.md`.
+
+## V4 manual QA notes (360 px / 390 px)
+
+- On every required step (goal, location, frequency, duration, experience, equipment,
+  training preference, guidance style) **"הבא"** is clearly disabled with a muted
+  **"בחר תשובה כדי להמשיך"** until an answer is chosen; selecting one enables it and
+  clears the hint. Verified with no overflow at 360 px and 390 px.
+- Equipment requires at least one option; deselecting the last option re-disables
+  "הבא"; choosing **"לא בטוח"** counts and unblocks. "לא בטוח עדיין" likewise counts
+  on the frequency / style / guidance steps.
+- The optional personal step and notes step show the calm optional hint and advance
+  while empty.
+- The summary is only reachable after all required answers exist; **"שמור פרופיל"**
+  on an incomplete draft shows the calm fallback and returns to the first missing
+  step. An empty profile cannot be saved.
+- An existing saved profile still renders its summary; editing an older profile
+  missing the now-required style/guidance steps guides the user to fill them before
+  saving, with no crash and no data loss.
+- **"דלג בינתיים"** appears only at the intro; inside the wizard navigation is
+  back/next only.
+- `npm run lint`, `npm run build`, and `npm run test:e2e` all pass — **96 e2e specs
+  green**.

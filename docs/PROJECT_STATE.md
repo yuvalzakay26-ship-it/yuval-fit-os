@@ -4,7 +4,34 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 4.3 (**Profile Onboarding V3 (UX) — premium modal + step
+> Last reviewed: Phase 4.4 (**Profile Wizard V4 — required core answers**: a
+> **validation/UX-only** change to `components/profile/TrainingProfileView.tsx` —
+> **no** change to the profile schema/fields/meanings, `yfos:personal-profile:v1`,
+> the sanitizer, backup/restore, the onboarding session gating, sessionStorage keys,
+> or the beta-welcome ordering. Fixes the V3 hole where pressing **"הבא"** repeatedly
+> with no answers reached the summary and saved an empty profile. The onboarding
+> stays optional at app-entry (modal "לא עכשיו"; intro "דלג בינתיים"), but **once
+> inside the wizard the core training questions are required**: **"הבא"** is disabled
+> until an answer is selected on goal · location · frequency · duration · experience ·
+> equipment(**≥1**) · training-preference · guidance, with a calm muted hint
+> **"בחר תשובה כדי להמשיך"**; "לא בטוח"/"לא בטוח עדיין" count as valid answers. The
+> **personal-adaptation** step (sex/adaptation · age · height · weight) and the
+> **notes** step stay **optional** (hint "השלב הזה אופציונלי…") — body-related fields
+> remain optional by design (sensitive, not needed for recommendations; **no BMI, no
+> body-shape labels, no medical/diet logic**). The summary is reachable only when all
+> required answers exist; `handleSave` defensively runs `firstMissingRequiredStep`
+> and, if anything is missing (e.g. an older profile lacking the now-required
+> trainingPreference/guidanceStyle), shows **"חסרות כמה תשובות בסיסיות לפני שמירת
+> הפרופיל."** and jumps back to the first missing step — an empty profile can never be
+> saved. Per-step and summary "דלג בינתיים" were removed (skip stays only at the
+> intro); inside the wizard it's back/next only. Editing an older profile guides the
+> user to complete missing required fields with no crash / no data loss. e2e:
+> `training-profile.spec.ts` gained required-gate, equipment-≥1, "לא בטוח",
+> optional-pass, and edit-missing-fields tests; existing flows updated to answer
+> required steps — full suite **96 green**. See
+> [`PERSONAL_PROFILE_V1.md`](PERSONAL_PROFILE_V1.md) ("V4 — Required core wizard
+> answers").)
+> Prior: Phase 4.3 (**Profile Onboarding V3 (UX) — premium modal + step
 > wizard**: a presentation-only upgrade of the onboarding — **no** change to the
 > profile schema/fields/meanings, `yfos:personal-profile:v1`, the sanitizer,
 > backup/restore, the onboarding **session** gating, or the beta-welcome ordering.

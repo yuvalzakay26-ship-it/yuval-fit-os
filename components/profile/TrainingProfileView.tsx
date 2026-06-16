@@ -182,46 +182,99 @@ function MultiChoiceGroup({
 /* ------------------------------ Wizard model ---------------------------- */
 // The onboarding is a guided, one-question-per-screen flow. STEPS holds the ten
 // question screens (indices 0–9) plus a final summary/confirm screen (index 10),
-// so the progress indicator and navigation are data-driven. Every answer is
-// OPTIONAL — "הבא" is always enabled; the user can advance without choosing.
+// so the progress indicator and navigation are data-driven.
+//
+// Required vs optional: the profile onboarding stays optional at the app-entry
+// level (the first modal still offers "לא עכשיו" and the intro still offers
+// "דלג בינתיים"). But once the user is INSIDE the questionnaire, the core
+// training questions are REQUIRED so we never store an empty / useless profile.
+// `required: true` steps gate "הבא" until an answer is chosen; the personal
+// adaptation step (6) and the notes step (9) stay optional and never block.
+// Body-related fields (sex/adaptation, age, height, weight) remain optional by
+// design — they are personal/sensitive and are not needed for recommendations;
+// no BMI, no body-shape labels, no medical/diet logic.
 
 interface StepMeta {
   icon: IconCmp;
   title: string;
   helper?: string;
+  /** Core training questions that must be answered before advancing. */
+  required?: boolean;
 }
 
 const STEPS: readonly StepMeta[] = [
-  { icon: TargetIcon, title: "מה המטרה המרכזית שלך?" }, // 0 goal
-  { icon: HomeIcon, title: "איפה אתה מתאמן בדרך כלל?" }, // 1 location
-  { icon: CalendarIcon, title: "כמה פעמים בשבוע תרצה להתאמן?" }, // 2 frequency
-  { icon: ClockIcon, title: "כמה זמן יש לך לאימון?" }, // 3 duration
-  { icon: ChartIcon, title: "מה רמת הניסיון שלך?" }, // 4 experience
+  { icon: TargetIcon, title: "מה המטרה המרכזית שלך?", required: true }, // 0 goal
+  { icon: HomeIcon, title: "איפה אתה מתאמן בדרך כלל?", required: true }, // 1 location
+  { icon: CalendarIcon, title: "כמה פעמים בשבוע תרצה להתאמן?", required: true }, // 2 frequency
+  { icon: ClockIcon, title: "כמה זמן יש לך לאימון?", required: true }, // 3 duration
+  { icon: ChartIcon, title: "מה רמת הניסיון שלך?", required: true }, // 4 experience
   {
     icon: DumbbellIcon,
     title: "איזה ציוד זמין לך?",
     helper: "אפשר לבחור כמה אפשרויות.",
-  }, // 5 equipment
+    required: true,
+  }, // 5 equipment (multi-select, ≥1)
   {
     icon: HeartIcon,
     title: "התאמה אישית — אופציונלי",
     helper:
       "כל השדות כאן אופציונליים לגמרי. נועדו רק כדי להתאים את החוויה — לא לשיפוט ולא לשום חישוב רפואי.",
-  }, // 6 personal
-  { icon: BoltIcon, title: "איזה סגנון אימון מתאים לך יותר?" }, // 7 trainingPreference
-  { icon: SparkIcon, title: "איך תרצה להתחיל?" }, // 8 guidanceStyle
+  }, // 6 personal (optional)
+  { icon: BoltIcon, title: "איזה סגנון אימון מתאים לך יותר?", required: true }, // 7 trainingPreference
+  { icon: SparkIcon, title: "איך תרצה להתחיל?", required: true }, // 8 guidanceStyle
   {
     icon: PencilIcon,
     title: "יש משהו שכדאי לקחת בחשבון?",
     helper:
       "לדוגמה: זמן מוגבל, תרגילים שפחות מתאימים לך, חוסר ניסיון או העדפה מסוימת.",
-  }, // 9 notes
+  }, // 9 notes (optional)
   { icon: CheckIcon, title: "סיכום" }, // 10 summary
 ] as const;
 
 const TOTAL_STEPS = STEPS.length; // 11
 const LAST_QUESTION_INDEX = STEPS.length - 2; // 9 (notes)
 const SUMMARY_INDEX = STEPS.length - 1; // 10
+
+/** Indices of the required core steps, in order — used to gate navigation and to
+ *  defensively validate before saving / find the first still-missing answer. */
+const REQUIRED_STEP_INDICES: readonly number[] = STEPS.reduce<number[]>(
+  (acc, step, index) => (step.required ? [...acc, index] : acc),
+  [],
+);
+
+/** Whether a given question step has a usable answer in the draft. Optional
+ *  steps (and the summary) are always "answered" so they never block. */
+function isStepAnswered(index: number, draft: ProfileDraft): boolean {
+  switch (index) {
+    case 0:
+      return Boolean(draft.goal);
+    case 1:
+      return Boolean(draft.location);
+    case 2:
+      return Boolean(draft.weeklyFrequency);
+    case 3:
+      return Boolean(draft.workoutDuration);
+    case 4:
+      return Boolean(draft.experience);
+    case 5:
+      return draft.equipment.length > 0; // "לא בטוח" counts as a valid choice
+    case 7:
+      return Boolean(draft.trainingPreference);
+    case 8:
+      return Boolean(draft.guidanceStyle);
+    default:
+      return true; // optional steps (6 personal, 9 notes) + summary
+  }
+}
+
+/** The first required step still missing an answer, or -1 when all are answered.
+ *  Drives the disabled "הבא" gate and the defensive pre-save check. */
+function firstMissingRequiredStep(draft: ProfileDraft): number {
+  for (const index of REQUIRED_STEP_INDICES) {
+    if (!isStepAnswered(index, draft)) return index;
+  }
+  return -1;
+}
 
 /** Progress bar + "step X of Y" readout shown above every wizard screen. */
 function WizardProgress({ stepIndex }: { stepIndex: number }) {
@@ -277,6 +330,24 @@ function StepCard({
       </div>
       {children}
     </Card>
+  );
+}
+
+/** A calm one-line hint under the question. For required-but-unanswered steps it
+ *  nudges the user to choose; for optional steps it reassures they can move on.
+ *  Deliberately muted — no harsh red, no scary validation language. */
+function StepHint({ kind }: { kind: "required" | "optional" }) {
+  return (
+    <p
+      className={cn(
+        "text-[12px] font-medium leading-relaxed",
+        kind === "required" ? "text-muted" : "text-faint",
+      )}
+    >
+      {kind === "required"
+        ? "בחר תשובה כדי להמשיך"
+        : "השלב הזה אופציונלי ואפשר להמשיך גם בלי למלא."}
+    </p>
   );
 }
 
@@ -467,6 +538,9 @@ export function TrainingProfileView() {
   // questions and the final confirm. Edit mode jumps straight into 'steps'.
   const [phase, setPhase] = useState<"intro" | "steps">("intro");
   const [stepIndex, setStepIndex] = useState(0);
+  // Set when a defensive save is blocked by a missing required answer: shows a
+  // calm notice and the wizard jumps back to that step. Cleared on any move.
+  const [missingNotice, setMissingNotice] = useState(false);
 
   // Show the wizard when creating (no saved profile) or when explicitly editing.
   const showWizard = isEditing || !hasProfile;
@@ -484,12 +558,14 @@ export function TrainingProfileView() {
     setIsEditing(true);
     setPhase("steps");
     setStepIndex(0);
+    setMissingNotice(false);
   };
 
   const cancelEditing = () => {
     setIsEditing(false);
     setPhase("intro");
     setStepIndex(0);
+    setMissingNotice(false);
   };
 
   const setField = <K extends keyof ProfileDraft>(
@@ -515,9 +591,15 @@ export function TrainingProfileView() {
     setField(key, digitsOnly);
   };
 
-  const goNext = () => setStepIndex((i) => Math.min(i + 1, SUMMARY_INDEX));
+  const goNext = () => {
+    setMissingNotice(false);
+    // Defensive: required steps gate advancing even if the button slips through.
+    if (STEPS[stepIndex].required && !isStepAnswered(stepIndex, draft)) return;
+    setStepIndex((i) => Math.min(i + 1, SUMMARY_INDEX));
+  };
 
   const goBack = () => {
+    setMissingNotice(false);
     if (stepIndex > 0) {
       setStepIndex((i) => i - 1);
       return;
@@ -529,10 +611,20 @@ export function TrainingProfileView() {
   };
 
   const handleSave = () => {
+    // Defensive backstop: never save an empty/incomplete core profile, even if
+    // the user reached the summary with stale data (e.g. an older saved profile
+    // missing newly-required fields). Send them to the first missing step.
+    const missing = firstMissingRequiredStep(draft);
+    if (missing !== -1) {
+      setStepIndex(missing);
+      setMissingNotice(true);
+      return;
+    }
     savePersonalProfile(draftToInput(draft));
     setIsEditing(false);
     setPhase("intro");
     setStepIndex(0);
+    setMissingNotice(false);
   };
 
   const handleSkip = () => {
@@ -617,6 +709,11 @@ export function TrainingProfileView() {
 
   const meta = STEPS[stepIndex];
   const isSummary = stepIndex === SUMMARY_INDEX;
+  // An optional question step (not the summary) that the user can pass empty.
+  const isOptionalStep = !isSummary && !meta.required;
+  // A required step whose answer is still missing — gates "הבא" and shows a hint.
+  const requiredUnanswered =
+    Boolean(meta.required) && !isStepAnswered(stepIndex, draft);
 
   const renderBody = () => {
     switch (stepIndex) {
@@ -751,6 +848,18 @@ export function TrainingProfileView() {
     <div className="space-y-5">
       <WizardProgress stepIndex={stepIndex} />
 
+      {/* Calm fallback shown when a save was blocked by a missing core answer. */}
+      {missingNotice && !isSummary && (
+        <Card className="flex items-start gap-3 border-accent/30 bg-[color:var(--accent-soft)]">
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface text-accent">
+            <SparkIcon className="h-4 w-4" />
+          </span>
+          <p className="text-[12.5px] font-medium leading-relaxed text-foreground">
+            חסרות כמה תשובות בסיסיות לפני שמירת הפרופיל.
+          </p>
+        </Card>
+      )}
+
       {/* Re-keying on the step makes each screen settle in with a soft fade. */}
       <div key={stepIndex} className="animate-fade-up">
         {isSummary ? (
@@ -772,6 +881,8 @@ export function TrainingProfileView() {
         ) : (
           <StepCard icon={meta.icon} title={meta.title} helper={meta.helper}>
             {renderBody()}
+            {requiredUnanswered && <StepHint kind="required" />}
+            {isOptionalStep && <StepHint kind="optional" />}
           </StepCard>
         )}
       </div>
@@ -785,32 +896,20 @@ export function TrainingProfileView() {
           <Button variant="secondary" className="w-full" onClick={goBack}>
             חזור לעריכה
           </Button>
-          {!hasProfile && (
-            <Button variant="ghost" className="w-full" onClick={handleSkip}>
-              דלג בינתיים
-            </Button>
-          )}
         </div>
       ) : (
-        <>
-          <div className="flex gap-2.5 pt-1">
-            <Button variant="secondary" className="px-6" onClick={goBack}>
-              חזור
-            </Button>
-            <Button className="flex-1" onClick={goNext}>
-              {stepIndex === LAST_QUESTION_INDEX ? "לסיכום" : "הבא"}
-            </Button>
-          </div>
-          {!hasProfile && (
-            <button
-              type="button"
-              onClick={handleSkip}
-              className="tap mx-auto block rounded-xl px-3 py-1.5 text-center text-[12.5px] font-semibold text-faint hover:text-foreground"
-            >
-              דלג בינתיים
-            </button>
-          )}
-        </>
+        <div className="flex gap-2.5 pt-1">
+          <Button variant="secondary" className="px-6" onClick={goBack}>
+            חזור
+          </Button>
+          <Button
+            className="flex-1"
+            onClick={goNext}
+            disabled={requiredUnanswered}
+          >
+            {stepIndex === LAST_QUESTION_INDEX ? "לסיכום" : "הבא"}
+          </Button>
+        </div>
       )}
     </div>
   );
