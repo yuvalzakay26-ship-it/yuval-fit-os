@@ -102,37 +102,40 @@ function PromptScreen() {
       aria-modal="true"
       aria-labelledby={titleId}
       aria-describedby={descId}
-      className="fixed inset-0 z-[95] flex min-h-dvh items-end justify-center overflow-y-auto px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6 text-foreground animate-fade-in sm:items-center"
+      // A true centered modal: the overlay centers the card both axes and only
+      // scrolls if the viewport is shorter than the card (small phones). It is
+      // never a bottom sheet — the card stays a focused, floating dialog.
+      className="fixed inset-0 z-[95] flex min-h-dvh items-center justify-center overflow-y-auto px-5 py-8 text-foreground animate-fade-in"
     >
-      {/* Backdrop — tapping it is the calm "not now" choice. */}
+      {/* Dimmed + blurred backdrop — tapping it is the calm "not now" choice. */}
       <button
         type="button"
         aria-label="סגירה"
         onClick={handleNotNow}
-        className="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
       />
 
-      <div className="relative w-full max-w-sm animate-fade-up rounded-[1.75rem] border border-border bg-surface-raised p-6 shadow-float">
-        {/* Friendly icon */}
-        <div className="relative mx-auto mb-5 h-16 w-16">
+      <div className="relative my-auto w-full max-w-sm animate-zoom-in rounded-[1.9rem] border border-border bg-surface-raised p-7 shadow-float">
+        {/* Premium icon treatment — gradient badge with a soft glow halo. */}
+        <div className="relative mx-auto mb-6 h-[4.5rem] w-[4.5rem]">
           <span
             aria-hidden="true"
-            className="absolute inset-0 rounded-[1.4rem] brand-gradient opacity-30 blur-xl"
+            className="absolute inset-0 rounded-[1.5rem] brand-gradient opacity-40 blur-xl"
           />
-          <span className="relative flex h-16 w-16 items-center justify-center rounded-[1.4rem] brand-gradient text-[color:var(--accent-contrast)] shadow-glow">
-            <TargetIcon className="h-8 w-8" />
+          <span className="relative flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-[1.5rem] brand-gradient text-[color:var(--accent-contrast)] shadow-glow ring-1 ring-white/15">
+            <TargetIcon className="h-9 w-9" />
           </span>
         </div>
 
         <h2
           id={titleId}
-          className="text-center text-[20px] font-extrabold leading-tight tracking-tight text-foreground"
+          className="text-center text-[21px] font-extrabold leading-tight tracking-tight text-foreground"
         >
           נכיר אותך כדי להתאים את החוויה?
         </h2>
         <p
           id={descId}
-          className="mx-auto mt-2.5 max-w-[20rem] text-center text-[13.5px] leading-relaxed text-muted"
+          className="mx-auto mt-3 max-w-[20rem] text-center text-[13.5px] leading-relaxed text-muted"
         >
           כמה שאלות קצרות יעזרו למערכת להבין את המטרה, השגרה והאימון שמתאים לך.
           אפשר לדלג ולמלא אחר כך.
@@ -141,7 +144,7 @@ function PromptScreen() {
         <button
           type="button"
           onClick={handleStart}
-          className="tap mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-2xl brand-gradient text-[15px] font-bold text-[color:var(--accent-contrast)] shadow-glow outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--ring)]"
+          className="tap mt-7 flex h-14 w-full items-center justify-center gap-2 rounded-2xl brand-gradient text-[15px] font-bold text-[color:var(--accent-contrast)] shadow-glow outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--ring)]"
         >
           <SparkIcon className="h-[18px] w-[18px]" /> בוא נתחיל
         </button>
@@ -153,7 +156,7 @@ function PromptScreen() {
           לא עכשיו
         </button>
 
-        <p className="mt-4 text-center text-[12px] leading-relaxed text-faint">
+        <p className="mt-5 text-center text-[12px] leading-relaxed text-faint">
           אפשר תמיד למלא או לערוך מאוחר יותר מתוך &quot;עוד&quot; או מסך האימונים.
         </p>
       </div>

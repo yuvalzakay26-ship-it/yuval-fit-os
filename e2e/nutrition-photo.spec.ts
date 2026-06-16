@@ -82,6 +82,9 @@ test("upload → editable draft → confirm saves to today's journal", async ({ 
 
 test("user can remove an item before saving", async ({ page }) => {
   await uploadPlate(page);
+  // Wait for the review screen to render before reading the draft inputs — the
+  // analyze-photo round-trip is async, so reading immediately can race it.
+  await expect(page.getByRole("heading", { name: "טיוטה מהתמונה" })).toBeVisible();
   expect(await draftNames(page)).toContain("אורז לבן");
   await page.getByRole("button", { name: /הסר מאכל מהטיוטה — אורז לבן/ }).click();
   await expect

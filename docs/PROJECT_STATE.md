@@ -4,7 +4,37 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 4.2 (**Entry Flow V3 — beta welcome + profile prompt on
+> Last reviewed: Phase 4.3 (**Profile Onboarding V3 (UX) — premium modal + step
+> wizard**: a presentation-only upgrade of the onboarding — **no** change to the
+> profile schema/fields/meanings, `yfos:personal-profile:v1`, the sanitizer,
+> backup/restore, the onboarding **session** gating, or the beta-welcome ordering.
+> (1) The entry prompt (`components/profile/ProfileOnboardingPrompt.tsx`) became a
+> **true centered modal** — centered both axes, dimmed+blurred backdrop
+> (`bg-black/60 backdrop-blur-sm`), premium `rounded-[1.9rem]` card, `p-7`,
+> `shadow-float`, `animate-zoom-in`, gradient icon badge; never a bottom sheet
+> (scrolls on short screens but stays centered). Same behaviour: after beta welcome,
+> not on public pages, not if a profile exists, "לא עכשיו" hides for the session,
+> "בוא נתחיל" → `/training-profile`. (2) `/training-profile`
+> (`components/profile/TrainingProfileView.tsx`) was rebuilt from one long form into
+> a **step-by-step wizard**: intro → 10 one-question screens (goal · location ·
+> frequency · duration · experience · equipment(multi) · personal-optional ·
+> training-preference · guidance · notes) → summary/confirm, with a "שלב X מתוך 11"
+> readout + gradient progress bar, **"הבא"/"חזור"** (last question reads "לסיכום"),
+> every step optional, smooth scroll-to-top + `animate-fade-up` per step (no anim
+> libs). Answers live in component state (`ProfileDraft`) and are written to storage
+> **only** on final "שמור פרופיל" (`savePersonalProfile`) — an abandoned wizard never
+> mutates the stored profile. **Edit (Option B):** an existing profile opens on the
+> compact saved summary (hero + rows + optional "התאמה אישית"), "ערוך פרופיל" opens
+> the same wizard pre-filled at step 1, "אפס פרופיל" stays confirm-gated. `app/
+> training-profile/page.tsx` unchanged (its `PageHeader` still supplies the screen
+> title). e2e: `training-profile.spec.ts` rewritten to drive the wizard (intro,
+> one-question-at-a-time, next/back, complete+save, optional fields, edit, skip,
+> reset, entry points); also hardened one latent race in `nutrition-photo.spec.ts`
+> (wait for the review heading before reading draft inputs) surfaced by the heavier
+> parallel suite — full suite **93 green**. See
+> [`PERSONAL_PROFILE_V1.md`](PERSONAL_PROFILE_V1.md)
+> ("V3 (UX) — Premium modal + step wizard").)
+> Prior: Phase 4.2 (**Entry Flow V3 — beta welcome + profile prompt on
 > every app entry**: changes only the *cadence/ordering* of the two onboarding
 > surfaces — no schema, profile, backup, or auth/access change. The **beta welcome**
 > is now gated **per session** (`lib/beta-welcome.ts` → sessionStorage
@@ -568,7 +598,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | Supplements Tracker | Personal supplement/medication tracking (no advice); searchable starter-template library with already-tracked state | `components/supplements/*`, `docs/SUPPLEMENTS_TRACKER.md`, `docs/SUPPLEMENTS_LIBRARY_UX.md` |
 | Progress | Premium weekly insights screen: weekly hero, rule-based insight cards, 7-day activity trends, human empty states, and personal records — derived purely from existing local data (no AI) | `components/progress/*`, `lib/analytics.ts`, `lib/progress-insights.ts`, `docs/PROGRESS_INSIGHTS_UPGRADE.md` |
 | Gym Attendance | Local gym check-in / check-out: prominent Today card, live visit timer, weekly stats (visits, time, avg, last), rich visit history (entry/exit/duration + display-only linked-workout snapshot matched by local day), same-day re-entry guard. Tracks *being at the gym* — separate from workout logging. No GPS | `components/gym/*`, `lib/gym-attendance.ts`, `docs/GYM_CHECK_IN.md` |
-| Personal Training Profile | Optional, editable personal profile (goal, location, frequency, experience, duration, equipment multi-select, notes + V2 optional adaptation/age/height/weight/training-preference/guidance-style). Collect + display only — no auto-program, no medical/diet/BMI/body-shape logic. Includes an optional one-time first-entry onboarding prompt (never blocks the app). localStorage-only; included in Backup/Restore | `components/profile/TrainingProfileView.tsx`, `components/profile/ProfileOnboardingPrompt.tsx`, `lib/personal-profile.ts`, `lib/profile-onboarding.ts`, `lib/app-access.ts`, `docs/PERSONAL_PROFILE_V1.md` |
+| Personal Training Profile | Optional, editable personal profile (goal, location, frequency, experience, duration, equipment multi-select, notes + V2 optional adaptation/age/height/weight/training-preference/guidance-style). Collect + display only — no auto-program, no medical/diet/BMI/body-shape logic. **V3 (UX): the entry prompt is a centered modal and `/training-profile` is a step-by-step wizard** (intro → one question per screen → summary/confirm, progress bar, next/back, save once on finish); an existing profile shows the saved summary and "ערוך פרופיל" reopens the wizard pre-filled. Never blocks the app. localStorage-only; included in Backup/Restore | `components/profile/TrainingProfileView.tsx`, `components/profile/ProfileOnboardingPrompt.tsx`, `lib/personal-profile.ts`, `lib/profile-onboarding.ts`, `lib/app-access.ts`, `docs/PERSONAL_PROFILE_V1.md` |
 | Settings | Premium "control center": appearance (light/dark only), daily goals, water shortcuts, data & storage (incl. a Backup & Restore card), access & privacy, separated sensitive actions, system info | `components/settings/SettingsView.tsx`, `docs/SETTINGS_CONTROL_CENTER.md` |
 | Backup & Restore | Local JSON export/import of all Fit OS data: Blob download (+ copy/paste fallback), validated import with counts preview + confirm, last-backup status. No backend/auth/cloud/encryption | `components/backup/BackupView.tsx`, `lib/backup.ts`, `docs/BACKUP_RESTORE.md` |
 | Learn (Knowledge Center) | Card-based Hebrew articles + protein calculator | `app/learn/*`, `lib/knowledge-content.ts`, `lib/protein.ts` |
@@ -597,7 +627,7 @@ Generated by the App Router (`app/`). Rendering mode noted from the build:
 | `/nutrition/supplements/add` | Add / edit supplement | Dynamic |
 | `/progress` | Progress | Static |
 | `/gym` | Gym Attendance | Static |
-| `/training-profile` | Personal Training Profile | Static |
+| `/training-profile` | Personal Training Profile (step wizard) | Static |
 | `/settings` | Settings | Static |
 | `/backup` | Backup & Restore | Static |
 | `/learn` | Knowledge Center index | Static |

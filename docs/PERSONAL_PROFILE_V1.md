@@ -7,11 +7,16 @@
 >
 > **V2 (Personal Profile Onboarding)** added: (1) an optional first-entry prompt
 > inviting the user to fill the profile, and (2) additive optional personalization
-> fields. See the **"V2 — Onboarding & expanded fields"** section. **V3 (Entry
-> flow)** then changed the *cadence*: the beta welcome and this prompt now appear
-> on **every app entry / session** (beta welcome first, profile prompt second)
-> instead of once-per-device-forever — see the **"V3 — Entry flow"** section at the
-> very end. The V1 content below still describes the core screen and storage.
+> fields. See the **"V2 — Onboarding & expanded fields"** section. **V3** then
+> upgraded the onboarding in two parts: **V3 (Flow)** changed the *cadence* so the
+> beta welcome and this prompt appear on **every app entry / session** (beta
+> welcome first, profile prompt second) instead of once-per-device-forever; and
+> **V3 (UX)** turned the entry prompt into a **true centered modal** and converted
+> `/training-profile` from one long form into a **step-by-step wizard** (one
+> question per screen, progress + next/back, summary/confirm before saving). See
+> the **"V3 (Flow) — Entry flow"** and **"V3 (UX) — Premium modal + step wizard"**
+> sections at the very end. The V1 content below still describes the core fields
+> and storage, which are unchanged.
 
 ## What it is
 
@@ -334,7 +339,7 @@ dependencies.
 
 ---
 
-# V3 — Entry flow (beta welcome + profile prompt on every app entry)
+# V3 (Flow) — Entry flow (beta welcome + profile prompt on every app entry)
 
 V3 changes **only the cadence and ordering** of the two onboarding surfaces — it
 touches no schema, no profile fields, no backup, and no auth/access logic. The
@@ -424,3 +429,125 @@ profile prompt, with the legacy persistent flag present).
   profile shows it again; once a profile exists it never shows.
 - Neither surface appears on `/privacy`, `/terms`, `/ai-disclaimer`, before access
   is granted, or for a non-granted visitor.
+
+---
+
+# V3 (UX) — Premium modal + step wizard
+
+V3 (UX) is a **presentation-only** upgrade of the onboarding. It changes how the
+entry prompt and the profile screen *look and flow* — it does **not** touch the
+profile schema, the stored fields, their meanings, backup/restore, the onboarding
+session gating, or the beta-welcome ordering. Everything in V1/V2/V3(Flow) above
+still holds.
+
+## Part 1 — The entry prompt is now a true centered modal
+
+`components/profile/ProfileOnboardingPrompt.tsx` previously rendered as a
+bottom-anchored sheet on mobile (`items-end`). It is now a **centered dialog**:
+
+- Centered on **both** axes (`items-center justify-center`); the card floats in the
+  middle of the screen, not low or inline.
+- **Dimmed + blurred backdrop** (`bg-black/60 backdrop-blur-sm`); tapping it is the
+  calm "not now" choice (unchanged).
+- Premium card: large rounded corners (`rounded-[1.9rem]`), generous padding
+  (`p-7`), `shadow-float`, and an `animate-zoom-in` entrance.
+- Clear icon treatment (gradient badge with a soft glow halo + subtle ring), title,
+  short body, strong primary CTA **"בוא נתחיל"**, clear secondary **"לא עכשיו"**, and
+  the helper note ("אפשר תמיד למלא או לערוך מאוחר יותר…").
+- Responsive: on short screens the overlay scrolls (`overflow-y-auto` + `py-8` +
+  `my-auto`) while the card stays a centered modal — never a bottom sheet.
+- **Behaviour is unchanged**: shown after the beta welcome, not on public info
+  pages, not if a profile exists; "לא עכשיו" hides it for the session; "בוא נתחיל"
+  records the dismissal and navigates to `/training-profile`.
+
+## Part 2 — `/training-profile` is now a step-by-step wizard
+
+`components/profile/TrainingProfileView.tsx` was rebuilt from one long stacked form
+into a guided wizard — **one focused decision per screen**, driven by a data
+`STEPS` array so the progress indicator and navigation stay in sync.
+
+### Step structure
+
+| # | Screen | Field(s) | Control |
+| --- | --- | --- | --- |
+| Intro | "כמה שאלות, חוויה מותאמת" + **"התחל"** / **"דלג בינתיים"** | — | start |
+| 1 | "מה המטרה המרכזית שלך?" | `goal` | single-select chips |
+| 2 | "איפה אתה מתאמן בדרך כלל?" | `location` | single-select |
+| 3 | "כמה פעמים בשבוע תרצה להתאמן?" | `weeklyFrequency` | single-select |
+| 4 | "כמה זמן יש לך לאימון?" | `workoutDuration` | single-select |
+| 5 | "מה רמת הניסיון שלך?" | `experience` | single-select |
+| 6 | "איזה ציוד זמין לך?" | `equipment` | **multi-select** |
+| 7 | "התאמה אישית — אופציונלי" | `adaptation`, `age`, `heightCm`, `weightKg` | chips + 3 numeric inputs |
+| 8 | "איזה סגנון אימון מתאים לך יותר?" | `trainingPreference` | single-select |
+| 9 | "איך תרצה להתחיל?" | `guidanceStyle` | single-select |
+| 10 | "יש משהו שכדאי לקחת בחשבון?" | `notes` | free-text area |
+| 11 | "סיכום" — clean summary + **"שמור פרופיל"** / **"חזור לעריכה"** (+ "דלג בינתיים" in create) | all | confirm |
+
+- **Progress indicator:** a "שלב X מתוך 11" readout **and** a gradient progress bar
+  at the top of every step.
+- **Navigation:** a clear **"הבא"** (→ **"לסיכום"** on the last question) and
+  **"חזור"**. Back from the first question returns to the intro (create) or to the
+  saved summary (edit). The summary's "חזור לעריכה" steps back into the answers.
+- **Every step is optional** — "הבא" is always enabled; the user can advance without
+  answering, keeping cognitive load minimal.
+- **Draft model:** answers live in **component state** (`ProfileDraft`) and are
+  persisted to `yfos:personal-profile:v1` **only** on the final "שמור פרופיל"
+  (`savePersonalProfile`). This is the simplest robust approach — no partial writes,
+  so an abandoned wizard never mutates the stored profile. (Chosen over saving
+  per-step.)
+- **Transitions:** each step is re-keyed and uses the existing lightweight
+  `animate-fade-up`; the view smooth-scrolls to top on step change. No animation
+  libraries were added.
+- **Visual language:** soft raised cards, one big question per screen, high-contrast
+  primary CTA, subtle per-step iconography, elegant progress bar. Verified clean at
+  360 px and 390 px.
+
+## Part 3 — Edit mode (Option B)
+
+When a profile already exists, `/training-profile` opens on the **saved summary**
+(hero + "סיכום הפרופיל" rows + optional "התאמה אישית" card), with **"ערוך פרופיל"**
+and a confirm-gated **"אפס פרופיל"**. "ערוך פרופיל" opens the **same wizard**
+pre-filled, jumping straight to the first question (no intro). So viewing stays a
+compact summary while editing is the identical guided experience as onboarding —
+combining the clarity of Option B (summary-first) with the consistency of Option A
+(wizard for editing). Reset still clears only `yfos:personal-profile:v1` behind a
+`ConfirmDialog`.
+
+## V3 (UX) — what stayed unchanged
+
+Profile **schema and fields**, `yfos:personal-profile:v1`, the sanitizer/validation,
+`savePersonalProfile`/`getPersonalProfile`/`clearPersonalProfile`, backup/restore
+(`personalProfile` module, `backupVersion` 1), the onboarding **session** gating and
+beta-welcome **ordering**, the More/Workouts entry points, auth/guest/admin/Supabase,
+and all Today/Nutrition/Workouts/Water/Supplement/Protein features. No field meaning
+changed, no field was removed, no new dependency was added. `app/training-profile/page.tsx`
+is unchanged (its `PageHeader` still supplies the "פרופיל אימון אישי" screen title).
+
+## V3 (UX) files
+
+**Modified:** `components/profile/ProfileOnboardingPrompt.tsx` (centered modal),
+`components/profile/TrainingProfileView.tsx` (rebuilt as the step wizard),
+`e2e/training-profile.spec.ts` (drives the wizard: intro, one-question-at-a-time,
+next/back, complete+save, optional fields, edit, skip, reset, entry points),
+`e2e/nutrition-photo.spec.ts` (hardened one latent race — wait for the review
+heading before reading draft inputs; unrelated to the profile, surfaced by the
+heavier parallel suite), `docs/PERSONAL_PROFILE_V1.md`, `docs/PROJECT_STATE.md`.
+
+## V3 (UX) manual QA notes (360 px / 390 px)
+
+- The entry prompt is centered both axes with a dimmed/blurred backdrop, reads as a
+  focused modal (not a card/sheet), and fits within 360/390 px; the three actions
+  (בוא נתחיל / לא עכשיו / backdrop) all resolve it.
+- The wizard shows exactly one question per screen with a visible "שלב X מתוך 11" +
+  progress bar; "הבא"/"חזור" move between steps and the last question's button reads
+  "לסיכום".
+- Selections persist across back/next; the summary lists answered fields (optional
+  "התאמה אישית" rows only when filled); "שמור פרופיל" writes once and returns to the
+  saved summary.
+- Editing an existing profile opens the wizard pre-filled at step 1; "אפס פרופיל"
+  confirms then returns the wizard intro.
+- "דלג בינתיים" (intro + summary in create mode) returns to Today; the app works
+  normally with no profile.
+- `npm run lint`, `npm run build`, and `npm run test:e2e` all pass — **93 e2e specs
+  green** (a latent race in `nutrition-photo.spec.ts`, surfaced by the heavier
+  parallel suite, was hardened in the same change).

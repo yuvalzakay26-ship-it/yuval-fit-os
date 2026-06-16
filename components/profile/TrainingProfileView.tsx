@@ -1,23 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { SectionHeader } from "@/components/ui/PageHeader";
 import { Input, Label, Textarea } from "@/components/ui/Field";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { cn } from "@/lib/utils";
 import {
+  BoltIcon,
+  CalendarIcon,
+  ChartIcon,
   CheckIcon,
   ClockIcon,
+  DumbbellIcon,
   HeartIcon,
-  ListIcon,
+  HomeIcon,
   PencilIcon,
   SparkIcon,
   TargetIcon,
   TrashIcon,
 } from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 import {
   ADAPTATION_OPTIONS,
   DURATION_OPTIONS,
@@ -125,7 +129,7 @@ function ChoiceGroup({
             aria-pressed={active}
             onClick={() => onSelect(option)}
             className={cn(
-              "tap rounded-2xl border px-3.5 py-2 text-[13px] font-semibold transition-colors",
+              "tap rounded-2xl border px-4 py-2.5 text-[13.5px] font-semibold transition-colors",
               active
                 ? "border-accent bg-[color:var(--accent-soft)] text-accent"
                 : "border-border bg-surface-2 text-foreground hover:bg-surface",
@@ -160,7 +164,7 @@ function MultiChoiceGroup({
             aria-pressed={active}
             onClick={() => onToggle(option)}
             className={cn(
-              "tap inline-flex items-center gap-1.5 rounded-2xl border px-3.5 py-2 text-[13px] font-semibold transition-colors",
+              "tap inline-flex items-center gap-1.5 rounded-2xl border px-4 py-2.5 text-[13.5px] font-semibold transition-colors",
               active
                 ? "border-accent bg-[color:var(--accent-soft)] text-accent"
                 : "border-border bg-surface-2 text-foreground hover:bg-surface",
@@ -175,62 +179,108 @@ function MultiChoiceGroup({
   );
 }
 
-/** A titled form section with a leading icon badge. */
-function FormSection({
+/* ------------------------------ Wizard model ---------------------------- */
+// The onboarding is a guided, one-question-per-screen flow. STEPS holds the ten
+// question screens (indices 0–9) plus a final summary/confirm screen (index 10),
+// so the progress indicator and navigation are data-driven. Every answer is
+// OPTIONAL — "הבא" is always enabled; the user can advance without choosing.
+
+interface StepMeta {
+  icon: IconCmp;
+  title: string;
+  helper?: string;
+}
+
+const STEPS: readonly StepMeta[] = [
+  { icon: TargetIcon, title: "מה המטרה המרכזית שלך?" }, // 0 goal
+  { icon: HomeIcon, title: "איפה אתה מתאמן בדרך כלל?" }, // 1 location
+  { icon: CalendarIcon, title: "כמה פעמים בשבוע תרצה להתאמן?" }, // 2 frequency
+  { icon: ClockIcon, title: "כמה זמן יש לך לאימון?" }, // 3 duration
+  { icon: ChartIcon, title: "מה רמת הניסיון שלך?" }, // 4 experience
+  {
+    icon: DumbbellIcon,
+    title: "איזה ציוד זמין לך?",
+    helper: "אפשר לבחור כמה אפשרויות.",
+  }, // 5 equipment
+  {
+    icon: HeartIcon,
+    title: "התאמה אישית — אופציונלי",
+    helper:
+      "כל השדות כאן אופציונליים לגמרי. נועדו רק כדי להתאים את החוויה — לא לשיפוט ולא לשום חישוב רפואי.",
+  }, // 6 personal
+  { icon: BoltIcon, title: "איזה סגנון אימון מתאים לך יותר?" }, // 7 trainingPreference
+  { icon: SparkIcon, title: "איך תרצה להתחיל?" }, // 8 guidanceStyle
+  {
+    icon: PencilIcon,
+    title: "יש משהו שכדאי לקחת בחשבון?",
+    helper:
+      "לדוגמה: זמן מוגבל, תרגילים שפחות מתאימים לך, חוסר ניסיון או העדפה מסוימת.",
+  }, // 9 notes
+  { icon: CheckIcon, title: "סיכום" }, // 10 summary
+] as const;
+
+const TOTAL_STEPS = STEPS.length; // 11
+const LAST_QUESTION_INDEX = STEPS.length - 2; // 9 (notes)
+const SUMMARY_INDEX = STEPS.length - 1; // 10
+
+/** Progress bar + "step X of Y" readout shown above every wizard screen. */
+function WizardProgress({ stepIndex }: { stepIndex: number }) {
+  const current = stepIndex + 1;
+  const pct = Math.round((current / TOTAL_STEPS) * 100);
+  const isSummary = stepIndex === SUMMARY_INDEX;
+  return (
+    <div aria-hidden={false}>
+      <div className="mb-2 flex items-center justify-between text-[12px] font-semibold">
+        <span className="text-muted">
+          {isSummary ? "סיכום" : `שלב ${current} מתוך ${TOTAL_STEPS}`}
+        </span>
+        <span className="text-faint">{pct}%</span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+        <div
+          className="brand-gradient h-full rounded-full transition-[width] duration-300 ease-out"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** The focused card that frames a single question — icon badge + title + body. */
+function StepCard({
   icon: Icon,
   title,
-  label,
   helper,
   children,
 }: {
   icon: IconCmp;
   title: string;
-  label: string;
   helper?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section>
-      <SectionHeader title={title} accent="var(--accent)" />
-      <Card className="space-y-3">
-        <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-soft)] text-accent">
-            <Icon className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-[14px] font-bold leading-tight text-foreground">
-              {label}
+    <Card variant="raised" className="space-y-5 p-5">
+      <div className="flex items-start gap-3">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-soft)] text-accent">
+          <Icon className="h-6 w-6" />
+        </span>
+        <div className="min-w-0 pt-0.5">
+          <h2 className="text-[18px] font-extrabold leading-snug tracking-tight text-foreground">
+            {title}
+          </h2>
+          {helper && (
+            <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
+              {helper}
             </p>
-            {helper && (
-              <p className="mt-0.5 text-[12px] leading-relaxed text-muted">
-                {helper}
-              </p>
-            )}
-          </div>
+          )}
         </div>
-        {children}
-      </Card>
-    </section>
-  );
-}
-
-/** A labelled sub-block inside a form section. */
-function SubField({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="pt-1">
-      <Label>{label}</Label>
+      </div>
       {children}
-    </div>
+    </Card>
   );
 }
 
-/* --------------------------- Saved summary ------------------------------ */
+/* --------------------------- Saved / draft summary ---------------------- */
 
 function SummaryRow({
   label,
@@ -249,6 +299,97 @@ function SummaryRow({
 
 const NONE = <span className="text-faint">לא נבחר</span>;
 
+/** Core + optional rows shared by the confirm step and the saved summary. */
+function ProfileRows({
+  goal,
+  location,
+  weeklyFrequency,
+  experience,
+  workoutDuration,
+  equipment,
+  notes,
+  adaptation,
+  age,
+  heightCm,
+  weightKg,
+  trainingPreference,
+  guidanceStyle,
+}: {
+  goal?: string;
+  location?: string;
+  weeklyFrequency?: string;
+  experience?: string;
+  workoutDuration?: string;
+  equipment: string[];
+  notes?: string;
+  adaptation?: string;
+  age?: string;
+  heightCm?: string;
+  weightKg?: string;
+  trainingPreference?: string;
+  guidanceStyle?: string;
+}) {
+  const equipmentValue =
+    equipment.length > 0 ? equipment.join(" · ") : NONE;
+  // Optional rows render ONLY when filled, so empty optional fields never read
+  // like missing/required errors.
+  const hasPersonalization =
+    adaptation || age || heightCm || weightKg || trainingPreference || guidanceStyle;
+  return (
+    <div className="space-y-5">
+      <section>
+        <SectionHeader title="סיכום הפרופיל" accent="var(--accent)" />
+        <Card>
+          <div className="divide-y divide-border">
+            <SummaryRow label="מטרה" value={goal ?? NONE} />
+            <SummaryRow label="מקום אימון" value={location ?? NONE} />
+            <SummaryRow label="תדירות" value={weeklyFrequency ?? NONE} />
+            <SummaryRow label="זמן אימון" value={workoutDuration ?? NONE} />
+            <SummaryRow label="רמה" value={experience ?? NONE} />
+            <SummaryRow label="ציוד" value={equipmentValue} />
+            {notes && notes.trim() && (
+              <SummaryRow
+                label="הערות"
+                value={
+                  <span className="whitespace-pre-wrap break-words font-normal text-foreground">
+                    {notes}
+                  </span>
+                }
+              />
+            )}
+          </div>
+        </Card>
+      </section>
+
+      {hasPersonalization && (
+        <section>
+          <SectionHeader title="התאמה אישית" accent="var(--accent)" />
+          <Card>
+            <div className="divide-y divide-border">
+              {adaptation && (
+                <SummaryRow label="מין / התאמה" value={adaptation} />
+              )}
+              {age && <SummaryRow label="גיל" value={age} />}
+              {heightCm && (
+                <SummaryRow label="גובה" value={`${heightCm} ס״מ`} />
+              )}
+              {weightKg && (
+                <SummaryRow label="משקל" value={`${weightKg} ק״ג`} />
+              )}
+              {trainingPreference && (
+                <SummaryRow label="סגנון אימון" value={trainingPreference} />
+              )}
+              {guidanceStyle && (
+                <SummaryRow label="איך להתחיל" value={guidanceStyle} />
+              )}
+            </div>
+          </Card>
+        </section>
+      )}
+    </div>
+  );
+}
+
 function SavedSummary({
   profile,
   onEdit,
@@ -256,19 +397,6 @@ function SavedSummary({
   profile: TrainingProfile;
   onEdit: () => void;
 }) {
-  const equipment =
-    profile.equipment && profile.equipment.length > 0
-      ? profile.equipment.join(" · ")
-      : NONE;
-  // Optional V2 rows are shown ONLY when filled, so empty optional fields never
-  // look like missing/required errors.
-  const hasPersonalization =
-    profile.adaptation ||
-    profile.age ||
-    profile.heightCm ||
-    profile.weightKg ||
-    profile.trainingPreference ||
-    profile.guidanceStyle;
   return (
     <div className="space-y-6">
       <Card variant="raised" className="sheen relative overflow-hidden p-5">
@@ -291,65 +419,21 @@ function SavedSummary({
         </div>
       </Card>
 
-      <section>
-        <SectionHeader title="סיכום הפרופיל" accent="var(--accent)" />
-        <Card>
-          <div className="divide-y divide-border">
-            <SummaryRow label="מטרה" value={profile.goal ?? NONE} />
-            <SummaryRow label="מקום אימון" value={profile.location ?? NONE} />
-            <SummaryRow
-              label="תדירות"
-              value={profile.weeklyFrequency ?? NONE}
-            />
-            <SummaryRow label="רמה" value={profile.experience ?? NONE} />
-            <SummaryRow
-              label="זמן אימון"
-              value={profile.workoutDuration ?? NONE}
-            />
-            <SummaryRow label="ציוד" value={equipment} />
-            {profile.notes && (
-              <SummaryRow
-                label="הערות"
-                value={
-                  <span className="whitespace-pre-wrap break-words font-normal text-foreground">
-                    {profile.notes}
-                  </span>
-                }
-              />
-            )}
-          </div>
-        </Card>
-      </section>
-
-      {/* Optional personalization — its own card, only when something is filled. */}
-      {hasPersonalization && (
-        <section>
-          <SectionHeader title="התאמה אישית" accent="var(--accent)" />
-          <Card>
-            <div className="divide-y divide-border">
-              {profile.adaptation && (
-                <SummaryRow label="מין / התאמה" value={profile.adaptation} />
-              )}
-              {profile.age && <SummaryRow label="גיל" value={profile.age} />}
-              {profile.heightCm && (
-                <SummaryRow label="גובה" value={`${profile.heightCm} ס״מ`} />
-              )}
-              {profile.weightKg && (
-                <SummaryRow label="משקל" value={`${profile.weightKg} ק״ג`} />
-              )}
-              {profile.trainingPreference && (
-                <SummaryRow
-                  label="סגנון אימון"
-                  value={profile.trainingPreference}
-                />
-              )}
-              {profile.guidanceStyle && (
-                <SummaryRow label="איך להתחיל" value={profile.guidanceStyle} />
-              )}
-            </div>
-          </Card>
-        </section>
-      )}
+      <ProfileRows
+        goal={profile.goal}
+        location={profile.location}
+        weeklyFrequency={profile.weeklyFrequency}
+        experience={profile.experience}
+        workoutDuration={profile.workoutDuration}
+        equipment={profile.equipment ?? []}
+        notes={profile.notes}
+        adaptation={profile.adaptation}
+        age={profile.age}
+        heightCm={profile.heightCm}
+        weightKg={profile.weightKg}
+        trainingPreference={profile.trainingPreference}
+        guidanceStyle={profile.guidanceStyle}
+      />
 
       <Button onClick={onEdit} className="w-full">
         <PencilIcon className="h-[18px] w-[18px]" /> ערוך פרופיל
@@ -379,13 +463,33 @@ export function TrainingProfileView() {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<ProfileDraft>(EMPTY_DRAFT);
   const [confirmingReset, setConfirmingReset] = useState(false);
+  // Wizard position: 'intro' is the brief start screen; 'steps' walks the
+  // questions and the final confirm. Edit mode jumps straight into 'steps'.
+  const [phase, setPhase] = useState<"intro" | "steps">("intro");
+  const [stepIndex, setStepIndex] = useState(0);
 
-  // Show the form when creating (no saved profile) or when explicitly editing.
-  const showForm = isEditing || !hasProfile;
+  // Show the wizard when creating (no saved profile) or when explicitly editing.
+  const showWizard = isEditing || !hasProfile;
+
+  // Gently bring each new step into view from the top — one focused screen at a
+  // time, never landing the user mid-scroll.
+  useEffect(() => {
+    if (showWizard && typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [phase, stepIndex, showWizard]);
 
   const startEditing = () => {
     setDraft(profile ? profileToDraft(profile) : EMPTY_DRAFT);
     setIsEditing(true);
+    setPhase("steps");
+    setStepIndex(0);
+  };
+
+  const cancelEditing = () => {
+    setIsEditing(false);
+    setPhase("intro");
+    setStepIndex(0);
   };
 
   const setField = <K extends keyof ProfileDraft>(
@@ -411,9 +515,24 @@ export function TrainingProfileView() {
     setField(key, digitsOnly);
   };
 
+  const goNext = () => setStepIndex((i) => Math.min(i + 1, SUMMARY_INDEX));
+
+  const goBack = () => {
+    if (stepIndex > 0) {
+      setStepIndex((i) => i - 1);
+      return;
+    }
+    // At the first question: leave the steps. Editing returns to the summary;
+    // a fresh onboarding returns to the intro screen.
+    if (isEditing) cancelEditing();
+    else setPhase("intro");
+  };
+
   const handleSave = () => {
     savePersonalProfile(draftToInput(draft));
     setIsEditing(false);
+    setPhase("intro");
+    setStepIndex(0);
   };
 
   const handleSkip = () => {
@@ -425,10 +544,14 @@ export function TrainingProfileView() {
     clearPersonalProfile();
     setConfirmingReset(false);
     setIsEditing(false);
+    setPhase("intro");
+    setStepIndex(0);
     setDraft(EMPTY_DRAFT);
   };
 
-  if (!showForm && profile) {
+  /* ----------------------------- Saved view ----------------------------- */
+
+  if (!showWizard && profile) {
     return (
       <>
         <SavedSummary profile={profile} onEdit={startEditing} />
@@ -455,178 +578,240 @@ export function TrainingProfileView() {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Intro — supportive, sets the "optional + on-device" expectation. */}
-      <Card className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:var(--accent-soft)] text-accent">
-          <SparkIcon className="h-[18px] w-[18px]" />
-        </span>
-        <p className="text-[12.5px] leading-relaxed text-muted">
-          כל השאלות אופציונליות. אפשר לענות על מה שמתאים, לדלג על השאר, ולערוך
-          בכל רגע. הפרופיל נשמר אצלך במכשיר בלבד.
+  /* ------------------------------- Intro -------------------------------- */
+
+  if (phase === "intro") {
+    return (
+      <div className="space-y-5">
+        <Card variant="raised" className="sheen relative overflow-hidden p-6 text-center">
+          <div
+            className="pointer-events-none absolute -left-10 -top-12 h-36 w-36 rounded-full opacity-50 blur-2xl"
+            style={{ background: "var(--accent-soft)" }}
+          />
+          <div className="relative mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[1.4rem] brand-gradient text-[color:var(--accent-contrast)] shadow-glow">
+            <SparkIcon className="h-8 w-8" />
+          </div>
+          <h2 className="relative text-[19px] font-extrabold leading-tight tracking-tight text-foreground">
+            כמה שאלות, חוויה מותאמת
+          </h2>
+          <p className="relative mx-auto mt-2 max-w-[18rem] text-[13px] leading-relaxed text-muted">
+            נעבור יחד על כמה שאלות קצרות, אחת בכל פעם, כדי להתאים את החוויה אליך.
+            כל שאלה אופציונלית — אפשר לדלג בכל שלב ולערוך אחר כך.
+          </p>
+        </Card>
+
+        <Button size="lg" className="w-full" onClick={() => { setPhase("steps"); setStepIndex(0); }}>
+          <SparkIcon className="h-[18px] w-[18px]" /> התחל
+        </Button>
+        <Button variant="ghost" className="w-full" onClick={handleSkip}>
+          דלג בינתיים
+        </Button>
+        <p className="text-center text-[12px] text-faint">
+          אפשר לדלג ולמלא אחר כך — האפליקציה עובדת רגיל גם בלי הפרופיל.
         </p>
-      </Card>
+      </div>
+    );
+  }
 
-      {/* מטרה */}
-      <FormSection icon={TargetIcon} title="מטרה" label="מה המטרה המרכזית שלך?">
-        <ChoiceGroup
-          options={GOAL_OPTIONS}
-          value={draft.goal}
-          onSelect={(v) => setField("goal", v)}
-        />
-      </FormSection>
+  /* ------------------------------- Steps -------------------------------- */
 
-      {/* שגרת אימון */}
-      <FormSection
-        icon={ClockIcon}
-        title="שגרת אימון"
-        label="איפה אתה מתאמן בדרך כלל?"
-      >
-        <ChoiceGroup
-          options={LOCATION_OPTIONS}
-          value={draft.location}
-          onSelect={(v) => setField("location", v)}
-        />
-        <SubField label="כמה פעמים בשבוע תרצה להתאמן?">
+  const meta = STEPS[stepIndex];
+  const isSummary = stepIndex === SUMMARY_INDEX;
+
+  const renderBody = () => {
+    switch (stepIndex) {
+      case 0:
+        return (
+          <ChoiceGroup
+            options={GOAL_OPTIONS}
+            value={draft.goal}
+            onSelect={(v) => setField("goal", v)}
+          />
+        );
+      case 1:
+        return (
+          <ChoiceGroup
+            options={LOCATION_OPTIONS}
+            value={draft.location}
+            onSelect={(v) => setField("location", v)}
+          />
+        );
+      case 2:
+        return (
           <ChoiceGroup
             options={FREQUENCY_OPTIONS}
             value={draft.weeklyFrequency}
             onSelect={(v) => setField("weeklyFrequency", v)}
           />
-        </SubField>
-        <SubField label="כמה זמן יש לך לאימון?">
+        );
+      case 3:
+        return (
           <ChoiceGroup
             options={DURATION_OPTIONS}
             value={draft.workoutDuration}
             onSelect={(v) => setField("workoutDuration", v)}
           />
-        </SubField>
-      </FormSection>
-
-      {/* ניסיון וציוד */}
-      <FormSection
-        icon={ListIcon}
-        title="ניסיון וציוד"
-        label="מה רמת הניסיון שלך?"
-      >
-        <ChoiceGroup
-          options={EXPERIENCE_OPTIONS}
-          value={draft.experience}
-          onSelect={(v) => setField("experience", v)}
-        />
-        <SubField label="איזה ציוד זמין לך? (אפשר לבחור כמה)">
+        );
+      case 4:
+        return (
+          <ChoiceGroup
+            options={EXPERIENCE_OPTIONS}
+            value={draft.experience}
+            onSelect={(v) => setField("experience", v)}
+          />
+        );
+      case 5:
+        return (
           <MultiChoiceGroup
             options={EQUIPMENT_OPTIONS}
             values={draft.equipment}
             onToggle={toggleEquipment}
           />
-        </SubField>
-      </FormSection>
-
-      {/* התאמה אישית — אופציונלי */}
-      <FormSection
-        icon={HeartIcon}
-        title="התאמה אישית — אופציונלי"
-        label="מין / התאמה — אופציונלי"
-        helper="כל השדות כאן אופציונליים לגמרי. נועדו רק כדי להתאים את החוויה — לא לשיפוט ולא לשום חישוב רפואי."
-      >
-        <ChoiceGroup
-          options={ADAPTATION_OPTIONS}
-          value={draft.adaptation}
-          onSelect={(v) => setField("adaptation", v)}
-        />
-        <div className="grid grid-cols-3 gap-2.5 pt-1">
-          <div>
-            <Label htmlFor="profile-age">גיל</Label>
-            <Input
-              id="profile-age"
-              inputMode="numeric"
-              maxLength={MEASURE_MAX_LENGTH}
-              className="text-center font-semibold"
-              value={draft.age}
-              onChange={(e) => setMeasure("age", e.target.value)}
-            />
+        );
+      case 6:
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label>מין / התאמה — אופציונלי</Label>
+              <ChoiceGroup
+                options={ADAPTATION_OPTIONS}
+                value={draft.adaptation}
+                onSelect={(v) => setField("adaptation", v)}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-2.5">
+              <div>
+                <Label htmlFor="profile-age">גיל</Label>
+                <Input
+                  id="profile-age"
+                  inputMode="numeric"
+                  maxLength={MEASURE_MAX_LENGTH}
+                  className="text-center font-semibold"
+                  value={draft.age}
+                  onChange={(e) => setMeasure("age", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="profile-height">גובה · ס״מ</Label>
+                <Input
+                  id="profile-height"
+                  inputMode="numeric"
+                  maxLength={MEASURE_MAX_LENGTH}
+                  className="text-center font-semibold"
+                  value={draft.heightCm}
+                  onChange={(e) => setMeasure("heightCm", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="profile-weight">משקל · ק״ג</Label>
+                <Input
+                  id="profile-weight"
+                  inputMode="numeric"
+                  maxLength={MEASURE_MAX_LENGTH}
+                  className="text-center font-semibold"
+                  value={draft.weightKg}
+                  onChange={(e) => setMeasure("weightKg", e.target.value)}
+                />
+              </div>
+            </div>
           </div>
-          <div>
-            <Label htmlFor="profile-height">גובה · ס״מ</Label>
-            <Input
-              id="profile-height"
-              inputMode="numeric"
-              maxLength={MEASURE_MAX_LENGTH}
-              className="text-center font-semibold"
-              value={draft.heightCm}
-              onChange={(e) => setMeasure("heightCm", e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="profile-weight">משקל · ק״ג</Label>
-            <Input
-              id="profile-weight"
-              inputMode="numeric"
-              maxLength={MEASURE_MAX_LENGTH}
-              className="text-center font-semibold"
-              value={draft.weightKg}
-              onChange={(e) => setMeasure("weightKg", e.target.value)}
-            />
-          </div>
-        </div>
-        <SubField label="איזה סגנון אימון מתאים לך יותר?">
+        );
+      case 7:
+        return (
           <ChoiceGroup
             options={TRAINING_PREFERENCE_OPTIONS}
             value={draft.trainingPreference}
             onSelect={(v) => setField("trainingPreference", v)}
           />
-        </SubField>
-        <SubField label="איך תרצה להתחיל?">
+        );
+      case 8:
+        return (
           <ChoiceGroup
             options={GUIDANCE_STYLE_OPTIONS}
             value={draft.guidanceStyle}
             onSelect={(v) => setField("guidanceStyle", v)}
           />
-        </SubField>
-      </FormSection>
+        );
+      case 9:
+        return (
+          <Textarea
+            value={draft.notes}
+            maxLength={NOTES_MAX_LENGTH}
+            onChange={(e) => setField("notes", e.target.value)}
+            placeholder="כתוב כאן בחופשיות…"
+            aria-label="הערות לפרופיל"
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
-      {/* הערות */}
-      <FormSection
-        icon={PencilIcon}
-        title="הערות"
-        label="יש משהו שכדאי לקחת בחשבון?"
-        helper="אם יש משהו שחשוב לזכור — זמן מוגבל, תרגילים שפחות מתאימים לך, חוסר ניסיון או העדפה מסוימת — אפשר לכתוב כאן."
-      >
-        <Textarea
-          value={draft.notes}
-          maxLength={NOTES_MAX_LENGTH}
-          onChange={(e) => setField("notes", e.target.value)}
-          placeholder="כתוב כאן בחופשיות…"
-          aria-label="הערות לפרופיל"
-        />
-      </FormSection>
+  return (
+    <div className="space-y-5">
+      <WizardProgress stepIndex={stepIndex} />
 
-      {/* Save area */}
-      <div className="space-y-2.5 pt-1">
-        <Button onClick={handleSave} size="lg" className="w-full">
-          <CheckIcon className="h-5 w-5" /> שמור פרופיל
-        </Button>
-        {hasProfile ? (
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={() => setIsEditing(false)}
-          >
-            ביטול
-          </Button>
+      {/* Re-keying on the step makes each screen settle in with a soft fade. */}
+      <div key={stepIndex} className="animate-fade-up">
+        {isSummary ? (
+          <ProfileRows
+            goal={draft.goal}
+            location={draft.location}
+            weeklyFrequency={draft.weeklyFrequency}
+            experience={draft.experience}
+            workoutDuration={draft.workoutDuration}
+            equipment={draft.equipment}
+            notes={draft.notes}
+            adaptation={draft.adaptation}
+            age={draft.age}
+            heightCm={draft.heightCm}
+            weightKg={draft.weightKg}
+            trainingPreference={draft.trainingPreference}
+            guidanceStyle={draft.guidanceStyle}
+          />
         ) : (
-          <Button variant="ghost" className="w-full" onClick={handleSkip}>
-            דלג בינתיים
-          </Button>
-        )}
-        {!hasProfile && (
-          <p className="text-center text-[12px] text-faint">
-            אפשר לדלג ולמלא אחר כך — האפליקציה עובדת רגיל גם בלי הפרופיל.
-          </p>
+          <StepCard icon={meta.icon} title={meta.title} helper={meta.helper}>
+            {renderBody()}
+          </StepCard>
         )}
       </div>
+
+      {/* Action area */}
+      {isSummary ? (
+        <div className="space-y-2.5 pt-1">
+          <Button size="lg" className="w-full" onClick={handleSave}>
+            <CheckIcon className="h-5 w-5" /> שמור פרופיל
+          </Button>
+          <Button variant="secondary" className="w-full" onClick={goBack}>
+            חזור לעריכה
+          </Button>
+          {!hasProfile && (
+            <Button variant="ghost" className="w-full" onClick={handleSkip}>
+              דלג בינתיים
+            </Button>
+          )}
+        </div>
+      ) : (
+        <>
+          <div className="flex gap-2.5 pt-1">
+            <Button variant="secondary" className="px-6" onClick={goBack}>
+              חזור
+            </Button>
+            <Button className="flex-1" onClick={goNext}>
+              {stepIndex === LAST_QUESTION_INDEX ? "לסיכום" : "הבא"}
+            </Button>
+          </div>
+          {!hasProfile && (
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="tap mx-auto block rounded-xl px-3 py-1.5 text-center text-[12.5px] font-semibold text-faint hover:text-foreground"
+            >
+              דלג בינתיים
+            </button>
+          )}
+        </>
+      )}
     </div>
   );
 }
