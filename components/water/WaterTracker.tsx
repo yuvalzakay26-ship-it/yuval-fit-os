@@ -24,6 +24,7 @@ import {
   TrashIcon,
 } from "@/components/ui/icons";
 import { WaterGauge } from "./WaterGauge";
+import { WaterGoalBanner } from "./WaterGoalBanner";
 import { WaterPresetChips } from "./WaterPresetChips";
 import { WATER_HELPER_COPY, waterStatusLine } from "./water-copy";
 
@@ -104,11 +105,15 @@ export function WaterTracker() {
           </p>
           <p className="mt-1.5 text-[13px] font-medium text-muted">
             {reached
-              ? "הגעת ליעד המים היום 🎉"
+              ? waterStatusLine(total, goal)
               : `נותרו ${formatLiters(remaining)} ליטר · ${waterStatusLine(total, goal)}`}
           </p>
         </div>
       </Card>
+
+      {/* Goal completion / graduated over-goal banner. Renders nothing below the
+          goal, so normal tracking is untouched; never blocks the controls. */}
+      <WaterGoalBanner totalMl={total} goalMl={goal} className="mt-4" />
 
       {/* Quick add — the full personal preset set */}
       <section className="mt-6">

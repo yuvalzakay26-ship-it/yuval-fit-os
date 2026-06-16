@@ -18,7 +18,7 @@ auth, database, sync, AI, or external APIs. Hebrew RTL, light + dark.
 | --- | --- | --- |
 | **Today** (`/`) | "הידרציה" section with the compact card (gauge + litres-of-goal + status + quick-add + "פתח") | `components/water/WaterCard.tsx` |
 | **Nutrition** (`/nutrition`) | "מעקב מים" compact card (same component, different title) | `components/water/WaterCard.tsx` |
-| **Water detail** (`/nutrition/water`) | Full screen: hero gauge, preset quick-add, custom amount, "עריכת קיצורים", today's entries, delete, reset, empty/success states | `components/water/WaterTracker.tsx` |
+| **Water detail** (`/nutrition/water`) | Full screen: hero gauge, a graduated goal-completion / over-goal banner ([`WATER_GOAL_UX_UPGRADE.md`](WATER_GOAL_UX_UPGRADE.md)), preset quick-add, custom amount, "עריכת קיצורים", today's entries, delete, reset, empty/success states | `components/water/WaterTracker.tsx`, `components/water/WaterGoalBanner.tsx` |
 | **Water presets** (`/nutrition/water/presets`) | Edit personal cup/bottle presets (Phase 3.26) | `components/water/WaterPresetsEditor.tsx`, [`WATER_PRESETS.md`](WATER_PRESETS.md) |
 | **Settings** (`/settings`) | "יעד מים יומי" — edit the daily goal in litres, plus a "ערוך קיצורי מים" shortcut | `components/settings/SettingsView.tsx` |
 | **Progress** (`/progress`) | "מים היום" + "ממוצע מים השבוע" stat cards | `components/progress/ProgressView.tsx` |
