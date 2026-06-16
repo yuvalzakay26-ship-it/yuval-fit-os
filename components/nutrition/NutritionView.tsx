@@ -275,20 +275,13 @@ export function NutritionView({
             accentSoft="var(--accent-nutrition-soft)"
             icon={<AppleIcon className="h-7 w-7" />}
             title="עדיין לא נרשם אוכל היום"
-            description="סרוק צלחת או הוסף ידנית כדי להתחיל לעקוב."
+            description="הוסף ארוחה כדי להתחיל לעקוב — פעולות ההוספה נמצאות למעלה."
             action={
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <Link href="/nutrition/add">
-                  <Button size="sm" variant="secondary">
-                    <PencilIcon className="h-4 w-4" /> הוסף ידנית
-                  </Button>
-                </Link>
-                <Link href="/nutrition/library">
-                  <Button size="sm" variant="secondary">
-                    <DatabaseIcon className="h-4 w-4" /> בחר מהמאגר
-                  </Button>
-                </Link>
-              </div>
+              <Link href="/nutrition/library">
+                <Button size="sm" variant="secondary">
+                  <DatabaseIcon className="h-4 w-4" /> בחר מהמאגר
+                </Button>
+              </Link>
             }
           />
         ) : (

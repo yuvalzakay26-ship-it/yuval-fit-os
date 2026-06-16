@@ -55,7 +55,7 @@ manual / recent fallbacks stay visible and usable in both states.
 | Component | `PhotoScanCard` (full state machine) | `PhotoScanCardDisabled` (inert `<div>`) |
 | Title | `סרוק צלחת` | `סרוק צלחת` |
 | Subtitle | `צלם את הארוחה ונבנה לך טיוטת תזונה לעריכה` | `ניתוח ארוחה מתמונה יופעל בקרוב` |
-| Trust line | `הערכה בלבד · אפשר לערוך לפני שמירה` | `בינתיים אפשר להוסיף ידנית או להשתמש ב־הוסף שוב` |
+| Trust line | `הערכה בלבד · אפשר לערוך לפני שמירה` | `בינתיים אפשר להוסיף ידנית או לבחור מהמאגר` |
 | Badge / CTA | `סרוק עכשיו` (opens capture) | `בקרוב` badge + disabled `לא פעיל כרגע` button |
 | File input | two hidden `<input type=file>` mounted | **none mounted** |
 | On tap | opens the pre-capture sheet | **nothing** (no handler, no overlay) |

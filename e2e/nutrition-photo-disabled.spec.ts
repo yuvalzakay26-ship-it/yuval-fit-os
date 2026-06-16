@@ -75,6 +75,31 @@ test("disabled card makes no call to the analyze route and logs no errors", asyn
   expect(consoleErrors).toEqual([]);
 });
 
+test("disabled card points to the always-available catalog fallback", async ({
+  page,
+}) => {
+  await gotoNutrition(page);
+  // The helper line names a fallback that is always reachable (unlike "הוסף שוב",
+  // which needs prior meals). Catalog is always available.
+  await expect(
+    page.getByText("בינתיים אפשר להוסיף ידנית או לבחור מהמאגר"),
+  ).toBeVisible();
+});
+
+test("empty food journal renders calm, non-duplicative copy", async ({ page }) => {
+  await gotoNutrition(page);
+  // Source of truth for today's food. On a fresh device it is empty.
+  await expect(page.getByText("היומן של היום", { exact: true })).toBeVisible();
+  await expect(page.getByText("עדיין לא נרשם אוכל היום")).toBeVisible();
+  await expect(
+    page.getByText("הוסף ארוחה כדי להתחיל לעקוב — פעולות ההוספה נמצאות למעלה."),
+  ).toBeVisible();
+  // The empty journal no longer repeats "הוסף ידנית" (already in the quick
+  // actions above); it keeps a single, distinct catalog CTA instead.
+  await expect(page.getByText("הוסף ידנית", { exact: true })).toHaveCount(1);
+  await expect(page.getByText("בחר מהמאגר", { exact: true })).toBeVisible();
+});
+
 test("manual add and add-again fallbacks stay available", async ({ page }) => {
   await gotoNutrition(page);
   // "הוסף ידנית" is always present and navigates to the manual flow.

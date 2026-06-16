@@ -4,7 +4,26 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (**Beta Access Requests**: the Beta Access System
+> Last reviewed: Phase 3.xx (**Nutrition Clarity Pass — Part 1**: a
+> presentation/copy-only hierarchy pass on `/nutrition` (`NutritionView`). The
+> screen reads top-down as a food-logging command center — (1) `MacroSummary`,
+> (2) photo-first **`סרוק צלחת`** primary (or inert **`בקרוב`**
+> `PhotoScanCardDisabled` when AI is off) with the `איך עובד ניתוח AI?` helper
+> link directly beneath it, (3) fast fallbacks `הוסף שוב` + `הוסף ידנית` with
+> recents/favorites secondary, (4) **`היומן של היום`** source-of-truth diary,
+> (5) **`מעקבים נוספים`** (water + supplements), (6) tools. This pass tightened
+> two rough edges: the **empty journal** no longer repeats `הוסף ידנית` (already
+> a quick action above) — it shows calm copy `עדיין לא נרשם אוכל היום` /
+> `הוסף ארוחה כדי להתחיל לעקוב — פעולות ההוספה נמצאות למעלה.` plus a single
+> distinct **`בחר מהמאגר`** catalog CTA; and the disabled scan card's helper line
+> now names an always-available fallback
+> (`בינתיים אפשר להוסיף ידנית או לבחור מהמאגר`, was `…או להשתמש ב־הוסף שוב`, which
+> needs prior meals). **No** change to `FoodLog` schema, localStorage keys, backup
+> format, AI route/activation, water/supplement/auth/gate behaviour, or macro
+> calculations; food photos still never stored; AI results never auto-saved. e2e:
+> two new disabled-page assertions (empty-journal copy + catalog fallback). See
+> [`NUTRITION_CLARITY_PASS.md`](NUTRITION_CLARITY_PASS.md).)
+> Prior: Phase 3.xx (**Beta Access Requests**: the Beta Access System
 > gained a self-service request + approval loop. An unapproved signed-in user now
 > sees a **`בקש גישה`** CTA on the denied screen (`BetaAccessDenied`) that files a
 > row in a new **`beta_access_requests`** queue (status `pending`); the screen
@@ -24,7 +43,7 @@
 > moved to the cloud** — only request/access metadata lives in Supabase. Rerun the
 > SQL to upgrade existing installs (`create table if not exists` + safe
 > `drop/create policy`). See [`BETA_ACCESS_SYSTEM.md`](BETA_ACCESS_SYSTEM.md).)
-> Latest: Phase 3.xx (**Today Product Clarity Pass — Part 3**: a hierarchy
+> Prior: Phase 3.xx (**Today Product Clarity Pass — Part 3**: a hierarchy
 > pass on the Today command area, presentation/copy only. (1) **What is live now
 > leads** — an active gym visit and/or in-progress workout draft are reordered
 > ABOVE the suggested next-action card so a session already in progress is never
@@ -81,7 +100,7 @@
 > calls `POST /api/nutrition/analyze-photo` — manual add + `הוסף שוב` stay visible
 > and usable directly below. Copy: title `סרוק צלחת`, subtitle
 > `ניתוח ארוחה מתמונה יופעל בקרוב`, trust line
-> `בינתיים אפשר להוסיף ידנית או להשתמש ב־הוסף שוב`, `בקרוב` badge, disabled
+> `בינתיים אפשר להוסיף ידנית או לבחור מהמאגר`, `בקרוב` badge, disabled
 > `לא פעיל כרגע` button; a non-prod-only dev/admin helper
 > (`showSetupHint` from `app/nutrition/page.tsx`) adds
 > `הפיצ׳ר מוכן, אבל עדיין לא חובר מפתח AI בסביבת הפרודקשן.`. `/nutrition` stays

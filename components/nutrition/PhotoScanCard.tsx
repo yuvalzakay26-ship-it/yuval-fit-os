@@ -344,7 +344,7 @@ export function PhotoScanCardDisabled({
       <div className="mt-3 flex items-center justify-between gap-2">
         <span className="inline-flex min-w-0 items-center gap-1.5 text-[11px] font-semibold text-faint">
           <ShieldIcon className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">בינתיים אפשר להוסיף ידנית או להשתמש ב־הוסף שוב</span>
+          <span className="truncate">בינתיים אפשר להוסיף ידנית או לבחור מהמאגר</span>
         </span>
         {/* A real disabled button: never fires, shows the not-interactive cursor. */}
         <button
