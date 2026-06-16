@@ -47,8 +47,18 @@ export interface WaterStatusInfo {
   status: WaterStatus;
   /** total / goal, clamped to ≥ 0. 0 when the goal is not set (goal ≤ 0). */
   ratio: number;
-  /** Rounded percentage of the goal (e.g. 100, 134). 0 when goal ≤ 0. */
+  /**
+   * Rounded, UNCAPPED percentage of the goal — this is the number shown to the
+   * user (e.g. 100, 134, 300). 0 when goal ≤ 0. Never clamp this for display:
+   * drinking 7.5L against a 2.5L goal must read as 300%, not 100%.
+   */
   percent: number;
+  /**
+   * Rounded percentage clamped to 0–100, for VISUAL fill only (gauge level,
+   * progress bars). Use this so the gauge stays full at the top once the goal is
+   * reached, while `percent` keeps the true over-goal figure for labels.
+   */
+  fillPercent: number;
   /** Millilitres still needed to reach the goal (0 once reached). */
   remainingMl: number;
   /** Millilitres logged beyond the goal (0 until the goal is passed). */
@@ -73,6 +83,7 @@ export function getWaterStatus(totalMl: number, goalMl: number): WaterStatusInfo
       status: "under_goal",
       ratio: 0,
       percent: 0,
+      fillPercent: 0,
       remainingMl: 0,
       overMl: 0,
       reached: false,
@@ -81,6 +92,7 @@ export function getWaterStatus(totalMl: number, goalMl: number): WaterStatusInfo
 
   const ratio = total / goal;
   const percent = Math.round(ratio * 100);
+  const fillPercent = Math.min(100, Math.max(0, percent));
   const remainingMl = Math.max(0, goal - total);
   const overMl = Math.max(0, total - goal);
 
@@ -102,6 +114,7 @@ export function getWaterStatus(totalMl: number, goalMl: number): WaterStatusInfo
     status,
     ratio,
     percent,
+    fillPercent,
     remainingMl,
     overMl,
     reached: ratio >= WATER_THRESHOLDS.completed,

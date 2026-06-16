@@ -236,8 +236,12 @@ export function TodayView() {
   // Water
   const waterGoal = settings.waterGoalMl ?? DEFAULT_WATER_GOAL_ML;
   const waterMl = todaysWaterMl(waterLogs);
+  // Uncapped on purpose: the status strip shows the *real* percentage, so
+  // drinking past the goal reads as e.g. 300%, not a clamped 100%. This is a
+  // text label only (no visual fill), so there is nothing to overflow. See
+  // docs/WATER_GOAL_GLOBAL_CELEBRATION.md.
   const waterPct =
-    waterGoal > 0 ? Math.min(100, Math.round((waterMl / waterGoal) * 100)) : 0;
+    waterGoal > 0 ? Math.round((waterMl / waterGoal) * 100) : 0;
 
   // Supplements
   const supp = supplementDaySummary(supplements, supplementLogs, today);

@@ -76,6 +76,32 @@ The gauge fill itself retints via `--water-from` / `--water-to` overrides (amber
 for attention, rose for caution), so the water "becomes more reddish" as the user
 exceeds the goal.
 
+## Displayed percentage vs. visual fill (uncapped label)
+
+The number shown to the user is the **real, uncapped** percentage; only the
+gauge's visual fill is clamped. Drinking 7.5L against a 2.5L goal reads as
+**300%**, while the circular gauge stays visually full (it never overflows).
+
+Two distinct quantities, deliberately kept apart:
+
+| Quantity | Value | Used for |
+| --- | --- | --- |
+| `percent` (display) | `Math.round((intakeMl / goalMl) * 100)` — uncapped | All visible percentage labels (gauge centre, banner, Today strip) |
+| `fillPercent` (visual) | `Math.min(100, Math.max(0, percent))` | Gauge fill level / progress fill only |
+
+- `lib/water-status.ts` — `getWaterStatus()` returns both `percent` (uncapped,
+  the displayed figure) and the new `fillPercent` (0–100, visual only). Status
+  thresholds still use the real `ratio`, so `caution` continues to appear at
+  ≥150%.
+- `components/water/WaterGauge.tsx` — computes a capped `fillPct` (0–1) for the
+  water-level transform and an **uncapped** `percentLabel` for the centre text.
+  Previously the label was derived from the clamped fill, so it wrongly stuck at
+  100% over goal.
+- `components/water/WaterGoalBanner.tsx` — already showed `info.percent`
+  (uncapped); unchanged.
+- `components/today/TodayView.tsx` — the four-pillar status strip now shows the
+  uncapped water percentage (it is a text label only, no fill to overflow).
+
 ## Safety wording
 
 Unchanged from the first pass and still deliberately non-medical. Copy is framed
@@ -104,7 +130,9 @@ against the user's **own configured goal**, never a universal health claim. We d
 - Auth / beta access / guest mode / admin / Supabase — untouched.
 - Nutrition / workout / supplement / gym schemas, AI routes, Privacy/Terms/AI
   disclaimer pages — untouched.
-- `lib/water-status.ts` thresholds and the existing detail-screen banner behaviour.
+- `lib/water-status.ts` thresholds and the existing detail-screen banner behaviour
+  (`fillPercent` was *added*; `percent` stays the uncapped display figure).
+- The global celebration trigger (`yfos:water-goal-reached`) and its once-per-day flag.
 - No new dependencies.
 
 ## Tests
@@ -118,6 +146,11 @@ against the user's **own configured goal**, never a universal health claim. We d
 - Today water card shows the amber **attention** copy/colour.
 - Today water card shows the rose **caution** copy + the non-medical disclaimer,
   outside `/nutrition/water`.
+- The gauge centre label shows the **uncapped** percentage at 100 / 110 / 120 /
+  150 / 300% (and is not clamped to 100% when over goal).
+- Over goal (300%) the gauge **fill stays capped** (`translateY(2px)`, the full
+  level) while the label still reads 300%.
+- The Today status strip surfaces the real over-goal percentage (300%).
 
 ## Manual QA notes (360px / light / dark)
 

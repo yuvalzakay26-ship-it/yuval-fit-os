@@ -36,13 +36,19 @@ export function WaterGauge({
   const clipId = `water-clip-${uid}`;
   const gradId = `water-grad-${uid}`;
 
-  const pct = goal > 0 ? Math.min(1, Math.max(0, value / goal)) : 0;
-  const percentLabel = Math.round(pct * 100);
+  // Two distinct quantities, deliberately kept apart (see docs/WATER_GOAL_*.md):
+  //   • fillPct — the VISUAL fill fraction, clamped to 0..1 so the gauge stays
+  //     full (never overflowing) once the goal is reached.
+  //   • percentLabel — the UNCAPPED percentage shown in the centre label, so
+  //     7.5L against a 2.5L goal reads as 300%, not a clamped 100%.
+  const rawRatio = goal > 0 ? Math.max(0, value / goal) : 0;
+  const fillPct = Math.min(1, rawRatio);
+  const percentLabel = Math.round(rawRatio * 100);
   const reached = goal > 0 && value >= goal;
 
   // Water level inside the 0–100 viewBox: 100 = empty (surface at bottom),
   // a little headroom kept at the top so a full gauge still shows a meniscus.
-  const levelY = 100 - pct * 96 - 2;
+  const levelY = 100 - fillPct * 96 - 2;
 
   // Wave crest path: mean line at y=0, period 50, width 200 (4 periods) so the
   // horizontal scroll loops seamlessly. Extends well below to fill the body.
@@ -111,7 +117,7 @@ export function WaterGauge({
           <span
             className={cn(
               "flex items-center justify-center",
-              pct > 0.45 ? "text-white" : "text-[color:var(--accent-water)]",
+              fillPct > 0.45 ? "text-white" : "text-[color:var(--accent-water)]",
             )}
             style={{ width: iconSize, height: iconSize }}
           >
@@ -124,7 +130,7 @@ export function WaterGauge({
           <span
             className={cn(
               "mt-0.5 font-extrabold leading-none tabular-nums",
-              pct > 0.55 ? "text-white" : "text-foreground",
+              fillPct > 0.55 ? "text-white" : "text-foreground",
             )}
             style={{ fontSize: numberSize }}
           >

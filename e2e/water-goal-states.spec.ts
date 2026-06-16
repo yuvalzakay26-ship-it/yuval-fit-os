@@ -166,3 +166,57 @@ test("Today water card shows the rose caution status outside /nutrition/water", 
     card.getByText("האפליקציה אינה מהווה ייעוץ רפואי."),
   ).toBeVisible();
 });
+
+// ===== Uncapped over-goal percentage display =====
+// The displayed percentage must reflect the *real* ratio (intake / goal), even
+// far over the goal — only the gauge's visual fill is capped at 100%. With the
+// 2000ml goal: 2000→100%, 2200→110%, 2400→120%, 3000→150%, 6000→300%.
+// The gauge centre label is an exact "<n>%" span, so an exact-text match finds
+// only the gauge (the banner's "<n>% מהיעד שהגדרת" carries extra text).
+
+const PERCENT_CASES: Array<{ totalMl: number; label: string }> = [
+  { totalMl: 2000, label: "100%" },
+  { totalMl: 2200, label: "110%" },
+  { totalMl: 2400, label: "120%" },
+  { totalMl: 3000, label: "150%" },
+  { totalMl: 6000, label: "300%" },
+];
+
+for (const { totalMl, label } of PERCENT_CASES) {
+  test(`water gauge shows ${label} for ${totalMl}ml against a 2000ml goal`, async ({
+    page,
+  }) => {
+    await seedWater(page, totalMl);
+    await page.goto("/nutrition/water");
+    // The gauge centre label shows the real (uncapped) percentage.
+    await expect(
+      page.getByText(label, { exact: true }).first(),
+    ).toBeVisible();
+    // It must NOT be clamped down to 100% when over goal.
+    if (label !== "100%") {
+      await expect(page.getByText("100%", { exact: true })).toHaveCount(0);
+    }
+  });
+}
+
+test("over-goal gauge fill stays capped while its label is uncapped", async ({
+  page,
+}) => {
+  // 300% over goal: the water body translate (visual fill) is capped at the
+  // full level (levelY = 2), identical to exactly 100%, so it never overflows —
+  // while the centre label still reads the true 300%.
+  await seedWater(page, 6000); // 300%
+  await page.goto("/nutrition/water");
+  await expect(page.getByText("300%", { exact: true }).first()).toBeVisible();
+  const fill = page.locator("svg g[clip-path]").first();
+  await expect(fill).toHaveAttribute("style", /translateY\(2px\)/);
+});
+
+test("Today status strip shows the real over-goal water percentage", async ({
+  page,
+}) => {
+  await seedWater(page, 6000); // 300%
+  await page.goto("/");
+  // The four-pillar status strip surfaces the uncapped percentage as text.
+  await expect(page.getByText("300%", { exact: true }).first()).toBeVisible();
+});
