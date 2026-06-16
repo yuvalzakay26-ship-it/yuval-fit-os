@@ -33,6 +33,7 @@ import {
   ListIcon,
   PlayIcon,
   PlusIcon,
+  TargetIcon,
 } from "@/components/ui/icons";
 import { WorkoutBuilder, type BuilderSeed } from "./WorkoutBuilder";
 import { WorkoutHistory } from "./WorkoutHistory";
@@ -336,6 +337,30 @@ export function WorkoutsView() {
                 </p>
                 <p className="mt-0.5 truncate text-[12.5px] text-muted">
                   כניסה, יציאה וזמן שהייה — בנפרד מהאימון
+                </p>
+              </div>
+              <ChevronIcon className="h-4 w-4 shrink-0 rotate-180 text-faint" />
+            </Card>
+          </Link>
+
+          {/* Personal training profile — a quiet, optional entry point to tailor
+              the workouts experience. Never blocks anything; the profile is
+              localStorage-only and editable any time. */}
+          <Link
+            href="/training-profile"
+            className="tap block"
+            aria-label="התאם את חוויית האימונים — פרופיל אימון אישי"
+          >
+            <Card className="flex items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-soft)] text-accent">
+                <TargetIcon className="h-[22px] w-[22px]" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px] font-bold leading-tight text-foreground">
+                  התאם את חוויית האימונים
+                </p>
+                <p className="mt-0.5 truncate text-[12.5px] text-muted">
+                  פרופיל אימון אישי — מטרה, ציוד ותדירות
                 </p>
               </div>
               <ChevronIcon className="h-4 w-4 shrink-0 rotate-180 text-faint" />

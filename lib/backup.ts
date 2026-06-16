@@ -23,6 +23,7 @@ import { useSyncExternalStore } from "react";
 import { STORAGE_KEYS } from "./storage";
 import { ACTIVE_WORKOUT_DRAFT_KEY } from "./active-workout-draft";
 import { ACTIVE_GYM_VISIT_KEY, GYM_VISITS_KEY } from "./gym-attendance";
+import { PERSONAL_PROFILE_KEY } from "./personal-profile";
 import { toISODate } from "./utils";
 
 /** App marker stored in every backup so a foreign file is rejected on import. */
@@ -84,6 +85,11 @@ export const BACKUP_MODULES: BackupModule[] = [
     field: "activeWorkoutDraft",
     storageKey: ACTIVE_WORKOUT_DRAFT_KEY,
     label: "טיוטת אימון פעיל",
+  },
+  {
+    field: "personalProfile",
+    storageKey: PERSONAL_PROFILE_KEY,
+    label: "פרופיל אימון אישי",
   },
 ];
 
@@ -249,6 +255,8 @@ export interface BackupPreview {
   settingsIncluded: boolean;
   activeDraftIncluded: boolean;
   activeGymVisitIncluded: boolean;
+  /** True when the personal training profile is part of the backup. */
+  personalProfileIncluded: boolean;
   /** True when no module carries any user data — a friendly "empty backup" hint. */
   isEmpty: boolean;
 }
@@ -280,6 +288,7 @@ export function previewBackup(backup: Backup): BackupPreview {
   const settingsIncluded = isObject(d.settings);
   const activeDraftIncluded = isMeaningfulDraft(d.activeWorkoutDraft);
   const activeGymVisitIncluded = isObject(d.activeGymVisit);
+  const personalProfileIncluded = isObject(d.personalProfile);
   const isEmpty =
     workouts +
       workoutTemplates +
@@ -293,7 +302,8 @@ export function previewBackup(backup: Backup): BackupPreview {
       0 &&
     !settingsIncluded &&
     !activeDraftIncluded &&
-    !activeGymVisitIncluded;
+    !activeGymVisitIncluded &&
+    !personalProfileIncluded;
   return {
     createdAt: backup.createdAt,
     backupVersion: backup.backupVersion,
@@ -309,6 +319,7 @@ export function previewBackup(backup: Backup): BackupPreview {
     settingsIncluded,
     activeDraftIncluded,
     activeGymVisitIncluded,
+    personalProfileIncluded,
     isEmpty,
   };
 }

@@ -23,6 +23,7 @@ import {
 } from "./fitness-types";
 import * as storage from "./storage";
 import { clearAllGymData } from "./gym-attendance";
+import { clearPersonalProfile } from "./personal-profile";
 import {
   clearWaterCelebrationFlag,
   maybeCelebrateWaterGoalCrossing,
@@ -397,6 +398,9 @@ export function resetAll(): void {
   // Gym attendance lives in its own module/keys (outside STORAGE_KEYS), so clear
   // it explicitly here — "reset all data" should remove gym visits too.
   clearAllGymData();
+  // The personal training profile is likewise its own module/key (outside
+  // STORAGE_KEYS) — "reset all data" should remove it as well.
+  clearPersonalProfile();
   // The water-celebration flag is isolated bookkeeping (not data / not backed
   // up); clear it so a fresh start can celebrate again the same day.
   clearWaterCelebrationFlag();

@@ -215,6 +215,13 @@ const SECTIONS: HubSection[] = [
         tone: "system",
       },
       {
+        href: "/training-profile",
+        title: "פרופיל אימון אישי",
+        description: "כמה שאלות קצרות שיתאימו את החוויה אליך",
+        icon: TargetIcon,
+        tone: "system",
+      },
+      {
         title: "מסלול אישי",
         description: "התאמה אישית חכמה של המערכת",
         icon: SparkIcon,

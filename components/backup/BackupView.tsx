@@ -350,6 +350,10 @@ export function BackupView() {
                   label="כולל טיוטת אימון"
                   value={yesNo(pending.preview.activeDraftIncluded)}
                 />
+                <PreviewRow
+                  label="כולל פרופיל אימון אישי"
+                  value={yesNo(pending.preview.personalProfileIncluded)}
+                />
               </div>
               <div className="mt-3.5 flex gap-2.5">
                 <Button

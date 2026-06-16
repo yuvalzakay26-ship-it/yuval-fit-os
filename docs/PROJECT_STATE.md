@@ -4,7 +4,38 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (**Workouts Clarity Pass — Part 1**: a UX
+> Last reviewed: Phase 4.0 (**Personal Profile V1 — Personal Training Profile**:
+> the first **safe personalization layer**. A new optional, fully editable
+> profile screen at **`/training-profile`** ("פרופיל אימון אישי") collects a few
+> short, supportive questions — `goal` (מטרה), `location` (מקום אימון),
+> `weeklyFrequency` (תדירות), `experience` (רמת ניסיון), `workoutDuration`
+> (זמן אימון), `equipment` (**multi-select**), and free-text `notes` — and shows a
+> saved summary with **"ערוך פרופיל"** / confirm-gated **"אפס פרופיל"** and a safe
+> future-facing note. It only **collects and displays**: **no** auto-generated
+> program, **no** medical/diet/fitness prescription, **no** body-shape/weight/
+> body-shaming fields or comparisons (age/height/weight/gender deliberately
+> **omitted** in V1). Stored under a new additive key
+> **`yfos:personal-profile:v1`**, owned by `lib/personal-profile.ts` (own
+> fail-safe + SSR-safe storage, defensive `sanitizeProfile` parser, and a
+> `useSyncExternalStore` reactive layer — mirrors `lib/gym-attendance.ts`).
+> **Included in Backup & Restore** as an additive `BACKUP_MODULES` entry
+> (`personalProfile`, label "פרופיל אימון אישי"); `backupVersion` stays **1**
+> (older backups omit the field and restore unchanged), restore writes raw while
+> reads sanitize, and the preview gained a `personalProfileIncluded` flag/row.
+> Cleared by `resetAll` (outside `STORAGE_KEYS`, so `fitness-store.resetAll` calls
+> `clearPersonalProfile()` explicitly, like gym). Entry points: a real card in the
+> System Hub **מערכת** group and a quiet **"התאם את חוויית האימונים"** card on
+> `/workouts`; **Today was intentionally left untouched** (already dense). The
+> "עוד" tab also lights up on `/training-profile`. The profile is **optional and
+> non-blocking** — no forced onboarding, the app works normally without it. **No**
+> change to workout/template/active-draft/FoodLog/nutrition/water/supplement/
+> protein/gym schemas, localStorage keys, existing backup behaviour (beyond the
+> additive module), auth/beta/guest/admin/Supabase, AI routes, or privacy/terms;
+> no new dependencies. e2e: new `training-profile.spec.ts` (renders form; fill +
+> save → summary; saved profile edits; skip returns to Today without breaking the
+> app; More + Workouts entry-point links) — full suite **76 passed**. See
+> [`PERSONAL_PROFILE_V1.md`](PERSONAL_PROFILE_V1.md).)
+> Prior: Phase 3.xx (**Workouts Clarity Pass — Part 1**: a UX
 > clarity/layout/copy pass on the `/workouts` hub — no new features, no schema /
 > localStorage-key / backup-format / behavior changes. All edits are in
 > `components/workouts/WorkoutsView.tsx`. The hub now reads as a training
@@ -468,6 +499,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | Supplements Tracker | Personal supplement/medication tracking (no advice); searchable starter-template library with already-tracked state | `components/supplements/*`, `docs/SUPPLEMENTS_TRACKER.md`, `docs/SUPPLEMENTS_LIBRARY_UX.md` |
 | Progress | Premium weekly insights screen: weekly hero, rule-based insight cards, 7-day activity trends, human empty states, and personal records — derived purely from existing local data (no AI) | `components/progress/*`, `lib/analytics.ts`, `lib/progress-insights.ts`, `docs/PROGRESS_INSIGHTS_UPGRADE.md` |
 | Gym Attendance | Local gym check-in / check-out: prominent Today card, live visit timer, weekly stats (visits, time, avg, last), rich visit history (entry/exit/duration + display-only linked-workout snapshot matched by local day), same-day re-entry guard. Tracks *being at the gym* — separate from workout logging. No GPS | `components/gym/*`, `lib/gym-attendance.ts`, `docs/GYM_CHECK_IN.md` |
+| Personal Training Profile | Optional, editable personal profile (goal, location, weekly frequency, experience, workout duration, equipment multi-select, free-text notes). Collect + display only — no auto-program, no medical/diet prescription, no body-shape fields. localStorage-only; included in Backup/Restore | `components/profile/TrainingProfileView.tsx`, `lib/personal-profile.ts`, `docs/PERSONAL_PROFILE_V1.md` |
 | Settings | Premium "control center": appearance (light/dark only), daily goals, water shortcuts, data & storage (incl. a Backup & Restore card), access & privacy, separated sensitive actions, system info | `components/settings/SettingsView.tsx`, `docs/SETTINGS_CONTROL_CENTER.md` |
 | Backup & Restore | Local JSON export/import of all Fit OS data: Blob download (+ copy/paste fallback), validated import with counts preview + confirm, last-backup status. No backend/auth/cloud/encryption | `components/backup/BackupView.tsx`, `lib/backup.ts`, `docs/BACKUP_RESTORE.md` |
 | Learn (Knowledge Center) | Card-based Hebrew articles + protein calculator | `app/learn/*`, `lib/knowledge-content.ts`, `lib/protein.ts` |
@@ -496,6 +528,7 @@ Generated by the App Router (`app/`). Rendering mode noted from the build:
 | `/nutrition/supplements/add` | Add / edit supplement | Dynamic |
 | `/progress` | Progress | Static |
 | `/gym` | Gym Attendance | Static |
+| `/training-profile` | Personal Training Profile | Static |
 | `/settings` | Settings | Static |
 | `/backup` | Backup & Restore | Static |
 | `/learn` | Knowledge Center index | Static |
@@ -542,6 +575,7 @@ existing user data is bound to them. See §5 for reset behavior.
 | `yfos:active-workout-draft:v1` | localStorage | **Single** in-progress active-workout draft (auto-saved). NOT history — separate from `yfos:workouts`; cleared on final save / explicit discard | `lib/active-workout-draft.ts` |
 | `yfos:gym-visits:v1` | localStorage | Gym **attendance** history (`GymVisit[]`). Separate from `yfos:workouts` — being at the gym, not training. Each visit may carry an optional, additive `workouts?` display-only snapshot (no format/version change). Included in backups; cleared by `resetAll` | `lib/gym-attendance.ts` |
 | `yfos:active-gym-visit:v1` | localStorage | **Single** open gym visit (`startedAt` only; the timer is derived). Closed into history on check-out, removed on discard. Included in backups; cleared by `resetAll` | `lib/gym-attendance.ts` |
+| `yfos:personal-profile:v1` | localStorage | **Single** optional personal training profile (`TrainingProfile`: goal/location/frequency/experience/duration/equipment/notes + `updatedAt`). Owned by `lib/personal-profile.ts` (own reactive layer + defensive parser). Included in backups (`personalProfile`); cleared by `resetAll` | `lib/personal-profile.ts` |
 | `yfos:backup-meta:v1` | localStorage | Backup bookkeeping only (`lastExportedAt` / `lastRestoredAt` / `lastRestoredBackupCreatedAt`). Best-effort status; **never** part of a backup and not "data" | `lib/backup.ts` |
 | `yfos:water-goal-celebration-seen:v1` | localStorage | Anti-spam flag for the app-wide water-goal celebration (stores the last date it played). Isolated bookkeeping; **never** part of a backup and not "data". Re-armed when intake drops below the goal; cleared by `resetAll` | `lib/water-goal-events.ts` |
 
@@ -559,7 +593,8 @@ existing user data is bound to them. See §5 for reset behavior.
 
 | Action (Settings) | What it clears | What it preserves |
 | --- | --- | --- |
-| **Reset all data** (`resetAll`) | All 9 `STORAGE_KEYS` data keys, incl. `yfos:settings` (theme returns to the default `light`), **plus** the gym keys (`yfos:gym-visits:v1`, `yfos:active-gym-visit:v1`) via `clearAllGymData()` | All gate flags (`welcome-seen`, `beta-welcome-seen`, `admin-access`) — gates are not "data" |
+| **Reset all data** (`resetAll`) | All 9 `STORAGE_KEYS` data keys, incl. `yfos:settings` (theme returns to the default `light`), **plus** the gym keys (`yfos:gym-visits:v1`, `yfos:active-gym-visit:v1`) via `clearAllGymData()` **and** the personal profile (`yfos:personal-profile:v1`) via `clearPersonalProfile()` | All gate flags (`welcome-seen`, `beta-welcome-seen`, `admin-access`) — gates are not "data" |
+| Reset personal profile (`clearPersonalProfile`) | `yfos:personal-profile:v1` only | All other modules |
 | Reset saved food values | `yfos:saved-food-values:v1` only | Food logs, favorites |
 | Reset favorite foods | `yfos:favorite-foods:v1` only | Food logs, saved values |
 | Reset supplements | `yfos:supplements:v1` (deleting a supplement also drops its logs) | Other modules |
