@@ -47,6 +47,13 @@ total drops back below the goal clears the flag for that day, so reaching the go
 again celebrates again. "Reset all data" clears the flag outright. The flag is
 **not** part of water data and **not** in Backup & Restore.
 
+> The day reset is now surfaced near the top of both water surfaces — an
+> "אפס את היום" action in the `WaterTracker` header and a quiet "אפס" button on the
+> Today/home `WaterCard` — instead of only at the bottom of the detail screen. Both
+> route through the same `resetWaterDay(today)`, so this re-arming behaviour is
+> preserved identically wherever the reset is triggered. See
+> [`WATER_TRACKING.md`](WATER_TRACKING.md) for the reset UX details.
+
 ## Surfaces now using the shared status
 
 | Surface | Component | Treatment |

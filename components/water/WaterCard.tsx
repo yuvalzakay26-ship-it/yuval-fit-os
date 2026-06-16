@@ -1,17 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   resolveWaterPresets,
   TODAY_WATER_PRESET_COUNT,
   todaysWaterMl,
 } from "@/lib/analytics";
-import { logWater, useSettings, useWaterLogs } from "@/lib/fitness-store";
+import {
+  logWater,
+  resetWaterDay,
+  useSettings,
+  useWaterLogs,
+} from "@/lib/fitness-store";
 import { DEFAULT_WATER_GOAL_ML } from "@/lib/fitness-types";
 import { getWaterStatus } from "@/lib/water-status";
 import { cn, formatLiters, todayISO } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
-import { ChevronIcon } from "@/components/ui/icons";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { ChevronIcon, TrashIcon } from "@/components/ui/icons";
 import { WaterGauge } from "./WaterGauge";
 import { WaterGoalBanner } from "./WaterGoalBanner";
 import { WaterPresetChips } from "./WaterPresetChips";
@@ -25,6 +32,7 @@ import { waterStatusLine, waterStatusTheme } from "./water-copy";
 export function WaterCard({ title = "מים היום" }: { title?: string }) {
   const logs = useWaterLogs();
   const settings = useSettings();
+  const [confirmingReset, setConfirmingReset] = useState(false);
 
   const goal = settings.waterGoalMl ?? DEFAULT_WATER_GOAL_ML;
   const total = todaysWaterMl(logs);
@@ -43,6 +51,11 @@ export function WaterCard({ title = "מים היום" }: { title?: string }) {
 
   const handleAdd = (ml: number) => logWater(todayISO(), ml);
 
+  const handleReset = () => {
+    resetWaterDay(todayISO());
+    setConfirmingReset(false);
+  };
+
   return (
     <Card className={cn(theme.module, theme.glow, "sheen relative overflow-hidden p-4")}>
       <div
@@ -56,17 +69,32 @@ export function WaterCard({ title = "מים היום" }: { title?: string }) {
             <p className={cn("text-[11px] font-semibold uppercase tracking-wide", theme.accentText)}>
               {title}
             </p>
-            <Link
-              href="/nutrition/water"
-              aria-label="פתח מעקב מים"
-              className={cn(
-                "tap -m-1 flex items-center gap-0.5 rounded-full px-2 py-1 text-[12px] font-semibold",
-                theme.chip,
+            <div className="flex shrink-0 items-center gap-1">
+              {/* Reset today's water — small, quiet, only when there's intake to
+                  clear, so it never competes with the quick-add buttons below. */}
+              {total > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmingReset(true)}
+                  aria-label="אפס את שתיית המים של היום"
+                  className="tap -m-1 flex items-center gap-0.5 rounded-full px-2 py-1 text-[12px] font-semibold text-faint hover:text-red-500"
+                >
+                  <TrashIcon className="h-3.5 w-3.5" />
+                  אפס
+                </button>
               )}
-            >
-              פתח
-              <ChevronIcon className="h-3.5 w-3.5 rotate-180" />
-            </Link>
+              <Link
+                href="/nutrition/water"
+                aria-label="פתח מעקב מים"
+                className={cn(
+                  "tap -m-1 flex items-center gap-0.5 rounded-full px-2 py-1 text-[12px] font-semibold",
+                  theme.chip,
+                )}
+              >
+                פתח
+                <ChevronIcon className="h-3.5 w-3.5 rotate-180" />
+              </Link>
+            </div>
           </div>
           <p className="mt-0.5 text-[15px] font-bold leading-tight text-foreground">
             {formatLiters(total)} ליטר{" "}
@@ -88,6 +116,19 @@ export function WaterCard({ title = "מים היום" }: { title?: string }) {
         presets={presets}
         onAdd={handleAdd}
         className="relative mt-3.5"
+      />
+
+      {/* Same confirm + reset path as the water detail screen — clears today's
+          entries only; goal, presets and settings stay unchanged. */}
+      <ConfirmDialog
+        open={confirmingReset}
+        title="לאפס את שתיית המים של היום?"
+        description="הפעולה תמחק את רישומי המים של היום בלבד. יעד המים והקיצורים יישארו ללא שינוי."
+        confirmLabel="אפס"
+        cancelLabel="ביטול"
+        tone="danger"
+        onConfirm={handleReset}
+        onCancel={() => setConfirmingReset(false)}
       />
     </Card>
   );

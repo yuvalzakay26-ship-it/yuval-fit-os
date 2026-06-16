@@ -15,6 +15,7 @@ import { getWaterStatus } from "@/lib/water-status";
 import { cn, formatLiters, parseOptionalNumber, todayISO } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Input } from "@/components/ui/Field";
 import { EmptyState, PageHeader, SectionHeader } from "@/components/ui/PageHeader";
 import {
@@ -88,7 +89,25 @@ export function WaterTracker() {
         תזונה
       </Link>
 
-      <PageHeader title="מעקב מים" subtitle="כמה מים שתית היום" className="mb-4" />
+      <PageHeader
+        title="מעקב מים"
+        subtitle="כמה מים שתית היום"
+        className="mb-4"
+        action={
+          // Reset is offered right here in the header — visible without
+          // scrolling past today's entries. Only when there's something to clear.
+          total > 0 ? (
+            <button
+              type="button"
+              onClick={() => setConfirmingReset(true)}
+              className="tap -m-1 flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-[12.5px] font-semibold text-faint hover:bg-surface-2 hover:text-red-500"
+            >
+              <TrashIcon className="h-3.5 w-3.5" />
+              אפס את היום
+            </button>
+          ) : undefined
+        }
+      />
 
       {/* Hero gauge */}
       <Card
@@ -208,41 +227,23 @@ export function WaterTracker() {
         )}
       </section>
 
-      {/* Reset today — only offered when there is something to reset. */}
-      {entries.length > 0 && (
-        <section className="mt-6">
-          {confirmingReset ? (
-            <Card className="space-y-3 p-4">
-              <p className="text-[13px] leading-relaxed text-muted">
-                לאפס את כל רשומות המים של היום? פעולה זו לא משפיעה על ימים קודמים.
-              </p>
-              <div className="flex gap-2.5">
-                <Button variant="danger" onClick={handleReset} className="flex-1">
-                  <TrashIcon className="h-[18px] w-[18px]" /> כן, אפס את היום
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => setConfirmingReset(false)}
-                >
-                  ביטול
-                </Button>
-              </div>
-            </Card>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmingReset(true)}
-              className="tap mx-auto block text-[13px] font-semibold text-faint hover:text-red-500"
-            >
-              אפס את היום
-            </button>
-          )}
-        </section>
-      )}
-
       <p className="mt-6 text-center text-[12px] leading-relaxed text-faint">
         {WATER_HELPER_COPY}
       </p>
+
+      {/* Confirm-gated reset. Clears today's entries only — goal, presets and
+          settings are untouched. resetWaterDay re-arms the celebration so
+          reaching the goal again later still celebrates. */}
+      <ConfirmDialog
+        open={confirmingReset}
+        title="לאפס את שתיית המים של היום?"
+        description="הפעולה תמחק את רישומי המים של היום בלבד. יעד המים והקיצורים יישארו ללא שינוי."
+        confirmLabel="אפס"
+        cancelLabel="ביטול"
+        tone="danger"
+        onConfirm={handleReset}
+        onCancel={() => setConfirmingReset(false)}
+      />
     </div>
   );
 }

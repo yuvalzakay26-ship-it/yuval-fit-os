@@ -16,9 +16,9 @@ auth, database, sync, AI, or external APIs. Hebrew RTL, light + dark.
 
 | Surface | What's shown | Component |
 | --- | --- | --- |
-| **Today** (`/`) | "הידרציה" section with the compact card (gauge + litres-of-goal + status + quick-add + "פתח") | `components/water/WaterCard.tsx` |
+| **Today** (`/`) | "הידרציה" section with the compact card (gauge + litres-of-goal + status + quick-add + "פתח" + a quiet "אפס" reset when intake > 0) | `components/water/WaterCard.tsx` |
 | **Nutrition** (`/nutrition`) | "מעקב מים" compact card (same component, different title) | `components/water/WaterCard.tsx` |
-| **Water detail** (`/nutrition/water`) | Full screen: hero gauge, a graduated goal-completion / over-goal banner ([`WATER_GOAL_UX_UPGRADE.md`](WATER_GOAL_UX_UPGRADE.md)), preset quick-add, custom amount, "עריכת קיצורים", today's entries, delete, reset, empty/success states | `components/water/WaterTracker.tsx`, `components/water/WaterGoalBanner.tsx` |
+| **Water detail** (`/nutrition/water`) | Full screen: header with an "אפס את היום" reset action, hero gauge, a graduated goal-completion / over-goal banner ([`WATER_GOAL_UX_UPGRADE.md`](WATER_GOAL_UX_UPGRADE.md)), preset quick-add, custom amount, "עריכת קיצורים", today's entries, delete, empty/success states | `components/water/WaterTracker.tsx`, `components/water/WaterGoalBanner.tsx` |
 | **Water presets** (`/nutrition/water/presets`) | Edit personal cup/bottle presets (Phase 3.26) | `components/water/WaterPresetsEditor.tsx`, [`WATER_PRESETS.md`](WATER_PRESETS.md) |
 | **Settings** (`/settings`) | "יעד מים יומי" — edit the daily goal in litres, plus a "ערוך קיצורי מים" shortcut | `components/settings/SettingsView.tsx` |
 | **Progress** (`/progress`) | "מים היום" + "ממוצע מים השבוע" stat cards | `components/progress/ProgressView.tsx` |
@@ -85,8 +85,22 @@ type WaterLog = {
   no longer the source of the chips.
 - **Custom amount** (detail screen only): a numeric ml input + add button.
 - **Delete** removes a single entry (trash icon per row).
-- **Reset today** is confirm-gated and only offered when entries exist; it clears
-  the day and never touches other days.
+- **Reset today** is confirm-gated and only offered when today has intake; it
+  clears the day and never touches other days. It is now **surfaced near the top**
+  of both surfaces so the user never has to scroll to find it:
+  - **Detail screen** (`WaterTracker`): an "אפס את היום" action in the page header,
+    right beside the title — visible without scrolling past today's entries.
+  - **Today/home card** (`WaterCard`): a small, quiet "אפס" button in the card
+    header (aria-label "אפס את שתיית המים של היום"), shown only when intake > 0 so
+    it never competes with the quick-add buttons.
+  - Both use the shared `ConfirmDialog` (RTL, danger tone) with the same wording —
+    title "לאפס את שתיית המים של היום?", body "הפעולה תמחק את רישומי המים של היום
+    בלבד. יעד המים והקיצורים יישארו ללא שינוי.", confirm "אפס", cancel "ביטול".
+  - Both call the same `resetWaterDay(today)` store action, which clears only
+    today's entries and **re-arms the goal celebration** (see
+    [`WATER_GOAL_GLOBAL_CELEBRATION.md`](WATER_GOAL_GLOBAL_CELEBRATION.md)), so
+    reaching the goal again later still celebrates. The water **goal**, **presets**
+    and all other **settings** are left unchanged.
 
 ## Visual progress treatment
 
@@ -135,3 +149,10 @@ Run with a server on `:3320` (`npx next start -p 3320`).
 Regression suites confirmed green: `qa/welcome-check.mjs`, `qa/console-check.mjs`,
 `scripts/qa-nutrition-smoke.mjs`, `scripts/qa-favorites.mjs`,
 `scripts/qa-saved-values.mjs`.
+
+The **reset UX** is covered by `e2e/water-reset.spec.ts` (`npm run test:e2e`):
+the header "אפס את היום" action shows when water is logged (and hides at 0); the
+confirmation dialog opens; cancel keeps entries; confirm clears today's water back
+to 0% and removes the amber/rose over-goal state; the goal and presets stay intact;
+the Today/home card reset clears today's water; and the goal celebration still
+fires after a reset when re-crossing the goal.
