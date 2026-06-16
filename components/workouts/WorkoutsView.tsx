@@ -360,7 +360,7 @@ export function WorkoutsView() {
                   התאם את חוויית האימונים
                 </p>
                 <p className="mt-0.5 truncate text-[12.5px] text-muted">
-                  פרופיל אימון אישי — מטרה, ציוד ותדירות
+                  ענה על כמה שאלות כדי שנוכל להציע כיוון מתאים בהמשך
                 </p>
               </div>
               <ChevronIcon className="h-4 w-4 shrink-0 rotate-180 text-faint" />

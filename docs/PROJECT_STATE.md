@@ -4,7 +4,46 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 4.0 (**Personal Profile V1 — Personal Training Profile**:
+> Last reviewed: Phase 4.1 (**Personal Profile Onboarding V2**: makes the personal
+> training profile an active first-entry experience instead of only a passive page,
+> and expands it additively. (1) **Optional one-time onboarding prompt**
+> (`components/profile/ProfileOnboardingPrompt.tsx`, mounted once in `app/layout.tsx`
+> as the LAST step inside `WelcomeGate`, next to `AppShell`): a calm invitation
+> "נכיר אותך כדי להתאים את החוויה?" with **"בוא נתחיל"** (→ `/training-profile`) and
+> **"לא עכשיו"**; both record a dismissal in the new flag
+> **`yfos:profile-onboarding-dismissed:v1`** (`lib/profile-onboarding.ts`, mirrors
+> `lib/welcome.ts`). It appears ONLY when access is granted
+> (`useAppAccessGranted`), the welcome screen AND beta welcome are both done, no
+> profile exists, it wasn't dismissed, and the route isn't a public info page or
+> `/training-profile` — so it never stacks on another modal, never shows before
+> gates resolve, and **never blocks the app** (`z-95`, below the real gates). The
+> `useAppAccessGranted` hook was **extracted verbatim** from `BetaWelcomeNotice`
+> into the shared **`lib/app-access.ts`** (behaviour identical; single source of
+> truth). (2) **Six additive OPTIONAL fields** on `TrainingProfile`
+> (`adaptation`, `age`, `heightCm`, `weightKg`, `trainingPreference`,
+> `guidanceStyle`) — all defensively sanitized, older profiles load unchanged.
+> Measures are short strings, lenient digits-only input, **no BMI / body categories
+> / "תקין·לא תקין" / labels / comparisons**; the adaptation field is
+> "מין / התאמה — אופציונלי" with "מעדיף/ה לא לענות", never forced, never a medical
+> claim. The `/training-profile` screen regrouped to **מטרה · שגרת אימון · ניסיון
+> וציוד · התאמה אישית — אופציונלי · הערות** (improved notes helper), and the saved
+> summary shows the optional "התאמה אישית" card **only when a field is filled** (no
+> empty-field "missing" look). Entry-point copy refreshed (More: "המטרה, השגרה
+> וההעדפות שלך"; Workouts: "ענה על כמה שאלות כדי שנוכל להציע כיוון מתאים בהמשך");
+> Today still untouched. **Backup unchanged in code** — the `personalProfile`
+> module already stores the whole profile object, so the new fields export/restore
+> automatically; `backupVersion` stays **1**. **No** auto-program / AI plan / BMI /
+> medical-diet logic; **no** change to workout/template/draft/FoodLog/nutrition/
+> water/supplement/protein/gym schemas or celebrations, auth/beta/guest/admin/
+> Supabase behaviour (access logic only extracted), AI routes, privacy/terms, the
+> existing backup modules, the gate order, or Today's command center; no new
+> dependencies. e2e: new `profile-onboarding.spec.ts` (prompt shows on first entry;
+> "לא עכשיו" dismisses + persists across reload; "בוא נתחיל" opens the profile;
+> never on public info pages; never once a profile exists) + an expanded
+> `training-profile.spec.ts` (optional fields save + summary; empty optional fields
+> show no section) — full suite **82 passed**. See
+> [`PERSONAL_PROFILE_V1.md`](PERSONAL_PROFILE_V1.md) (V2 section).)
+> Prior: Phase 4.0 (**Personal Profile V1 — Personal Training Profile**:
 > the first **safe personalization layer**. A new optional, fully editable
 > profile screen at **`/training-profile`** ("פרופיל אימון אישי") collects a few
 > short, supportive questions — `goal` (מטרה), `location` (מקום אימון),
@@ -499,7 +538,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | Supplements Tracker | Personal supplement/medication tracking (no advice); searchable starter-template library with already-tracked state | `components/supplements/*`, `docs/SUPPLEMENTS_TRACKER.md`, `docs/SUPPLEMENTS_LIBRARY_UX.md` |
 | Progress | Premium weekly insights screen: weekly hero, rule-based insight cards, 7-day activity trends, human empty states, and personal records — derived purely from existing local data (no AI) | `components/progress/*`, `lib/analytics.ts`, `lib/progress-insights.ts`, `docs/PROGRESS_INSIGHTS_UPGRADE.md` |
 | Gym Attendance | Local gym check-in / check-out: prominent Today card, live visit timer, weekly stats (visits, time, avg, last), rich visit history (entry/exit/duration + display-only linked-workout snapshot matched by local day), same-day re-entry guard. Tracks *being at the gym* — separate from workout logging. No GPS | `components/gym/*`, `lib/gym-attendance.ts`, `docs/GYM_CHECK_IN.md` |
-| Personal Training Profile | Optional, editable personal profile (goal, location, weekly frequency, experience, workout duration, equipment multi-select, free-text notes). Collect + display only — no auto-program, no medical/diet prescription, no body-shape fields. localStorage-only; included in Backup/Restore | `components/profile/TrainingProfileView.tsx`, `lib/personal-profile.ts`, `docs/PERSONAL_PROFILE_V1.md` |
+| Personal Training Profile | Optional, editable personal profile (goal, location, frequency, experience, duration, equipment multi-select, notes + V2 optional adaptation/age/height/weight/training-preference/guidance-style). Collect + display only — no auto-program, no medical/diet/BMI/body-shape logic. Includes an optional one-time first-entry onboarding prompt (never blocks the app). localStorage-only; included in Backup/Restore | `components/profile/TrainingProfileView.tsx`, `components/profile/ProfileOnboardingPrompt.tsx`, `lib/personal-profile.ts`, `lib/profile-onboarding.ts`, `lib/app-access.ts`, `docs/PERSONAL_PROFILE_V1.md` |
 | Settings | Premium "control center": appearance (light/dark only), daily goals, water shortcuts, data & storage (incl. a Backup & Restore card), access & privacy, separated sensitive actions, system info | `components/settings/SettingsView.tsx`, `docs/SETTINGS_CONTROL_CENTER.md` |
 | Backup & Restore | Local JSON export/import of all Fit OS data: Blob download (+ copy/paste fallback), validated import with counts preview + confirm, last-backup status. No backend/auth/cloud/encryption | `components/backup/BackupView.tsx`, `lib/backup.ts`, `docs/BACKUP_RESTORE.md` |
 | Learn (Knowledge Center) | Card-based Hebrew articles + protein calculator | `app/learn/*`, `lib/knowledge-content.ts`, `lib/protein.ts` |
@@ -575,7 +614,8 @@ existing user data is bound to them. See §5 for reset behavior.
 | `yfos:active-workout-draft:v1` | localStorage | **Single** in-progress active-workout draft (auto-saved). NOT history — separate from `yfos:workouts`; cleared on final save / explicit discard | `lib/active-workout-draft.ts` |
 | `yfos:gym-visits:v1` | localStorage | Gym **attendance** history (`GymVisit[]`). Separate from `yfos:workouts` — being at the gym, not training. Each visit may carry an optional, additive `workouts?` display-only snapshot (no format/version change). Included in backups; cleared by `resetAll` | `lib/gym-attendance.ts` |
 | `yfos:active-gym-visit:v1` | localStorage | **Single** open gym visit (`startedAt` only; the timer is derived). Closed into history on check-out, removed on discard. Included in backups; cleared by `resetAll` | `lib/gym-attendance.ts` |
-| `yfos:personal-profile:v1` | localStorage | **Single** optional personal training profile (`TrainingProfile`: goal/location/frequency/experience/duration/equipment/notes + `updatedAt`). Owned by `lib/personal-profile.ts` (own reactive layer + defensive parser). Included in backups (`personalProfile`); cleared by `resetAll` | `lib/personal-profile.ts` |
+| `yfos:personal-profile:v1` | localStorage | **Single** optional personal training profile (`TrainingProfile`: goal/location/frequency/experience/duration/equipment/notes + V2 optional `adaptation`/`age`/`heightCm`/`weightKg`/`trainingPreference`/`guidanceStyle` + `updatedAt`). Owned by `lib/personal-profile.ts` (own reactive layer + defensive parser). Included in backups (`personalProfile`, whole object — V2 fields additive); cleared by `resetAll` | `lib/personal-profile.ts` |
+| `yfos:profile-onboarding-dismissed:v1` | localStorage | One-time profile-onboarding prompt dismissed flag (`"1"`). Gate/preference flag, **not** data — never backed up, **not** cleared by `resetAll`. Owned by `lib/profile-onboarding.ts` | `lib/profile-onboarding.ts` |
 | `yfos:backup-meta:v1` | localStorage | Backup bookkeeping only (`lastExportedAt` / `lastRestoredAt` / `lastRestoredBackupCreatedAt`). Best-effort status; **never** part of a backup and not "data" | `lib/backup.ts` |
 | `yfos:water-goal-celebration-seen:v1` | localStorage | Anti-spam flag for the app-wide water-goal celebration (stores the last date it played). Isolated bookkeeping; **never** part of a backup and not "data". Re-armed when intake drops below the goal; cleared by `resetAll` | `lib/water-goal-events.ts` |
 

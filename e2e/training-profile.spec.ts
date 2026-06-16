@@ -86,6 +86,35 @@ test("a user can fill the profile and save it, then see the summary", async ({
   await expect(
     page.getByRole("button", { name: "ערוך פרופיל" }),
   ).toBeVisible();
+  // Empty optional fields never render a "התאמה אישית" summary section — so they
+  // never read as missing/required.
+  await expect(page.getByText("התאמה אישית")).toHaveCount(0);
+});
+
+test("optional personalization fields can be saved and shown in the summary", async ({
+  page,
+}) => {
+  await seedBase(page);
+  await page.goto("/training-profile");
+
+  // A core answer plus the optional V2 fields.
+  await page.getByRole("button", { name: "להתחזק" }).click();
+  await page.getByRole("button", { name: "מעדיף/ה לא לענות" }).click();
+  await page.locator("#profile-age").fill("30");
+  await page.locator("#profile-height").fill("180");
+  await page.locator("#profile-weight").fill("78");
+  await page.getByRole("button", { name: "מאוזן" }).click();
+  await page.getByRole("button", { name: "תכנית פשוטה וברורה" }).click();
+
+  await page.getByRole("button", { name: "שמור פרופיל" }).click();
+
+  // The optional personalization summary section appears with the filled values.
+  await expect(page.getByText("התאמה אישית")).toBeVisible();
+  await expect(page.getByText("מעדיף/ה לא לענות")).toBeVisible();
+  await expect(page.getByText("180 ס״מ")).toBeVisible();
+  await expect(page.getByText("78 ק״ג")).toBeVisible();
+  await expect(page.getByText("מאוזן")).toBeVisible();
+  await expect(page.getByText("תכנית פשוטה וברורה")).toBeVisible();
 });
 
 test("a saved profile shows the summary and can be edited", async ({ page }) => {

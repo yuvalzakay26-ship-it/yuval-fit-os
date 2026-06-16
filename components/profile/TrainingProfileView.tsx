@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { SectionHeader } from "@/components/ui/PageHeader";
-import { Label, Textarea } from "@/components/ui/Field";
+import { Input, Label, Textarea } from "@/components/ui/Field";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import {
   CheckIcon,
   ClockIcon,
-  DumbbellIcon,
+  HeartIcon,
   ListIcon,
   PencilIcon,
   SparkIcon,
@@ -19,13 +19,17 @@ import {
   TrashIcon,
 } from "@/components/ui/icons";
 import {
+  ADAPTATION_OPTIONS,
   DURATION_OPTIONS,
   EQUIPMENT_OPTIONS,
   EXPERIENCE_OPTIONS,
   FREQUENCY_OPTIONS,
   GOAL_OPTIONS,
+  GUIDANCE_STYLE_OPTIONS,
   LOCATION_OPTIONS,
+  MEASURE_MAX_LENGTH,
   NOTES_MAX_LENGTH,
+  TRAINING_PREFERENCE_OPTIONS,
   clearPersonalProfile,
   isProfileEmpty,
   savePersonalProfile,
@@ -46,9 +50,21 @@ interface ProfileDraft {
   workoutDuration?: string;
   equipment: string[];
   notes: string;
+  adaptation?: string;
+  age: string;
+  heightCm: string;
+  weightKg: string;
+  trainingPreference?: string;
+  guidanceStyle?: string;
 }
 
-const EMPTY_DRAFT: ProfileDraft = { equipment: [], notes: "" };
+const EMPTY_DRAFT: ProfileDraft = {
+  equipment: [],
+  notes: "",
+  age: "",
+  heightCm: "",
+  weightKg: "",
+};
 
 function profileToDraft(profile: TrainingProfile): ProfileDraft {
   return {
@@ -59,6 +75,12 @@ function profileToDraft(profile: TrainingProfile): ProfileDraft {
     workoutDuration: profile.workoutDuration,
     equipment: profile.equipment ? [...profile.equipment] : [],
     notes: profile.notes ?? "",
+    adaptation: profile.adaptation,
+    age: profile.age ?? "",
+    heightCm: profile.heightCm ?? "",
+    weightKg: profile.weightKg ?? "",
+    trainingPreference: profile.trainingPreference,
+    guidanceStyle: profile.guidanceStyle,
   };
 }
 
@@ -71,6 +93,12 @@ function draftToInput(draft: ProfileDraft): TrainingProfileInput {
     workoutDuration: draft.workoutDuration,
     equipment: draft.equipment,
     notes: draft.notes,
+    adaptation: draft.adaptation,
+    age: draft.age,
+    heightCm: draft.heightCm,
+    weightKg: draft.weightKg,
+    trainingPreference: draft.trainingPreference,
+    guidanceStyle: draft.guidanceStyle,
   };
 }
 
@@ -186,6 +214,22 @@ function FormSection({
   );
 }
 
+/** A labelled sub-block inside a form section. */
+function SubField({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="pt-1">
+      <Label>{label}</Label>
+      {children}
+    </div>
+  );
+}
+
 /* --------------------------- Saved summary ------------------------------ */
 
 function SummaryRow({
@@ -216,6 +260,15 @@ function SavedSummary({
     profile.equipment && profile.equipment.length > 0
       ? profile.equipment.join(" · ")
       : NONE;
+  // Optional V2 rows are shown ONLY when filled, so empty optional fields never
+  // look like missing/required errors.
+  const hasPersonalization =
+    profile.adaptation ||
+    profile.age ||
+    profile.heightCm ||
+    profile.weightKg ||
+    profile.trainingPreference ||
+    profile.guidanceStyle;
   return (
     <div className="space-y-6">
       <Card variant="raised" className="sheen relative overflow-hidden p-5">
@@ -268,6 +321,36 @@ function SavedSummary({
         </Card>
       </section>
 
+      {/* Optional personalization — its own card, only when something is filled. */}
+      {hasPersonalization && (
+        <section>
+          <SectionHeader title="התאמה אישית" accent="var(--accent)" />
+          <Card>
+            <div className="divide-y divide-border">
+              {profile.adaptation && (
+                <SummaryRow label="מין / התאמה" value={profile.adaptation} />
+              )}
+              {profile.age && <SummaryRow label="גיל" value={profile.age} />}
+              {profile.heightCm && (
+                <SummaryRow label="גובה" value={`${profile.heightCm} ס״מ`} />
+              )}
+              {profile.weightKg && (
+                <SummaryRow label="משקל" value={`${profile.weightKg} ק״ג`} />
+              )}
+              {profile.trainingPreference && (
+                <SummaryRow
+                  label="סגנון אימון"
+                  value={profile.trainingPreference}
+                />
+              )}
+              {profile.guidanceStyle && (
+                <SummaryRow label="איך להתחיל" value={profile.guidanceStyle} />
+              )}
+            </div>
+          </Card>
+        </section>
+      )}
+
       <Button onClick={onEdit} className="w-full">
         <PencilIcon className="h-[18px] w-[18px]" /> ערוך פרופיל
       </Button>
@@ -319,6 +402,13 @@ export function TrainingProfileView() {
         ? d.equipment.filter((e) => e !== option)
         : [...d.equipment, option],
     }));
+  };
+
+  // Keep measure inputs lenient + calm: digits only, no scary validation, just
+  // quietly ignore other characters as the user types.
+  const setMeasure = (key: "age" | "heightCm" | "weightKg", raw: string) => {
+    const digitsOnly = raw.replace(/[^\d]/g, "").slice(0, MEASURE_MAX_LENGTH);
+    setField(key, digitsOnly);
   };
 
   const handleSave = () => {
@@ -379,11 +469,7 @@ export function TrainingProfileView() {
       </Card>
 
       {/* מטרה */}
-      <FormSection
-        icon={TargetIcon}
-        title="מטרה"
-        label="מה המטרה המרכזית שלך?"
-      >
+      <FormSection icon={TargetIcon} title="מטרה" label="מה המטרה המרכזית שלך?">
         <ChoiceGroup
           options={GOAL_OPTIONS}
           value={draft.goal}
@@ -391,10 +477,10 @@ export function TrainingProfileView() {
         />
       </FormSection>
 
-      {/* שגרה */}
+      {/* שגרת אימון */}
       <FormSection
         icon={ClockIcon}
-        title="שגרה"
+        title="שגרת אימון"
         label="איפה אתה מתאמן בדרך כלל?"
       >
         <ChoiceGroup
@@ -402,28 +488,26 @@ export function TrainingProfileView() {
           value={draft.location}
           onSelect={(v) => setField("location", v)}
         />
-        <div className="pt-1">
-          <Label>כמה פעמים בשבוע תרצה להתאמן?</Label>
+        <SubField label="כמה פעמים בשבוע תרצה להתאמן?">
           <ChoiceGroup
             options={FREQUENCY_OPTIONS}
             value={draft.weeklyFrequency}
             onSelect={(v) => setField("weeklyFrequency", v)}
           />
-        </div>
-        <div className="pt-1">
-          <Label>כמה זמן יש לך לאימון?</Label>
+        </SubField>
+        <SubField label="כמה זמן יש לך לאימון?">
           <ChoiceGroup
             options={DURATION_OPTIONS}
             value={draft.workoutDuration}
             onSelect={(v) => setField("workoutDuration", v)}
           />
-        </div>
+        </SubField>
       </FormSection>
 
-      {/* ניסיון */}
+      {/* ניסיון וציוד */}
       <FormSection
         icon={ListIcon}
-        title="ניסיון"
+        title="ניסיון וציוד"
         label="מה רמת הניסיון שלך?"
       >
         <ChoiceGroup
@@ -431,20 +515,76 @@ export function TrainingProfileView() {
           value={draft.experience}
           onSelect={(v) => setField("experience", v)}
         />
+        <SubField label="איזה ציוד זמין לך? (אפשר לבחור כמה)">
+          <MultiChoiceGroup
+            options={EQUIPMENT_OPTIONS}
+            values={draft.equipment}
+            onToggle={toggleEquipment}
+          />
+        </SubField>
       </FormSection>
 
-      {/* ציוד */}
+      {/* התאמה אישית — אופציונלי */}
       <FormSection
-        icon={DumbbellIcon}
-        title="ציוד"
-        label="איזה ציוד זמין לך?"
-        helper="אפשר לבחור כמה אפשרויות."
+        icon={HeartIcon}
+        title="התאמה אישית — אופציונלי"
+        label="מין / התאמה — אופציונלי"
+        helper="כל השדות כאן אופציונליים לגמרי. נועדו רק כדי להתאים את החוויה — לא לשיפוט ולא לשום חישוב רפואי."
       >
-        <MultiChoiceGroup
-          options={EQUIPMENT_OPTIONS}
-          values={draft.equipment}
-          onToggle={toggleEquipment}
+        <ChoiceGroup
+          options={ADAPTATION_OPTIONS}
+          value={draft.adaptation}
+          onSelect={(v) => setField("adaptation", v)}
         />
+        <div className="grid grid-cols-3 gap-2.5 pt-1">
+          <div>
+            <Label htmlFor="profile-age">גיל</Label>
+            <Input
+              id="profile-age"
+              inputMode="numeric"
+              maxLength={MEASURE_MAX_LENGTH}
+              className="text-center font-semibold"
+              value={draft.age}
+              onChange={(e) => setMeasure("age", e.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="profile-height">גובה · ס״מ</Label>
+            <Input
+              id="profile-height"
+              inputMode="numeric"
+              maxLength={MEASURE_MAX_LENGTH}
+              className="text-center font-semibold"
+              value={draft.heightCm}
+              onChange={(e) => setMeasure("heightCm", e.target.value)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="profile-weight">משקל · ק״ג</Label>
+            <Input
+              id="profile-weight"
+              inputMode="numeric"
+              maxLength={MEASURE_MAX_LENGTH}
+              className="text-center font-semibold"
+              value={draft.weightKg}
+              onChange={(e) => setMeasure("weightKg", e.target.value)}
+            />
+          </div>
+        </div>
+        <SubField label="איזה סגנון אימון מתאים לך יותר?">
+          <ChoiceGroup
+            options={TRAINING_PREFERENCE_OPTIONS}
+            value={draft.trainingPreference}
+            onSelect={(v) => setField("trainingPreference", v)}
+          />
+        </SubField>
+        <SubField label="איך תרצה להתחיל?">
+          <ChoiceGroup
+            options={GUIDANCE_STYLE_OPTIONS}
+            value={draft.guidanceStyle}
+            onSelect={(v) => setField("guidanceStyle", v)}
+          />
+        </SubField>
       </FormSection>
 
       {/* הערות */}
@@ -452,7 +592,7 @@ export function TrainingProfileView() {
         icon={PencilIcon}
         title="הערות"
         label="יש משהו שכדאי לקחת בחשבון?"
-        helper="לדוגמה: תרגילים שאתה מעדיף להימנע מהם, זמן מוגבל, חוסר ניסיון או משהו שחשוב לך לזכור."
+        helper="אם יש משהו שחשוב לזכור — זמן מוגבל, תרגילים שפחות מתאימים לך, חוסר ניסיון או העדפה מסוימת — אפשר לכתוב כאן."
       >
         <Textarea
           value={draft.notes}

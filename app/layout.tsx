@@ -8,6 +8,7 @@ import { WELCOME_INIT_SCRIPT } from "@/lib/welcome";
 import { BetaWelcomeNotice } from "@/components/access/BetaWelcomeNotice";
 import { BETA_WELCOME_INIT_SCRIPT } from "@/lib/beta-welcome";
 import { BetaAuthGate } from "@/components/access/BetaAuthGate";
+import { ProfileOnboardingPrompt } from "@/components/profile/ProfileOnboardingPrompt";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
 const heebo = Heebo({
@@ -78,6 +79,12 @@ export default function RootLayout({
             <BetaWelcomeNotice>
               <WelcomeGate>
                 <AppShell>{children}</AppShell>
+                {/* Optional, one-time profile onboarding invitation. Renders
+                    nothing until the access + welcome + beta-welcome flow is
+                    fully done (so it never stacks on another modal) and only
+                    when no profile exists and it hasn't been dismissed. Never
+                    blocks the app — see components/profile/ProfileOnboardingPrompt. */}
+                <ProfileOnboardingPrompt />
               </WelcomeGate>
             </BetaWelcomeNotice>
           </BetaAuthGate>

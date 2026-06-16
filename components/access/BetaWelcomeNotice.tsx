@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isPublicInfoPath } from "@/lib/public-paths";
@@ -8,13 +8,7 @@ import {
   markBetaWelcomeSeen,
   useBetaWelcomeSeen,
 } from "@/lib/beta-welcome";
-import {
-  type AccessDecision,
-  fetchAccessDecision,
-  useBetaSession,
-} from "@/lib/beta-access";
-import { isSupabaseConfigured } from "@/lib/supabase/client";
-import { useGuestSession } from "@/lib/guest-session";
+import { useAppAccessGranted } from "@/lib/app-access";
 import {
   BrandMark,
   ChatIcon,
@@ -59,53 +53,6 @@ export function BetaWelcomeNotice({ children }: { children: React.ReactNode }) {
       {granted && !seen && !isPublic && <NoticeScreen />}
     </>
   );
-}
-
-/**
- * Whether the user has actually been let into the app shell — i.e. the beta auth
- * gate is currently rendering nothing on top of us. Mirrors the gate's "allowed"
- * logic (it does not export a shared signal) so the welcome notice never greets a
- * user the gate is still blocking:
- *  - active guest with no real user → granted (guests are welcomed too);
- *  - signed-in + approved ("active") → granted;
- *  - everything else (loading, signed out, denied, blocked, unconfigured) → not.
- *
- * This re-reads the user's OWN approval row (RLS-restricted); it is a single
- * read-only SELECT and changes no auth behaviour. The decision is stored with the
- * email it was computed for so a stale result after the email changes is treated
- * as "still resolving" by derivation, never by a synchronous reset.
- */
-function useAppAccessGranted(): boolean {
-  const testingOpen = process.env.NEXT_PUBLIC_BETA_DISABLE_GATE === "1";
-  const configured = isSupabaseConfigured();
-  const { loading: sessionLoading, email } = useBetaSession();
-  const guest = useGuestSession();
-  const [resolved, setResolved] = useState<{
-    email: string;
-    decision: AccessDecision;
-  } | null>(null);
-
-  useEffect(() => {
-    if (testingOpen || !configured || sessionLoading || !email) return;
-    let active = true;
-    void fetchAccessDecision(email).then((result) => {
-      if (active) setResolved({ email, decision: result });
-    });
-    return () => {
-      active = false;
-    };
-  }, [testingOpen, configured, sessionLoading, email]);
-
-  // Testing seam (NEXT_PUBLIC_BETA_DISABLE_GATE=1): the gate is bypassed so the
-  // app is fully open for automated QA. We greet only when a guest session is
-  // explicitly seeded, so the many feature-test scripts reach app screens
-  // unobstructed while a dedicated test can still exercise the notice. (This
-  // branch is dead in production, where the flag is never set.)
-  if (testingOpen) return guest;
-  if (!configured || sessionLoading) return false;
-  if (!email) return guest; // guest session opens the app shell only
-  const decision = resolved && resolved.email === email ? resolved.decision : null;
-  return decision?.state === "allowed";
 }
 
 /** WhatsApp deep link to Yuval (international format, no plus). */
