@@ -20,6 +20,7 @@ import {
   PillIcon,
   PlusIcon,
   SettingsIcon,
+  ShieldIcon,
   SparkIcon,
   TargetIcon,
 } from "@/components/ui/icons";
@@ -219,6 +220,33 @@ const SECTIONS: HubSection[] = [
         icon: SparkIcon,
         tone: "system",
         soon: true,
+      },
+    ],
+  },
+  {
+    title: "מידע ומסמכים",
+    accent: "var(--muted)",
+    items: [
+      {
+        href: "/privacy",
+        title: "מדיניות פרטיות",
+        description: "איך הנתונים שלך נשמרים ומשמשים",
+        icon: ShieldIcon,
+        tone: "system",
+      },
+      {
+        href: "/terms",
+        title: "תנאי שימוש ובטא",
+        description: "מה לדעת על השימוש במערכת",
+        icon: BookOpenIcon,
+        tone: "system",
+      },
+      {
+        href: "/ai-disclaimer",
+        title: "הבהרת AI ותזונה",
+        description: "איך עובד ניתוח התמונה",
+        icon: SparkIcon,
+        tone: "system",
       },
     ],
   },

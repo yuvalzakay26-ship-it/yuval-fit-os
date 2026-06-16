@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { isPublicInfoPath } from "@/lib/public-paths";
 import {
   type AccessDecision,
   fetchAccessDecision,
@@ -55,9 +58,14 @@ import {
  * localStorage (see lib/storage.ts) until a future cloud-sync phase.
  */
 export function BetaAuthGate({ children }: { children: React.ReactNode }) {
-  // Testing/local escape hatch — resolved before any hooks so it can short out
-  // the overlay entirely. OFF by default; never set in production.
+  const pathname = usePathname();
+  // Testing/local escape hatch — OFF by default; never set in production.
   if (isGateDisabledForTesting()) return <>{children}</>;
+  // Public, pre-login info pages (privacy / terms / AI disclaimer) render without
+  // the access overlay so visitors can read them before deciding to use the app.
+  // This grants NO app access — see lib/public-paths.ts. Every other route stays
+  // gated exactly as before.
+  if (isPublicInfoPath(pathname)) return <>{children}</>;
   return (
     <>
       {children}
@@ -381,6 +389,25 @@ function BetaSignInScreen({ onGuest }: { onGuest: () => void }) {
             הזה בלבד, אלא אם נוסיף סנכרון ענן בעתיד.
           </p>
         </div>
+
+        {/* Public info links — readable before signing in (see lib/public-paths). */}
+        <nav className="mt-5 flex items-center justify-center gap-2 text-[12.5px] font-semibold text-muted">
+          <Link
+            href="/privacy"
+            className="tap underline outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]"
+          >
+            מדיניות פרטיות
+          </Link>
+          <span aria-hidden="true" className="text-faint">
+            ·
+          </span>
+          <Link
+            href="/terms"
+            className="tap underline outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]"
+          >
+            תנאי שימוש
+          </Link>
+        </nav>
       </div>
     </div>
   );

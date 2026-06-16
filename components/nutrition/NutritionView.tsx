@@ -124,6 +124,15 @@ export function NutritionView({
         ) : (
           <PhotoScanCardDisabled showSetupHint={showSetupHint} />
         )}
+        {/* Explains the AI scan is an estimate-only, editable draft. */}
+        <p className="mt-2 text-center text-[12px] text-muted">
+          <Link
+            href="/ai-disclaimer"
+            className="tap font-semibold text-accent underline"
+          >
+            איך עובד ניתוח AI?
+          </Link>
+        </p>
       </section>
 
       {/* 3 — Fast fallback actions: add again + manual. Always visible. */}

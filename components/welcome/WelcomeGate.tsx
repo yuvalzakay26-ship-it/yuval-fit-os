@@ -1,6 +1,8 @@
 "use client";
 
 import { useId } from "react";
+import { usePathname } from "next/navigation";
+import { isPublicInfoPath } from "@/lib/public-paths";
 import { markWelcomeSeen, useWelcomeSeen } from "@/lib/welcome";
 import {
   AppleIcon,
@@ -21,10 +23,15 @@ import {
  */
 export function WelcomeGate({ children }: { children: React.ReactNode }) {
   const seen = useWelcomeSeen();
+  const pathname = usePathname();
+  // The public info pages (privacy / terms / AI disclaimer) are readable before
+  // login, so the first-visit intro must not cover them for a brand-new visitor.
+  // See lib/public-paths.ts — every other route keeps the intro as before.
+  const isPublic = isPublicInfoPath(pathname);
   return (
     <>
       {children}
-      {!seen && <WelcomeScreen />}
+      {!seen && !isPublic && <WelcomeScreen />}
     </>
   );
 }

@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { isPublicInfoPath } from "@/lib/public-paths";
 import {
   markBetaWelcomeSeen,
   useBetaWelcomeSeen,
@@ -45,10 +48,15 @@ import {
 export function BetaWelcomeNotice({ children }: { children: React.ReactNode }) {
   const seen = useBetaWelcomeSeen();
   const granted = useAppAccessGranted();
+  const pathname = usePathname();
+  // The public info pages stay readable from the welcome notice's own links: the
+  // greeting steps aside on those routes (it still reappears on app routes until
+  // acknowledged). See lib/public-paths.ts.
+  const isPublic = isPublicInfoPath(pathname);
   return (
     <>
       {children}
-      {granted && !seen && <NoticeScreen />}
+      {granted && !seen && !isPublic && <NoticeScreen />}
     </>
   );
 }
@@ -226,6 +234,26 @@ function NoticeScreen() {
           <p className="mt-5 text-center text-[12px] leading-relaxed text-faint">
             תודה שאתם עוזרים לשפר את המערכת.
           </p>
+
+          {/* Quiet links to the public info pages — kept minimal so the welcome
+              screen stays uncluttered. */}
+          <nav className="mt-3 flex items-center justify-center gap-2 text-[11.5px] font-semibold text-muted">
+            <Link
+              href="/privacy"
+              className="tap underline outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]"
+            >
+              מדיניות פרטיות
+            </Link>
+            <span aria-hidden="true" className="text-faint">
+              ·
+            </span>
+            <Link
+              href="/terms"
+              className="tap underline outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]"
+            >
+              תנאי שימוש
+            </Link>
+          </nav>
         </div>
       </div>
     </div>
