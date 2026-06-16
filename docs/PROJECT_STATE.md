@@ -4,7 +4,37 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 4.1 (**Personal Profile Onboarding V2**: makes the personal
+> Last reviewed: Phase 4.2 (**Entry Flow V3 — beta welcome + profile prompt on
+> every app entry**: changes only the *cadence/ordering* of the two onboarding
+> surfaces — no schema, profile, backup, or auth/access change. The **beta welcome**
+> is now gated **per session** (`lib/beta-welcome.ts` → sessionStorage
+> **`yfos:beta-welcome-seen-session:v1`**, replacing the permanent localStorage
+> `yfos:beta-welcome-seen:v1`, which is retained but **no longer read**), so it
+> greets on **every app entry** — admins, approved testers, and guests alike (all
+> via `useAppAccessGranted`) — without re-stacking on in-session route navigation; a
+> new tab / fresh launch / new session greets again. The **profile onboarding
+> prompt** dismissal is likewise **per session** (`lib/profile-onboarding.ts` →
+> sessionStorage **`yfos:profile-onboarding-dismissed-session:v1`**, replacing the
+> permanent `yfos:profile-onboarding-dismissed:v1`, retained but **no longer
+> read**): "לא עכשיו" hides it for the session, and it may return on a later entry
+> **while no profile exists** (once a profile exists it never shows). **Ordering** is
+> enforced by the prompt already requiring `useBetaWelcomeSeen()`, so the beta
+> welcome is always step one and the two never show at once. `BETA_WELCOME_INIT_SCRIPT`
+> now checks the session key (no within-session flash). Settings "הצג הודעת בטא שוב"
+> still works (reset clears the session flag, re-showing immediately); `WelcomeGate`
+> stays persistent (out of V3 scope). **No** change to personal-profile schema /
+> `yfos:personal-profile:v1` / profile form / backup-restore / workout / nutrition /
+> water / supplement / protein / gym schemas / auth-beta-guest-admin-Supabase / AI
+> routes / privacy-terms-ai-disclaimer / Today-Nutrition-Workouts layouts; no profile
+> data cleared, no dismissal flag backed up, no new dependencies. e2e: new
+> `e2e/beta-welcome.spec.ts` (beta welcome on entry, even with the legacy flag set;
+> before the profile prompt; session flag set on ack; within-session reload doesn't
+> re-show; fresh session re-greets; public pages show neither; non-granted sees
+> nothing) + updated `e2e/profile-onboarding.spec.ts` (session keys, beta-open
+> ordering, fresh-session re-show). See
+> [`PERSONAL_PROFILE_V1.md`](PERSONAL_PROFILE_V1.md) ("V3 — Entry flow") and
+> [`BETA_WELCOME_NOTICE.md`](BETA_WELCOME_NOTICE.md).)
+> Prior: Phase 4.1 (**Personal Profile Onboarding V2**: makes the personal
 > training profile an active first-entry experience instead of only a passive page,
 > and expands it additively. (1) **Optional one-time onboarding prompt**
 > (`components/profile/ProfileOnboardingPrompt.tsx`, mounted once in `app/layout.tsx`
@@ -543,7 +573,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | Backup & Restore | Local JSON export/import of all Fit OS data: Blob download (+ copy/paste fallback), validated import with counts preview + confirm, last-backup status. No backend/auth/cloud/encryption | `components/backup/BackupView.tsx`, `lib/backup.ts`, `docs/BACKUP_RESTORE.md` |
 | Learn (Knowledge Center) | Card-based Hebrew articles + protein calculator | `app/learn/*`, `lib/knowledge-content.ts`, `lib/protein.ts` |
 | Welcome screen | First-visit intro (gate) | `components/welcome/WelcomeGate.tsx`, `lib/welcome.ts` |
-| Beta Welcome Notice | One-time friendly beta greeting after the access gate (gate) | `components/access/BetaWelcomeNotice.tsx`, `lib/beta-welcome.ts`, `docs/BETA_WELCOME_NOTICE.md` |
+| Beta Welcome Notice | Per-session friendly beta greeting after the access gate — shown on every app entry, before the profile prompt (gate) | `components/access/BetaWelcomeNotice.tsx`, `lib/beta-welcome.ts`, `docs/BETA_WELCOME_NOTICE.md` |
 | Private Access Notice | _Removed from the active flow_ — superseded by the Beta Welcome Notice; files kept only as a reference | `components/access/PrivateAccessNotice.tsx`, `lib/private-access.ts` |
 | Admin Access Code Gate | Client-side access-code gate (not real auth) | `components/access/AdminAccessCodeGate.tsx`, `lib/admin-access.ts`, `docs/ADMIN_ACCESS_GATE.md` |
 | PWA | Installable app shell + service worker | `app/manifest.ts`, `components/ServiceWorkerRegister.tsx`, `public/sw.js` |
@@ -608,14 +638,16 @@ existing user data is bound to them. See §5 for reset behavior.
 | Key | Type | Purpose | Owner |
 | --- | --- | --- | --- |
 | `yfos:welcome-seen:v1` | localStorage | First-visit welcome screen seen flag (`"1"`) | `lib/welcome.ts` |
-| `yfos:beta-welcome-seen:v1` | localStorage | Friendly beta welcome notice acknowledged (`"1"`) — shown once after the access gate | `lib/beta-welcome.ts` |
+| `yfos:beta-welcome-seen-session:v1` | **sessionStorage** | Beta welcome notice seen **this session** (`"1"`) — V3 per-session gate; greets on every app entry after the access gate | `lib/beta-welcome.ts` |
+| `yfos:beta-welcome-seen:v1` | localStorage | _Legacy_ permanent beta-welcome flag — retained, **no longer read** (superseded by the session key above in V3) | `lib/beta-welcome.ts` |
 | `yfos:private-access-notice-accepted:session` | **sessionStorage** | _Defunct_ — old private-access notice flag, no longer read (notice removed from the flow) | `lib/private-access.ts` |
 | `yfos:admin-access-granted:v1` | localStorage | Admin access-code gate unlocked on this device (`"1"`) | `lib/admin-access.ts` |
 | `yfos:active-workout-draft:v1` | localStorage | **Single** in-progress active-workout draft (auto-saved). NOT history — separate from `yfos:workouts`; cleared on final save / explicit discard | `lib/active-workout-draft.ts` |
 | `yfos:gym-visits:v1` | localStorage | Gym **attendance** history (`GymVisit[]`). Separate from `yfos:workouts` — being at the gym, not training. Each visit may carry an optional, additive `workouts?` display-only snapshot (no format/version change). Included in backups; cleared by `resetAll` | `lib/gym-attendance.ts` |
 | `yfos:active-gym-visit:v1` | localStorage | **Single** open gym visit (`startedAt` only; the timer is derived). Closed into history on check-out, removed on discard. Included in backups; cleared by `resetAll` | `lib/gym-attendance.ts` |
 | `yfos:personal-profile:v1` | localStorage | **Single** optional personal training profile (`TrainingProfile`: goal/location/frequency/experience/duration/equipment/notes + V2 optional `adaptation`/`age`/`heightCm`/`weightKg`/`trainingPreference`/`guidanceStyle` + `updatedAt`). Owned by `lib/personal-profile.ts` (own reactive layer + defensive parser). Included in backups (`personalProfile`, whole object — V2 fields additive); cleared by `resetAll` | `lib/personal-profile.ts` |
-| `yfos:profile-onboarding-dismissed:v1` | localStorage | One-time profile-onboarding prompt dismissed flag (`"1"`). Gate/preference flag, **not** data — never backed up, **not** cleared by `resetAll`. Owned by `lib/profile-onboarding.ts` | `lib/profile-onboarding.ts` |
+| `yfos:profile-onboarding-dismissed-session:v1` | **sessionStorage** | Profile-onboarding prompt dismissed **this session** (`"1"`) — V3 per-session gate; may re-show on a later entry while no profile exists. Gate/preference flag, **not** data — never backed up, **not** cleared by `resetAll`. Owned by `lib/profile-onboarding.ts` | `lib/profile-onboarding.ts` |
+| `yfos:profile-onboarding-dismissed:v1` | localStorage | _Legacy_ permanent profile-prompt dismissed flag — retained, **no longer read** (superseded by the session key above in V3) | `lib/profile-onboarding.ts` |
 | `yfos:backup-meta:v1` | localStorage | Backup bookkeeping only (`lastExportedAt` / `lastRestoredAt` / `lastRestoredBackupCreatedAt`). Best-effort status; **never** part of a backup and not "data" | `lib/backup.ts` |
 | `yfos:water-goal-celebration-seen:v1` | localStorage | Anti-spam flag for the app-wide water-goal celebration (stores the last date it played). Isolated bookkeeping; **never** part of a backup and not "data". Re-armed when intake drops below the goal; cleared by `resetAll` | `lib/water-goal-events.ts` |
 
@@ -641,7 +673,7 @@ existing user data is bound to them. See §5 for reset behavior.
 | Reset supplement log | `yfos:supplement-logs:v1` only | The supplement catalogue |
 | Reset water day | One date inside `yfos:water-logs:v1` | All other days |
 | Show welcome again (`resetWelcome`) | `yfos:welcome-seen:v1` only | All real data |
-| Show beta notice again (`resetBetaWelcome`) | `yfos:beta-welcome-seen:v1` only | All real data |
+| Show beta notice again (`resetBetaWelcome`) | `yfos:beta-welcome-seen-session:v1` only (session flag) | All real data |
 | Lock system — "נעל מערכת" (`resetAdminAccess`) | `yfos:admin-access-granted:v1` only — re-shows the access-code gate | All real data |
 
 `resetAll` deliberately does **not** clear the gate flags, and the gate resets

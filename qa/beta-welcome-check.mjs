@@ -7,12 +7,15 @@
 // testing seam the welcome greets only when a local guest session is seeded —
 // which lets the feature-test scripts reach app screens unobstructed while this
 // dedicated script can still exercise the notice. It checks:
-//   - a granted (guest) user with a clean flag sees the welcome once;
+//   - a granted (guest) user with a clean SESSION sees the welcome on entry;
 //   - the welcoming Hebrew copy, contact number + WhatsApp link are present;
 //   - there is NO password / text input and NO harsh "private/forbidden" copy;
-//   - acknowledging enters the app and persists the flag; a refresh does not
-//     re-show it; Settings "הצג הודעת בטא שוב" brings it back and clears the flag;
+//   - acknowledging enters the app and sets the per-session flag; a refresh in the
+//     same session does not re-show it; Settings "הצג הודעת בטא שוב" brings it back
+//     and clears the session flag;
 //   - a NON-granted visitor (no guest session) never sees the notice.
+// The notice is now gated PER SESSION (sessionStorage: yfos:beta-welcome-seen-
+// session:v1), not once-per-device — so a fresh session/launch greets again.
 // Watches the console and checks for horizontal overflow at 360 + 390. Assumes a
 // dev/prod server on :3000 (override with QA_BASE, e.g.
 // QA_BASE=http://localhost:3199).
@@ -119,8 +122,10 @@ await page.getByRole("button", { name: "הבנתי, המשך למערכת" }).cl
 await page.waitForTimeout(300);
 check("acknowledging removes the notice", (await page.locator(GATE).count()) === 0);
 check(
-  "beta-welcome flag persisted",
-  (await page.evaluate(() => localStorage.getItem("yfos:beta-welcome-seen:v1"))) === "1",
+  "beta-welcome session flag set",
+  (await page.evaluate(() =>
+    sessionStorage.getItem("yfos:beta-welcome-seen-session:v1"),
+  )) === "1",
 );
 check("app chrome visible after entry", await page.locator("nav[aria-label]").isVisible());
 
@@ -136,8 +141,10 @@ await page.getByRole("button", { name: "הצג הודעת בטא שוב" }).clic
 await page.waitForTimeout(300);
 check("settings action shows notice again", await page.locator(GATE).isVisible());
 check(
-  "beta-welcome flag cleared after reset",
-  (await page.evaluate(() => localStorage.getItem("yfos:beta-welcome-seen:v1"))) === null,
+  "beta-welcome session flag cleared after reset",
+  (await page.evaluate(() =>
+    sessionStorage.getItem("yfos:beta-welcome-seen-session:v1"),
+  )) === null,
 );
 await context.close();
 

@@ -20,21 +20,24 @@ import { SparkIcon, TargetIcon } from "@/components/ui/icons";
 const PROFILE_PATH = "/training-profile";
 
 /**
- * Optional first-entry profile onboarding prompt (Personal Profile Onboarding V2).
+ * Optional profile onboarding prompt (Personal Profile Onboarding V2) — the
+ * SECOND step of every app entry, shown right after the beta welcome.
  *
- * A calm, one-time invitation to fill the short personal training profile so the
- * app can later tailor the experience. It is NOT a gate and NEVER blocks the app:
- * the user can start, choose "not now", or simply ignore it — and can always fill
- * or edit the profile later from More / Workouts.
+ * A calm invitation to fill the short personal training profile so the app can
+ * later tailor the experience. It is NOT a gate and NEVER blocks the app: the user
+ * can start, choose "not now", or simply ignore it — and can always fill or edit
+ * the profile later from More / Workouts.
  *
  * It appears ONLY when ALL of the following hold, so it never stacks on top of
  * another modal and never shows before access is resolved:
  *   • the user has truly passed the access boundary (useAppAccessGranted) — never
  *     while auth/approval is loading and never for a denied/blocked user;
- *   • the first-visit welcome screen AND the beta welcome notice are both done
- *     (so this is the LAST thing in the onboarding sequence, no stacking);
+ *   • the first-visit welcome screen AND the beta welcome notice are both done for
+ *     this session (so the beta welcome is always seen FIRST and the two prompts
+ *     never show at once — when the beta welcome is open this renders null);
  *   • no personal profile exists yet;
- *   • the prompt has not been dismissed before (localStorage flag);
+ *   • the prompt has not been dismissed THIS SESSION (sessionStorage flag — a
+ *     future entry can show it again while no profile exists);
  *   • the route is not a public info page (privacy / terms / AI disclaimer) and
  *     not the profile page itself.
  *
@@ -80,7 +83,8 @@ function PromptScreen() {
     };
   }, []);
 
-  // Both actions remember the choice so the prompt is truly one-time; the profile
+  // Both actions remember the choice for this session so the prompt steps aside;
+  // it may return on a future app entry while no profile exists, and the profile
   // stays reachable from its entry points either way.
   const handleStart = () => {
     dismissProfileOnboarding();

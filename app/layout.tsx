@@ -65,8 +65,9 @@ export default function RootLayout({
           {/* Gate order (highest z-index seen first): the Supabase beta auth
               gate (z-108) is the REAL access boundary — sign in with an approved
               email, or continue as a local guest. Once the user is in, the
-              friendly beta welcome notice (z-104) greets them once, and finally
-              the first-visit welcome screen (z-100) sits above the app.
+              friendly beta welcome notice (z-104) greets them once per session
+              (every app entry, admins and guests included), and finally the
+              first-visit welcome screen (z-100) sits above the app.
 
               The old "private system / do not share the link" notice
               (PrivateAccessNotice) was removed from this chain: access is now
@@ -79,11 +80,13 @@ export default function RootLayout({
             <BetaWelcomeNotice>
               <WelcomeGate>
                 <AppShell>{children}</AppShell>
-                {/* Optional, one-time profile onboarding invitation. Renders
-                    nothing until the access + welcome + beta-welcome flow is
-                    fully done (so it never stacks on another modal) and only
-                    when no profile exists and it hasn't been dismissed. Never
-                    blocks the app — see components/profile/ProfileOnboardingPrompt. */}
+                {/* Optional profile onboarding invitation — the second step of
+                    every app entry, shown right after the beta welcome. Renders
+                    nothing until the access + welcome + beta-welcome flow is done
+                    for this session (so it never stacks on the beta welcome) and
+                    only when no profile exists and it hasn't been dismissed this
+                    session. Never blocks the app — see
+                    components/profile/ProfileOnboardingPrompt. */}
                 <ProfileOnboardingPrompt />
               </WelcomeGate>
             </BetaWelcomeNotice>

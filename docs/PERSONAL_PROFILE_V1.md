@@ -5,10 +5,13 @@
 > only **collects and displays** the profile. It does **not** auto-generate a
 > training program and makes **no** medical, diet, or fitness prescriptions.
 >
-> **V2 (Personal Profile Onboarding)** added: (1) an optional one-time first-entry
-> prompt inviting the user to fill the profile, and (2) additive optional
-> personalization fields. See the **"V2 — Onboarding & expanded fields"** section
-> at the end. The V1 content below still describes the core screen and storage.
+> **V2 (Personal Profile Onboarding)** added: (1) an optional first-entry prompt
+> inviting the user to fill the profile, and (2) additive optional personalization
+> fields. See the **"V2 — Onboarding & expanded fields"** section. **V3 (Entry
+> flow)** then changed the *cadence*: the beta welcome and this prompt now appear
+> on **every app entry / session** (beta welcome first, profile prompt second)
+> instead of once-per-device-forever — see the **"V3 — Entry flow"** section at the
+> very end. The V1 content below still describes the core screen and storage.
 
 ## What it is
 
@@ -177,26 +180,35 @@ collect-and-display only — no auto-program, no medical/diet/body-pressure logi
 
 ## Part 1 — Optional first-entry onboarding prompt
 
-A calm, one-time invitation (`components/profile/ProfileOnboardingPrompt.tsx`),
-mounted once in `app/layout.tsx` as the **last** step of the onboarding sequence
-(inside `WelcomeGate`, next to `AppShell`).
+A calm invitation (`components/profile/ProfileOnboardingPrompt.tsx`), mounted once
+in `app/layout.tsx` as the **second** step of the entry sequence — right after the
+beta welcome (inside `WelcomeGate`, next to `AppShell`). **As of V3 its dismissal
+is session-level**, so it returns on a future app entry while no profile exists —
+see the "V3 — Entry flow" section; the points below describe the original V2
+wiring with the V3 cadence noted inline.
 
 - **Copy:** title "נכיר אותך כדי להתאים את החוויה?", body "כמה שאלות קצרות יעזרו
   למערכת להבין את המטרה, השגרה והאימון שמתאים לך. אפשר לדלג ולמלא אחר כך.",
   primary CTA **"בוא נתחיל"**, secondary CTA **"לא עכשיו"** (the backdrop is also a
   "not now" tap, labelled "סגירה" so it doesn't duplicate the button name).
 - **"בוא נתחיל"** → records the dismissal and navigates to `/training-profile`.
-- **"לא עכשיו"** (or backdrop) → records the dismissal only. Both choices are
-  one-time; the profile stays reachable from More / Workouts either way.
+- **"לא עכשיו"** (or backdrop) → records the dismissal only. Both choices dismiss
+  for the **current session** (V3); the profile stays reachable from More /
+  Workouts either way, and the prompt may return on a later entry while no profile
+  exists.
 - **Appears only when ALL hold** (so it never stacks on another modal and never
   shows before access resolves):
   1. the user has truly passed the access boundary — `useAppAccessGranted()`
      (`lib/app-access.ts`), never while auth/approval is loading, never for a
      denied/blocked user;
   2. the first-visit welcome screen **and** the beta welcome notice are both done
-     (`useWelcomeSeen()` + `useBetaWelcomeSeen()`);
+     (`useWelcomeSeen()` + `useBetaWelcomeSeen()` — in V3 the beta welcome is a
+     per-session flag, so this guarantees the beta welcome is always seen FIRST and
+     the two never show at once);
   3. no personal profile exists yet (`usePersonalProfile()` + `isProfileEmpty`);
-  4. it hasn't been dismissed before (`yfos:profile-onboarding-dismissed:v1`);
+  4. it hasn't been dismissed **this session** (V3 session flag
+     `yfos:profile-onboarding-dismissed-session:v1`; the legacy permanent key
+     `yfos:profile-onboarding-dismissed:v1` is no longer read as a suppressor);
   5. the route is not a public info page (`/privacy`, `/terms`, `/ai-disclaimer`)
      and not `/training-profile` itself.
 - **Never blocks the app.** It's an overlay (`z-95`, below all the real gates at
@@ -209,13 +221,15 @@ mounted once in `app/layout.tsx` as the **last** step of the onboarding sequence
 
 ### Dismissal key
 
-`yfos:profile-onboarding-dismissed:v1` (new, additive), owned by
-`lib/profile-onboarding.ts` (mirrors `lib/welcome.ts`: `useSyncExternalStore`
-reactive flag, fail-"dismissed" on storage errors so a hiccup never re-nags).
-This is a **gate/preference flag, not data** — like the welcome flags it is **not**
-part of Backup/Restore and is **not** cleared by `resetAll` (a `resetProfileOnboarding`
-reset is exported for any future "show again" action). After a full reset the
-profile is cleared but the prompt does not re-nag, matching welcome-flag semantics.
+**V3:** `yfos:profile-onboarding-dismissed-session:v1` in **sessionStorage**, owned
+by `lib/profile-onboarding.ts` (`useSyncExternalStore` reactive flag,
+fail-"dismissed" on storage errors so a hiccup never re-nags mid-session). The
+legacy permanent localStorage key `yfos:profile-onboarding-dismissed:v1` is left in
+place but **no longer read** as a suppressor. This is a **gate/preference flag, not
+data** — it is **not** part of Backup/Restore and is **not** cleared by `resetAll`
+(a `resetProfileOnboarding` reset is exported for any "show again" action). After a
+full reset the profile is cleared but the prompt does not re-nag within the
+session, matching welcome-flag semantics.
 
 ## Part 2 — Expanded optional fields (additive)
 
@@ -317,3 +331,96 @@ dependencies.
   reload). It only appears after welcome + beta-welcome are done and access is
   granted.
 - `npm run lint`, `npm run build`, and `npm run test:e2e` all pass (82 e2e specs).
+
+---
+
+# V3 — Entry flow (beta welcome + profile prompt on every app entry)
+
+V3 changes **only the cadence and ordering** of the two onboarding surfaces — it
+touches no schema, no profile fields, no backup, and no auth/access logic. The
+profile screen, the profile data key (`yfos:personal-profile:v1`), the profile
+form, and everything in V1/V2 above are unchanged.
+
+## Why
+
+The previous behaviour gated both surfaces with **permanent localStorage flags**,
+so once a user had seen them on a device they never appeared again. The desired
+product flow is: every time a user enters the system they should see the **beta
+welcome first**, then the **profile onboarding prompt** (while no profile exists),
+then the app.
+
+## What changed
+
+1. **Beta welcome is now per session.** `lib/beta-welcome.ts` reads/writes
+   `yfos:beta-welcome-seen-session:v1` in **sessionStorage** (was the permanent
+   `yfos:beta-welcome-seen:v1` in localStorage). It greets on every fresh app entry
+   — for **admins, approved testers, and guests** alike (all funnel through
+   `useAppAccessGranted`) — and does **not** re-stack while navigating between
+   routes in the same session. A new tab / fresh PWA launch / new session greets
+   again. The pre-paint `BETA_WELCOME_INIT_SCRIPT` now checks the session key, so a
+   within-session reload still doesn't flash the greeting.
+
+2. **Profile prompt dismissal is now per session.** `lib/profile-onboarding.ts`
+   reads/writes `yfos:profile-onboarding-dismissed-session:v1` in **sessionStorage**
+   (was the permanent `yfos:profile-onboarding-dismissed:v1`). "לא עכשיו" hides it
+   for the current session only; it may return on a future entry **while no profile
+   exists**. Once a profile exists it never shows (unchanged). It still never shows
+   on `/training-profile` or the public info pages.
+
+3. **Ordering is enforced via the per-session beta-welcome flag.** The profile
+   prompt already requires `useBetaWelcomeSeen()` to be true, so while the beta
+   welcome is open the prompt renders `null` — the two are never visible at once,
+   and the beta welcome is always step one.
+
+The legacy permanent keys are intentionally **left in place** (no data churn) but
+are **no longer read** as suppressors. The Settings "הצג מסך פתיחה" /
+"הצג הודעת בטא שוב" actions still work (reset now clears the session flag, showing
+the notice again immediately).
+
+## Storage keys (V3)
+
+| Surface | Key | Storage | Cadence |
+| --- | --- | --- | --- |
+| Beta welcome | `yfos:beta-welcome-seen-session:v1` | sessionStorage | once per session/entry |
+| Beta welcome (legacy) | `yfos:beta-welcome-seen:v1` | localStorage | retained, **no longer read** |
+| Profile prompt | `yfos:profile-onboarding-dismissed-session:v1` | sessionStorage | dismissed per session, until a profile exists |
+| Profile prompt (legacy) | `yfos:profile-onboarding-dismissed:v1` | localStorage | retained, **no longer read** |
+| First-visit welcome | `yfos:welcome-seen:v1` | localStorage | **unchanged** (still once per device) |
+| Personal profile | `yfos:personal-profile:v1` | localStorage | **unchanged** |
+
+The first-visit `WelcomeGate` was deliberately **left persistent** — V3 scope was
+only the beta welcome and the profile prompt.
+
+## V3 — what stayed unchanged
+
+Personal-profile schema, `yfos:personal-profile:v1`, profile form fields,
+backup/restore, workout/template/draft schemas, FoodLog/nutrition schemas,
+water/supplement/protein celebrations, gym schemas,
+auth/beta/guest/admin/Supabase access logic, AI routes, privacy/terms/AI-disclaimer
+pages, and the Today/Nutrition/Workouts clarity layouts. No new dependencies. No
+profile data is cleared and no dismissal flag is backed up.
+
+## V3 files
+
+**Modified:** `lib/beta-welcome.ts` (sessionStorage gating + init script),
+`lib/profile-onboarding.ts` (sessionStorage dismissal),
+`components/access/BetaWelcomeNotice.tsx` + `components/profile/ProfileOnboardingPrompt.tsx`
++ `app/layout.tsx` (doc-comment updates only — gating logic flows through the libs),
+`e2e/profile-onboarding.spec.ts` (session keys + ordering/fresh-session tests),
+`qa/beta-welcome-check.mjs` (session-flag assertions), `docs/BETA_WELCOME_NOTICE.md`,
+`docs/PERSONAL_PROFILE_V1.md`, `docs/PROJECT_STATE.md`.
+**Added:** `e2e/beta-welcome.spec.ts` (beta welcome on every entry, before the
+profile prompt, with the legacy persistent flag present).
+
+## V3 manual QA notes
+
+- Guest and approved entries both show the beta welcome first on a fresh session,
+  then the profile prompt (no profile) — never both at once.
+- The beta welcome appears even when the old `yfos:beta-welcome-seen:v1`
+  localStorage flag is present (legacy flag no longer suppresses).
+- Within a session, route navigation and a reload do **not** re-show the beta
+  welcome; a new session/tab does.
+- "לא עכשיו" hides the profile prompt for the session; a new session with no
+  profile shows it again; once a profile exists it never shows.
+- Neither surface appears on `/privacy`, `/terms`, `/ai-disclaimer`, before access
+  is granted, or for a non-granted visitor.

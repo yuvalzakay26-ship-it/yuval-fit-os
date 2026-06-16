@@ -26,10 +26,13 @@ import {
  * expectations that the app is still evolving, and shows how to reach Yuval.
  *
  * Behaviour:
- *  - Shows once per browser/device (localStorage: yfos:beta-welcome-seen:v1) and
- *    only once the user has actually passed the access gate (approved real user
- *    OR local guest). It NEVER appears for denied/blocked users or before
- *    auth/access has resolved — see useAppAccessGranted below.
+ *  - Shows once PER SESSION (sessionStorage: yfos:beta-welcome-seen-session:v1),
+ *    as part of every app entry — for admins, approved testers, and guests alike —
+ *    and only once the user has actually passed the access gate (approved real
+ *    user OR local guest). It does not re-appear while navigating between routes
+ *    in the same session, but a fresh entry (new tab / launch / session) greets
+ *    again. It NEVER appears for denied/blocked users or before auth/access has
+ *    resolved — see useAppAccessGranted below.
  *  - The app shell is always mounted underneath so acknowledging is instant (no
  *    remount). The overlay sits above the welcome gate (z-100) and below the beta
  *    auth gate (z-108) so the gate's own screens always win while access is

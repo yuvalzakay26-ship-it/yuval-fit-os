@@ -3,39 +3,52 @@
 // Beta welcome notice state for Yuval Fit OS.
 //
 // This is NOT auth or access control — there is no password and nothing to
-// protect here. It governs a one-time friendly welcome shown AFTER the real beta
-// access gate (components/access/BetaAuthGate.tsx) has let the user in. It thanks
-// beta testers, sets expectations that the app is still evolving, and shows how
-// to reach Yuval. The access boundary lives entirely in BetaAuthGate; this module
+// protect here. It governs the friendly welcome shown AFTER the real beta access
+// gate (components/access/BetaAuthGate.tsx) has let the user in. It thanks beta
+// testers, sets expectations that the app is still evolving, and shows how to
+// reach Yuval. The access boundary lives entirely in BetaAuthGate; this module
 // never reads or writes any auth/approval/fitness data.
 //
-// State lives in localStorage (persisted across sessions, like the welcome gate)
-// so an approved tester sees it once per browser/device and then never again.
-// All state is funneled through here (mirroring lib/welcome.ts) so the notice
-// component and the Settings "show beta notice again" action stay in sync via
-// useSyncExternalStore.
+// Product rule (updated): the beta welcome is part of EVERY app entry, not a
+// one-time-per-device greeting. It is now gated PER SESSION instead of with a
+// permanent localStorage flag, so an admin, approved tester, or guest sees it the
+// first time they enter the app in a given browser session and not again while
+// navigating between routes within that same session. Re-entering the app (a new
+// tab, a fresh PWA launch, a new browser session) shows it again. State therefore
+// lives in sessionStorage. All state is funneled through here (mirroring
+// lib/welcome.ts) so the notice component and the Settings "show beta notice
+// again" action stay in sync via useSyncExternalStore.
 
 import { useSyncExternalStore } from "react";
 
-/** localStorage key holding the beta-welcome-seen flag (value "1" once seen). */
+/**
+ * Legacy localStorage key from the old "seen once per device, forever" behaviour.
+ * It is intentionally left untouched (we don't churn existing data) but is NO
+ * LONGER read as a permanent suppressor — the active gate is the session key
+ * below, so testers who acknowledged the notice on an earlier device-level visit
+ * still see it again on their next app entry.
+ */
 export const BETA_WELCOME_KEY = "yfos:beta-welcome-seen:v1";
+
+/** sessionStorage key holding the per-session seen flag (value "1" once seen). */
+export const BETA_WELCOME_SESSION_KEY = "yfos:beta-welcome-seen-session:v1";
 
 function isBrowser(): boolean {
   return (
-    typeof window !== "undefined" && typeof window.localStorage !== "undefined"
+    typeof window !== "undefined" && typeof window.sessionStorage !== "undefined"
   );
 }
 
 /**
- * Whether the beta welcome notice has already been seen. Fails open: if storage
- * is unavailable or throws (private mode, blocked cookies, quota errors), we
- * treat it as seen so a storage hiccup never traps an approved tester behind the
- * notice — there is nothing to protect here.
+ * Whether the beta welcome notice has already been seen IN THIS SESSION. Fails
+ * open: if storage is unavailable or throws (private mode, blocked cookies, quota
+ * errors), we treat it as seen so a storage hiccup never traps an approved tester
+ * behind the notice — there is nothing to protect here.
  */
 export function readBetaWelcomeSeen(): boolean {
   if (!isBrowser()) return false;
   try {
-    return window.localStorage.getItem(BETA_WELCOME_KEY) === "1";
+    return window.sessionStorage.getItem(BETA_WELCOME_SESSION_KEY) === "1";
   } catch {
     return true;
   }
@@ -45,7 +58,7 @@ export function readBetaWelcomeSeen(): boolean {
 // runtime so the flash-avoidance CSS rule (see globals.css) never hides the
 // notice after a reset, and never reveals it after acknowledgement.
 function setHtmlFlag(seen: boolean): void {
-  if (!isBrowser()) return;
+  if (typeof document === "undefined") return;
   document.documentElement.classList.toggle("beta-welcome-seen", seen);
 }
 
@@ -55,25 +68,32 @@ function notify(): void {
   listeners.forEach((listener) => listener());
 }
 
-/** Acknowledge the notice ("הבנתי, המשך למערכת") and remember it was seen. */
+/**
+ * Acknowledge the notice ("הבנתי, המשך למערכת") and remember it was seen for the
+ * rest of this session (it will greet again on the next app entry).
+ */
 export function markBetaWelcomeSeen(): void {
   if (isBrowser()) {
     try {
-      window.localStorage.setItem(BETA_WELCOME_KEY, "1");
+      window.sessionStorage.setItem(BETA_WELCOME_SESSION_KEY, "1");
     } catch {
       // Storage unavailable — the in-memory notify still dismisses it for this
-      // session; the notice may reappear on next load, which is harmless.
+      // render; the notice may reappear on next navigation, which is harmless.
     }
   }
   setHtmlFlag(true);
   notify();
 }
 
-/** Clear the flag so the notice shows again (optional Settings action). */
+/**
+ * Clear the session flag so the notice shows again right now (the Settings
+ * "הצג הודעת בטא שוב" action). Since the gate is already per-session, this simply
+ * brings the greeting back immediately in the current session.
+ */
 export function resetBetaWelcome(): void {
   if (isBrowser()) {
     try {
-      window.localStorage.removeItem(BETA_WELCOME_KEY);
+      window.sessionStorage.removeItem(BETA_WELCOME_SESSION_KEY);
     } catch {
       // Ignore — worst case the notice simply doesn't reappear.
     }
@@ -83,18 +103,12 @@ export function resetBetaWelcome(): void {
 }
 
 function subscribe(callback: () => void): () => void {
+  // Session state is per-tab, so there is no cross-tab `storage` event to mirror
+  // (sessionStorage changes never fire one). Same-tab updates flow through the
+  // in-memory listener set via notify().
   listeners.add(callback);
-  // Reflect an acknowledge/reset performed in another tab.
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === BETA_WELCOME_KEY || event.key === null) {
-      setHtmlFlag(readBetaWelcomeSeen());
-      callback();
-    }
-  };
-  if (isBrowser()) window.addEventListener("storage", onStorage);
   return () => {
     listeners.delete(callback);
-    if (isBrowser()) window.removeEventListener("storage", onStorage);
   };
 }
 
@@ -108,8 +122,9 @@ export function useBetaWelcomeSeen(): boolean {
 
 /**
  * Inline script string run in <head> before paint. When the notice was already
- * seen it adds `.beta-welcome-seen` to <html>, which CSS uses to hide the
- * server-rendered notice overlay before first paint — so approved testers never
- * see a flash of it on later loads. Mirrors WELCOME_INIT_SCRIPT.
+ * seen THIS SESSION it adds `.beta-welcome-seen` to <html>, which CSS uses to hide
+ * the notice overlay before first paint — so a within-session reload doesn't flash
+ * the greeting again. On a fresh session the key is absent, the class is not
+ * added, and the notice shows as intended. Mirrors WELCOME_INIT_SCRIPT.
  */
-export const BETA_WELCOME_INIT_SCRIPT = `(function(){try{if(localStorage.getItem('${BETA_WELCOME_KEY}')==='1')document.documentElement.classList.add('beta-welcome-seen');}catch(e){}})();`;
+export const BETA_WELCOME_INIT_SCRIPT = `(function(){try{if(sessionStorage.getItem('${BETA_WELCOME_SESSION_KEY}')==='1')document.documentElement.classList.add('beta-welcome-seen');}catch(e){}})();`;
