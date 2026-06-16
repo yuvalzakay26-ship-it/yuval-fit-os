@@ -5,6 +5,7 @@ import { ScrollToTop } from "./ScrollToTop";
 import { GuestModeBanner } from "@/components/access/GuestModeBanner";
 import { WaterGoalCelebrationOverlay } from "@/components/water/WaterGoalCelebrationOverlay";
 import { SupplementTakenCelebrationOverlay } from "@/components/supplements/SupplementTakenCelebrationOverlay";
+import { ProteinGoalCelebrationOverlay } from "@/components/nutrition/ProteinGoalCelebrationOverlay";
 
 /**
  * App-wide chrome: sticky header, scrollable content area, fixed bottom nav,
@@ -25,6 +26,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <WaterGoalCelebrationOverlay />
       {/* App-wide supplement-taken success celebration (distinct theme, same pattern). */}
       <SupplementTakenCelebrationOverlay />
+      {/* App-wide protein-goal celebration (warm amber/gold theme, same pattern). */}
+      <ProteinGoalCelebrationOverlay />
     </div>
   );
 }

@@ -4,7 +4,40 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (**Supplement Taken Celebration**: a new app-wide,
+> Last reviewed: Phase 3.xx (**Protein Goal Celebration**: a new app-wide,
+> one-shot moment that plays when today's logged protein crosses into the user's
+> **configured** daily protein goal (`Settings.proteinGoal`) — distinct in
+> meaning and theme from the water-goal (water goal) and supplement-taken (single
+> item logged) celebrations. New event seam `lib/protein-goal-events.ts`
+> (`yfos:protein-goal-reached`, `maybeCelebrateProteinGoalCrossing` fires **only**
+> on the below→at-or-above edge, safe on zero/missing goal), a
+> `ProteinGoalCelebrationOverlay` mounted once in `AppShell`
+> (`pointer-events-none`, `aria-hidden` visuals + a `role="status"` SR
+> announcement, self-dismisses ~1.4s), and `protein-celebrate-*` CSS in
+> `globals.css` (new warm amber/gold `--accent-protein*` tokens) with a
+> `prefers-reduced-motion` static-glow fallback. The trigger is centralized in the
+> existing `addFoodLog` store mutation, so every add surface (manual add, food
+> library, `הוסף שוב` recents/journal, and AI drafts confirmed through the normal
+> flow) celebrates identically — **no parallel food-logging path**. Theme is a
+> warm amber/gold + cream glow, a **target** badge on the protein gradient,
+> drifting macro rings, and warm-gold sparkles (no water-blue, no capsules, no red
+> warning, no body/medical imagery). On-screen copy **`יעד החלבון הושלם`**;
+> SR copy **`כל הכבוד, יעד החלבון של היום הושלם`** — neutral, tied to the user's
+> own target, **no** medical/diet claim (`חובה`/`צריך`/`מומלץ לאכול`/
+> `הגעת לכמות שאתה צריך`/`כדי לרדת במשקל` explicitly avoided). It does **NOT** fire
+> on render, hydration, loading existing logs, adding more once already met,
+> removing food, backup restore, or a zero/missing goal; remove-below → re-cross
+> may fire again (**no per-day flag** — the crossing edge over real food-log
+> totals is the guard, so **no new persisted state / no backup-schema change**).
+> **No** change to `FoodLog` schema, nutrition localStorage keys, macro/summary
+> calculations, the AI draft flow (no auto-save, no photo storage), backup format,
+> water/supplement celebrations, workout/gym schemas, auth/beta/guest/admin/
+> Supabase, AI routes, or privacy/terms; no new dependencies. e2e: new
+> `protein-celebration.spec.ts` (load with goal met = no overlay; below-goal add
+> no-op; manual add crossing shows `יעד החלבון הושלם`; add while over no-op;
+> `הוסף שוב` crossing fires; remove-below then re-add fires again). See
+> [`PROTEIN_GOAL_CELEBRATION.md`](PROTEIN_GOAL_CELEBRATION.md).)
+> Prior: Phase 3.xx (**Supplement Taken Celebration**: a new app-wide,
 > one-shot success moment that plays when a supplement is marked **taken today**
 > — distinct in meaning and theme from the water-goal celebration (water =
 > reaching a daily goal; supplement = confirming a single item was logged). New
@@ -398,7 +431,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | System Hub ("מרכז מערכת") | Premium `/more` hub gathering all secondary tools into module-coloured categories (pure navigation) | `components/more/SystemHubView.tsx`, `docs/NAVIGATION_SYSTEM_HUB.md` |
 | Workouts | Log sessions, build from templates, view history; the active session (builder) is a premium muscle-aware "live workout" experience with an explicit drag-only exercise reorder mode (Pointer-Events drag + keyboard, no data loss) and **collapsible exercise cards** (per-card chevron + `מזער הכל`/`פתח הכל`, visual-only) to tame long sessions | `components/workouts/*`, `docs/ACTIVE_WORKOUT_SESSION_UX.md`, `docs/ACTIVE_WORKOUT_REORDER.md`, `docs/ACTIVE_WORKOUT_COLLAPSIBLE_CARDS.md` |
 | Exercise Library | 133 exercises, images, instructions, external demo videos | `components/exercises/*`, `lib/seed-exercises.ts` |
-| Nutrition | Daily food logs + macro totals, plus **quick reuse**: an `אכלת לאחרונה` row and per-entry `הוסף שוב` that re-log a previous food in one tap (derived from logs, no new storage) | `components/nutrition/NutritionView.tsx`, `lib/nutrition-reuse.ts`, `docs/NUTRITION_QUICK_REUSE.md` |
+| Nutrition | Daily food logs + macro totals, plus **quick reuse**: an `אכלת לאחרונה` row and per-entry `הוסף שוב` that re-log a previous food in one tap (derived from logs, no new storage). Crossing the **configured protein goal** via any add surface fires an app-wide celebration overlay | `components/nutrition/NutritionView.tsx`, `lib/nutrition-reuse.ts`, `lib/protein-goal-events.ts`, `docs/NUTRITION_QUICK_REUSE.md`, `docs/PROTEIN_GOAL_CELEBRATION.md` |
 | Food Library | Visual catalogue of foods to log from | `components/nutrition/FoodLibrary*`, `lib/food-library.ts` |
 | Saved Food Values | User's remembered per-food default macros | `docs/NUTRITION_SAVED_VALUES.md` |
 | Favorite Foods | Quick-access favorites (identity only, no macros) | `docs/NUTRITION_FAVORITES.md` |

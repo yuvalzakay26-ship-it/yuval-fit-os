@@ -29,10 +29,19 @@ import {
   rearmWaterCelebration,
 } from "./water-goal-events";
 import { maybeCelebrateSupplementTaken } from "./supplement-events";
+import { maybeCelebrateProteinGoalCrossing } from "./protein-goal-events";
 
 /** Today's total ml for a date from a logs array (0 when none). */
 function waterTotalForDate(logs: WaterLog[], date: string): number {
   return logs.find((log) => log.date === date)?.totalMl ?? 0;
+}
+
+/** Total logged protein (grams) for a date from a food-logs array (0 when none). */
+function proteinTotalForDate(logs: FoodLog[], date: string): number {
+  return logs.reduce(
+    (sum, log) => (log.date === date ? sum + log.protein : sum),
+    0,
+  );
 }
 
 const EMPTY_WORKOUTS: WorkoutSession[] = [];
@@ -203,9 +212,28 @@ export function removeWorkout(id: string): void {
 }
 
 export function addFoodLog(log: FoodLog): void {
+  // Capture the pre-save protein total for this log's date so we can detect
+  // crossing into the configured daily goal. `saveFoodLog` is an upsert, so this
+  // works for new logs and edits alike (an edit's old value is already in prev).
+  const date = log.date;
+  const prevProtein = proteinTotalForDate(storage.getFoodLogs(), date);
   storage.saveFoodLog(log);
   foodLogsCache = storage.getFoodLogs();
   notify();
+
+  // App-wide celebration when this food log crossed today's protein goal (fires
+  // only on the below→at-or-above edge; see lib/protein-goal-events.ts).
+  // Centralized here so every add surface — manual add, the food library, the
+  // add-again / recent-food shortcut, and AI drafts saved through the normal
+  // flow — triggers it identically. UX feedback only; no diet/medical claim.
+  const goal = storage.getSettings().proteinGoal ?? 0;
+  const nextProtein = proteinTotalForDate(foodLogsCache, date);
+  maybeCelebrateProteinGoalCrossing({
+    date,
+    prevProteinGrams: prevProtein,
+    nextProteinGrams: nextProtein,
+    goalGrams: goal,
+  });
 }
 
 export function removeFoodLog(id: string): void {
