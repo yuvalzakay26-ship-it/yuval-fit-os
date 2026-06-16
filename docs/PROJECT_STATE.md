@@ -24,7 +24,24 @@
 > moved to the cloud** — only request/access metadata lives in Supabase. Rerun the
 > SQL to upgrade existing installs (`create table if not exists` + safe
 > `drop/create policy`). See [`BETA_ACCESS_SYSTEM.md`](BETA_ACCESS_SYSTEM.md).)
-> Latest: Phase 3.xx (**Today Product Clarity Pass — Part 1**: a UX
+> Latest: Phase 3.xx (**Today Product Clarity Pass — Part 2**: a follow-up
+> affordance/copy pass after real-UI feedback that the Part 1 collapsible
+> `סיכום היום` row looked static (users couldn't tell it was tappable). The bare
+> heading-row toggle is now a **full card-like `<button>`** that unmistakably
+> reads as an expandable control: a leading `ListIcon` tile, a `הצג פירוט תזונה
+> ואימון` → `פירוט תזונה ואימון` subtitle, the protein hint demoted to a small
+> pill, and an explicit `פתח`/`סגור` action chip with an up/down `ChevronDownIcon`
+> that rotates 180° when open. The whole card is the tap target; affordance never
+> relies on the chevron or colour alone. Wired for a11y: native button,
+> `aria-expanded`, and `aria-controls="today-summary-panel"` (matching `id` on the
+> revealed panel). Presentation only — summary still collapsed by default, the
+> expanded nutrition + workout cards unchanged, and active gym/workout promotion,
+> state-aware gym copy, water reset + over-goal states, and quick actions all
+> preserved. **No** `lib/today.ts` / `lib/gym-attendance.ts` logic, storage keys,
+> schemas, backup format, routes, gates, or save behaviour changed. The Today
+> e2e spec was extended (still 47 passed). See
+> [`TODAY_CLARITY_PASS.md`](TODAY_CLARITY_PASS.md).)
+> Prior: Phase 3.xx (**Today Product Clarity Pass — Part 1**: a UX
 > clarity/hierarchy pass on the Today screen so it reads as a daily command
 > center, not a stack of same-weight cards. Two changes, presentation only:
 > (1) **`סיכום היום` is demoted to a collapsible section, closed by default** —

@@ -31,9 +31,11 @@ import {
   ChartIcon,
   CheckIcon,
   ChevronIcon,
+  ChevronDownIcon,
   DropletIcon,
   DumbbellIcon,
   FlameIcon,
+  ListIcon,
   PillIcon,
   PlayIcon,
   PlusIcon,
@@ -493,37 +495,58 @@ export function TodayView() {
 
       {/* Daily summary — nutrition + workout. Demoted to a collapsible section so
           it no longer duplicates the "מבט מהיר" strip at full visual weight. The
-          toggle header carries a compact protein hint (the one detail the strip
-          omits); tapping it reveals the richer nutrition + workout cards. */}
+          toggle is a full card-like button (not a bare heading row) so it clearly
+          reads as an expandable control: a leading icon, a "show/hide details"
+          subtitle, the protein hint (the one fact the strip omits), and an
+          explicit "פתח"/"סגור" action chip + chevron. aria-expanded/aria-controls
+          wire it up for screen readers; affordance never relies on the chevron
+          (or colour) alone. */}
       <section className="space-y-3">
         <button
           type="button"
           onClick={() => setSummaryOpen((v) => !v)}
           aria-expanded={summaryOpen}
-          className="tap flex w-full items-center justify-between gap-2"
+          aria-controls="today-summary-panel"
+          className="tap block w-full text-start"
         >
-          <span className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.08em] text-faint">
-            <span
-              aria-hidden="true"
-              className="h-1.5 w-1.5 rounded-full"
-              style={{ background: "var(--accent-nutrition)" }}
+          <Card className="module-nutrition sheen relative overflow-hidden p-4">
+            <div
+              className="pointer-events-none absolute -left-10 -top-12 h-28 w-28 rounded-full opacity-50 blur-2xl"
+              style={{ background: "var(--accent-nutrition-soft)" }}
             />
-            סיכום היום
-          </span>
-          <span className="flex min-w-0 items-center gap-1.5 text-faint">
-            <span className="truncate text-[12px] font-medium text-muted">
-              {proteinHint}
-            </span>
-            <ChevronIcon
-              className={`h-4 w-4 shrink-0 transition-transform duration-200 ${
-                summaryOpen ? "-rotate-90" : "rotate-90"
-              }`}
-            />
-          </span>
+            <div className="relative flex items-center gap-3">
+              <span className="nutrition-gradient sheen flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-[color:var(--accent-contrast)] shadow-glow-nutrition">
+                <ListIcon className="h-5 w-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px] font-bold leading-tight text-foreground">
+                  סיכום היום
+                </p>
+                <p className="mt-0.5 truncate text-[12.5px] text-muted">
+                  {summaryOpen
+                    ? "פירוט תזונה ואימון"
+                    : "הצג פירוט תזונה ואימון"}
+                </p>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                <span className="max-w-[8.5rem] truncate rounded-full bg-[color:var(--accent-nutrition-soft)] px-2 py-0.5 text-[10.5px] font-bold text-[color:var(--accent-nutrition)]">
+                  {proteinHint}
+                </span>
+                <span className="flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-1 text-[12px] font-bold text-[color:var(--accent-nutrition)]">
+                  {summaryOpen ? "סגור" : "פתח"}
+                  <ChevronDownIcon
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      summaryOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </span>
+              </div>
+            </div>
+          </Card>
         </button>
 
         {summaryOpen && (
-          <div className="space-y-4">
+          <div id="today-summary-panel" className="space-y-4">
         {/* Nutrition */}
         <Card className="module-nutrition sheen relative overflow-hidden p-4">
           <div

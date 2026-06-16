@@ -1,3 +1,69 @@
+# Today — Product Clarity Pass
+
+## Part 2 — make the summary control obviously interactive
+
+Part 1 collapsed `סיכום היום` by default, but real-UI feedback was that the
+collapsed row read like a static heading with a chevron — users couldn't tell it
+was tappable. Part 2 turns it into an **unmistakable expandable control** and is
+otherwise copy/affordance only (no schema, key, route, or logic changes).
+
+### What was clarified
+
+The bare heading-row toggle became a **full card-like button** with layered
+affordances, so interactivity never depends on the chevron (or colour) alone:
+
+| Element | Collapsed | Expanded |
+|---|---|---|
+| Leading icon | `ListIcon` in a nutrition-gradient tile | same |
+| Title | `סיכום היום` | `סיכום היום` |
+| Subtitle | `הצג פירוט תזונה ואימון` | `פירוט תזונה ואימון` |
+| Protein hint pill | e.g. `נותרו 150 ג׳ חלבון` | same |
+| Action chip | `פתח` + down chevron | `סגור` + chevron rotated 180° |
+
+- The **whole card is one `<button>`** (`text-start`, full width), so the entire
+  row is the tap target — not just the chevron.
+- The protein hint stays (the one fact `מבט מהיר` omits) but is now a small pill,
+  no longer the most prominent thing in the row — the `פתח`/`סגור` chip and the
+  "show details" subtitle lead instead.
+- The chevron is a real up/down `ChevronDownIcon` that rotates 180° when open,
+  reinforcing — but never solely carrying — the expand/collapse meaning.
+
+### Accessibility
+
+- The control is a native `<button type="button">`.
+- `aria-expanded` reflects open/closed; `aria-controls="today-summary-panel"`
+  points at the revealed panel, which carries the matching `id`.
+- The button's accessible name includes the title, the show/hide subtitle, and
+  the `פתח`/`סגור` label, so a screen reader announces a meaningful, stateful
+  control — not just an icon.
+
+### Section hierarchy
+
+The existing section titles already read clearly and were kept stable to keep the
+diff focused and reviewable: `מבט מהיר` (compact status overview), `פעולות מהירות`
+(actions to take now), `נוכחות במכון` (gym presence), `סיכום היום` (expandable
+details), `עוד` (secondary links). Only the `סיכום היום` control was redesigned.
+
+### What stayed unchanged (Part 2)
+
+- Daily summary still **collapsed by default**; the expanded nutrition + workout
+  cards are byte-for-byte the same content.
+- Active gym / active-workout promotion under Next Action, state-aware gym copy,
+  water reset + over-goal states, and quick actions are all untouched.
+- No `lib/today.ts` / `lib/gym-attendance.ts` logic, storage keys, schemas,
+  backup format, routes, gates, or save behaviour changed.
+
+### Manual QA — 360 px / 390 px (Part 2)
+
+- 360 px & 390 px, light + dark, RTL: no horizontal overflow. The middle column
+  (`min-w-0`) truncates its subtitle first; the protein pill is capped
+  (`max-w-[8.5rem] truncate`) and the `פתח`/`סגור` chip + chevron stay visible.
+- The whole card is a comfortable touch target (≥ 44 px tall); the chip and
+  chevron never clip. Bottom nav and the scroll-to-top button still clear the
+  toggle and the major actions.
+
+---
+
 # Today — Product Clarity Pass (Part 1)
 
 A focused **UX clarity** pass on the Today / home screen. Today already had the

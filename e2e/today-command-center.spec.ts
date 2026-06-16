@@ -102,7 +102,7 @@ test("an in-progress workout draft is surfaced high on Today", async ({
   await expect(page.getByText("אימון בוקר")).toBeVisible();
 });
 
-test("'סיכום היום' is collapsed by default and expands on tap", async ({
+test("'סיכום היום' is an obvious expandable control, collapsed by default", async ({
   page,
 }) => {
   await seedBase(page);
@@ -110,10 +110,19 @@ test("'סיכום היום' is collapsed by default and expands on tap", async (
   const toggle = page.getByRole("button", { name: /סיכום היום/ });
   await expect(toggle).toBeVisible();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(toggle).toHaveAttribute("aria-controls", "today-summary-panel");
+  // The control carries explicit, non-chevron affordance copy.
+  await expect(toggle.getByText("הצג פירוט תזונה ואימון")).toBeVisible();
+  await expect(toggle.getByText("פתח", { exact: true })).toBeVisible();
   // The detailed "תזונה היום" card is hidden until the section is expanded.
   await expect(page.getByText("תזונה היום")).toHaveCount(0);
+
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  // Expanded state shows a clear "close" affordance and the panel content.
+  await expect(toggle.getByText("סגור", { exact: true })).toBeVisible();
+  await expect(toggle.getByText("פירוט תזונה ואימון", { exact: true })).toBeVisible();
+  await expect(page.locator("#today-summary-panel")).toBeVisible();
   await expect(page.getByText("תזונה היום")).toBeVisible();
 });
 
