@@ -35,18 +35,25 @@ written to the **existing** nutrition journal.
 
 ## `/nutrition` hierarchy (scan-first)
 
-1. **Today summary** — `MacroSummary` (unchanged).
-2. **Primary action** — large `סרוק צלחת` card. **Active** when AI is configured;
-   **disabled / coming-soon** (`בקרוב`) when it is not. The slot is always present.
-3. **Fallback actions** — `הוסף שוב` (reveals recent foods) + `הוסף ידנית`
-   (`/nutrition/add`). Below: compact **favorites** chips when any exist.
-4. **Today's journal** — `היומן של היום`.
+1. **Today summary** — `MacroSummary` (status, near the top; calcs unchanged).
+2. **`הוספת אוכל` command area** (helper: `בחר איך לרשום את הארוחה שלך`):
+   - **Primary** — large `סרוק צלחת` card. **Active** when AI is configured;
+     **disabled / coming-soon** (`בקרוב`) when it is not. The slot is always
+     present, with the `איך עובד ניתוח AI?` helper link attached directly beneath.
+   - **Secondary** — `הוסף ידנית` (`/nutrition/add`) + `בחר מהמאגר`
+     (`/nutrition/library`), equal weight, quieter than the scan card.
+   - **Shortcut** — full-width `הוסף שוב` (reveals recent foods; stays visible but
+     disabled with `אין עדיין ארוחות אחרונות` when there are none yet).
+3. **`יומן האוכל של היום`** — the source-of-truth food journal. Empty state is calm
+   and button-free (`עדיין לא נרשם אוכל היום` / `הוסף ארוחה כדי להתחיל לעקוב — …`),
+   since every add action already lives in the command area above.
+4. **Food shortcuts** — compact **favorites** (`מועדפים`) chips when any exist.
 5. **More tracking** (`מעקבים נוספים`) — water + supplements, subordinate.
 6. **Tools** (`כלים נוספים`) — protein calculator + full food library.
 
-The hierarchy is identical in both states — only section 2's card swaps between
-the active flow and the inert `בקרוב` card. Nothing below it ever changes, and the
-manual / recent fallbacks stay visible and usable in both states.
+The hierarchy is identical in both AI states — only the primary card swaps between
+the active flow and the inert `בקרוב` card. Everything below it stays put, and the
+manual / catalog / recent fallbacks stay visible and usable in both states.
 
 ### Active vs disabled scan card
 

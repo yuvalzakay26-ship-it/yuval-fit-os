@@ -104,18 +104,25 @@ export function NutritionView({
 
   return (
     <div className="space-y-6">
-      {/* 1 — Today's nutrition summary */}
+      {/* B — Today's nutrition summary (status, near the top) */}
       <MacroSummary
         totals={totals}
         proteinGoal={settings.proteinGoal}
         calorieGoal={settings.calorieGoal}
       />
 
-      {/* 2 — Primary default action: photo scan. Active when AI is configured;
-          otherwise a calm "בקרוב" card so users still see the feature exists.
-          The disabled card is inert (no upload, no fetch) and never blocks the
-          manual / "add again" fallbacks directly below. */}
+      {/* C — "הוספת אוכל" command area: the single place to choose how to log a
+          meal. Primary = photo scan (active, or a calm "בקרוב" card when AI is
+          off) with the AI helper link attached directly beneath it. Secondary =
+          manual + catalog. Shortcut = "הוסף שוב". The disabled scan card is inert
+          (no upload, no fetch) and never blocks these fallbacks. */}
       <section>
+        <SectionHeader
+          title="הוספת אוכל"
+          hint="בחר איך לרשום את הארוחה שלך"
+          accent="var(--accent-nutrition)"
+        />
+
         {aiEnabled ? (
           <PhotoScanCard
             hasRecents={hasRecents}
@@ -124,7 +131,7 @@ export function NutritionView({
         ) : (
           <PhotoScanCardDisabled showSetupHint={showSetupHint} />
         )}
-        {/* Explains the AI scan is an estimate-only, editable draft. */}
+        {/* AI helper link — attached under the scan card; estimate-only framing. */}
         <p className="mt-2 text-center text-[12px] text-muted">
           <Link
             href="/ai-disclaimer"
@@ -133,37 +140,10 @@ export function NutritionView({
             איך עובד ניתוח AI?
           </Link>
         </p>
-      </section>
 
-      {/* 3 — Fast fallback actions: add again + manual. Always visible. */}
-      <section>
-        <div className="grid grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            onClick={() => hasRecents && setShowRecents((v) => !v)}
-            disabled={!hasRecents}
-            aria-expanded={hasRecents ? showRecents : undefined}
-            className="tap flex flex-col items-start gap-2 rounded-2xl border border-border bg-surface p-4 text-right shadow-soft transition-[border-color] hover:border-border-strong disabled:opacity-60 disabled:hover:border-border"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--accent-nutrition-soft)] text-[color:var(--accent-nutrition)]">
-              <RefreshIcon className="h-5 w-5" />
-            </span>
-            <span className="flex w-full items-center justify-between gap-1">
-              <span className="text-[14px] font-bold text-foreground">הוסף שוב</span>
-              {hasRecents && (
-                <ChevronDownIcon
-                  className={cn(
-                    "h-4 w-4 text-faint transition-transform",
-                    showRecents && "rotate-180",
-                  )}
-                />
-              )}
-            </span>
-            <span className="text-[11.5px] leading-snug text-muted">
-              מהארוחות האחרונות שלך
-            </span>
-          </button>
-
+        {/* Secondary actions: manual + catalog — equal weight, clearly tappable,
+            quieter than the primary scan card above. */}
+        <div className="mt-3 grid grid-cols-2 gap-2.5">
           <Link
             href="/nutrition/add"
             className="tap flex flex-col items-start gap-2 rounded-2xl border border-border bg-surface p-4 text-right shadow-soft transition-[border-color] hover:border-border-strong"
@@ -173,10 +153,52 @@ export function NutritionView({
             </span>
             <span className="text-[14px] font-bold text-foreground">הוסף ידנית</span>
             <span className="text-[11.5px] leading-snug text-muted">
-              בחירה מהמאגר או הזנה חופשית
+              הזנה חופשית של ערכים
+            </span>
+          </Link>
+
+          <Link
+            href="/nutrition/library"
+            className="tap flex flex-col items-start gap-2 rounded-2xl border border-border bg-surface p-4 text-right shadow-soft transition-[border-color] hover:border-border-strong"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--accent-nutrition-soft)] text-[color:var(--accent-nutrition)]">
+              <DatabaseIcon className="h-5 w-5" />
+            </span>
+            <span className="text-[14px] font-bold text-foreground">בחר מהמאגר</span>
+            <span className="text-[11.5px] leading-snug text-muted">
+              מאכלים עם תמונה מהמאגר
             </span>
           </Link>
         </div>
+
+        {/* Shortcut: "הוסף שוב" reveals recent foods. Quiet + full-width so it
+            doesn't compete with the actions above; it stays visible but disabled,
+            with a clear reason, when there are no recents yet. */}
+        <button
+          type="button"
+          onClick={() => hasRecents && setShowRecents((v) => !v)}
+          disabled={!hasRecents}
+          aria-expanded={hasRecents ? showRecents : undefined}
+          className="tap mt-2.5 flex w-full items-center gap-3 rounded-2xl border border-border bg-surface p-3.5 text-right shadow-soft transition-[border-color] hover:border-border-strong disabled:opacity-60 disabled:hover:border-border"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--accent-nutrition-soft)] text-[color:var(--accent-nutrition)]">
+            <RefreshIcon className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14px] font-bold text-foreground">הוסף שוב</span>
+            <span className="block text-[11.5px] leading-snug text-muted">
+              {hasRecents ? "מהארוחות האחרונות שלך" : "אין עדיין ארוחות אחרונות"}
+            </span>
+          </span>
+          {hasRecents && (
+            <ChevronDownIcon
+              className={cn(
+                "h-4 w-4 shrink-0 text-faint transition-transform",
+                showRecents && "rotate-180",
+              )}
+            />
+          )}
+        </button>
 
         {/* Recent foods, revealed under "הוסף שוב". Derived from log history; the
             macros are exactly what the user entered before — nothing inferred. */}
@@ -226,49 +248,13 @@ export function NutritionView({
             ))}
           </div>
         )}
-
-        {/* "מועדפים" — quick chips for favorited library foods. Identity only —
-            no macros are stored or inferred here (see docs/NUTRITION_FAVORITES.md). */}
-        {favoriteFoods.length > 0 && (
-          <div className="mt-3">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="flex items-center gap-1.5 text-[12px] font-semibold text-muted">
-                <StarIcon filled className="h-3.5 w-3.5 text-amber-400" />
-                מועדפים
-              </p>
-              <Link
-                href="/nutrition/library?view=favorites"
-                className="tap text-[12px] font-semibold text-[color:var(--accent-nutrition)]"
-              >
-                הצג הכל
-              </Link>
-            </div>
-            <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-              {favoriteFoods.map((food) => (
-                <Link
-                  key={food.id}
-                  href={`/nutrition/add?foodId=${encodeURIComponent(food.id)}`}
-                  className="tap flex shrink-0 items-center gap-2 rounded-full border border-border bg-surface py-1.5 pe-3 ps-1.5 text-[12.5px] font-semibold text-foreground hover:border-border-strong"
-                >
-                  <FoodImage
-                    imagePath={food.imagePath}
-                    alt={food.nameHe}
-                    category={food.category}
-                    label={food.nameHe}
-                    sizes="28px"
-                    className="h-7 w-7 shrink-0 rounded-full"
-                  />
-                  <span className="max-w-[8rem] truncate">{food.nameHe}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
       </section>
 
-      {/* 4 — Today's diary */}
+      {/* D — Today's food journal: the source of truth for what was logged
+          today. The add actions live above, so the empty state stays calm and
+          button-free (a CTA here would just re-duplicate them). */}
       <section>
-        <SectionHeader title={`היומן של היום${today.length ? ` · ${today.length}` : ""}`} />
+        <SectionHeader title={`יומן האוכל של היום${today.length ? ` · ${today.length}` : ""}`} />
         {today.length === 0 ? (
           <EmptyState
             accent="var(--accent-nutrition)"
@@ -276,13 +262,6 @@ export function NutritionView({
             icon={<AppleIcon className="h-7 w-7" />}
             title="עדיין לא נרשם אוכל היום"
             description="הוסף ארוחה כדי להתחיל לעקוב — פעולות ההוספה נמצאות למעלה."
-            action={
-              <Link href="/nutrition/library">
-                <Button size="sm" variant="secondary">
-                  <DatabaseIcon className="h-4 w-4" /> בחר מהמאגר
-                </Button>
-              </Link>
-            }
           />
         ) : (
           <div className="space-y-2.5">
@@ -336,7 +315,47 @@ export function NutritionView({
         )}
       </section>
 
-      {/* 5 — More tracking: water + supplements, subordinate to food logging. */}
+      {/* E — Food shortcuts: favorited foods as compact chips. A quick re-add,
+          secondary to the journal — identity only, no macros stored/inferred
+          here (see docs/NUTRITION_FAVORITES.md). Hidden entirely when empty so
+          it never reads as a main content area. */}
+      {favoriteFoods.length > 0 && (
+        <section>
+          <div className="mb-2 flex items-center justify-between">
+            <p className="flex items-center gap-1.5 text-[12px] font-semibold text-muted">
+              <StarIcon filled className="h-3.5 w-3.5 text-amber-400" />
+              מועדפים
+            </p>
+            <Link
+              href="/nutrition/library?view=favorites"
+              className="tap text-[12px] font-semibold text-[color:var(--accent-nutrition)]"
+            >
+              הצג הכל
+            </Link>
+          </div>
+          <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+            {favoriteFoods.map((food) => (
+              <Link
+                key={food.id}
+                href={`/nutrition/add?foodId=${encodeURIComponent(food.id)}`}
+                className="tap flex shrink-0 items-center gap-2 rounded-full border border-border bg-surface py-1.5 pe-3 ps-1.5 text-[12.5px] font-semibold text-foreground hover:border-border-strong"
+              >
+                <FoodImage
+                  imagePath={food.imagePath}
+                  alt={food.nameHe}
+                  category={food.category}
+                  label={food.nameHe}
+                  sizes="28px"
+                  className="h-7 w-7 shrink-0 rounded-full"
+                />
+                <span className="max-w-[8rem] truncate">{food.nameHe}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* F — More tracking: water + supplements, subordinate to food logging. */}
       <section>
         <SectionHeader title="מעקבים נוספים" />
         <div className="space-y-3">
@@ -345,7 +364,7 @@ export function NutritionView({
         </div>
       </section>
 
-      {/* 6 — Tools / advanced: protein goal + the full food library. */}
+      {/* G — Tools / advanced: protein goal + the full food library. */}
       <section>
         <SectionHeader title="כלים נוספים" />
         <div className="space-y-3">

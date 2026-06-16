@@ -86,18 +86,44 @@ test("disabled card points to the always-available catalog fallback", async ({
   ).toBeVisible();
 });
 
-test("empty food journal renders calm, non-duplicative copy", async ({ page }) => {
+test("'הוספת אוכל' command area presents every add option once", async ({
+  page,
+}) => {
   await gotoNutrition(page);
-  // Source of truth for today's food. On a fresh device it is empty.
-  await expect(page.getByText("היומן של היום", { exact: true })).toBeVisible();
+  // One clearly-titled command area with its helper line.
+  await expect(page.getByText("הוספת אוכל", { exact: true })).toBeVisible();
+  await expect(page.getByText("בחר איך לרשום את הארוחה שלך")).toBeVisible();
+  // Primary (scan) + secondary (manual, catalog) + shortcut (add again), each
+  // present exactly once — no equal-weight duplicates competing for attention.
+  await expect(page.getByText("סרוק צלחת", { exact: true })).toBeVisible();
+  await expect(page.getByText("הוסף ידנית", { exact: true })).toHaveCount(1);
+  await expect(page.getByText("בחר מהמאגר", { exact: true })).toHaveCount(1);
+  await expect(page.getByText("הוסף שוב", { exact: true })).toHaveCount(1);
+  // Catalog navigates to the full-screen library.
+  await page.getByText("בחר מהמאגר", { exact: true }).click();
+  await expect(page).toHaveURL(/\/nutrition\/library/);
+});
+
+test("daily summary leads and secondary trackers sit lower", async ({ page }) => {
+  await gotoNutrition(page);
+  // Daily nutrition summary renders near the top.
+  await expect(page.getByText("קלוריות היום")).toBeVisible();
+  // Water + supplements stay available but framed as secondary tracking.
+  await expect(page.getByText("מעקבים נוספים", { exact: true })).toBeVisible();
+});
+
+test("empty food journal renders calm, button-free copy", async ({ page }) => {
+  await gotoNutrition(page);
+  // Renamed source-of-truth title; empty on a fresh device.
+  await expect(page.getByText("יומן האוכל של היום", { exact: true })).toBeVisible();
   await expect(page.getByText("עדיין לא נרשם אוכל היום")).toBeVisible();
   await expect(
     page.getByText("הוסף ארוחה כדי להתחיל לעקוב — פעולות ההוספה נמצאות למעלה."),
   ).toBeVisible();
-  // The empty journal no longer repeats "הוסף ידנית" (already in the quick
-  // actions above); it keeps a single, distinct catalog CTA instead.
+  // Add actions live in the "הוספת אוכל" area above, so the empty journal carries
+  // no button of its own — a CTA here would just re-duplicate them.
   await expect(page.getByText("הוסף ידנית", { exact: true })).toHaveCount(1);
-  await expect(page.getByText("בחר מהמאגר", { exact: true })).toBeVisible();
+  await expect(page.getByText("בחר מהמאגר", { exact: true })).toHaveCount(1);
 });
 
 test("manual add and add-again fallbacks stay available", async ({ page }) => {

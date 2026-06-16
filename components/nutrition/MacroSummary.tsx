@@ -72,7 +72,7 @@ export function MacroSummary({
   calorieGoal?: number;
 }) {
   return (
-    <Card variant="raised" className="space-y-4 p-5">
+    <Card variant="raised" className="space-y-4 p-4">
       <div className="flex items-center gap-5">
         <ProgressRing value={totals.protein} goal={proteinGoal ?? 0} size={88} stroke={9}>
           <span className="text-[21px] font-extrabold leading-none text-foreground">

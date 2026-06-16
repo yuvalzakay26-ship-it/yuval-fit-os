@@ -137,7 +137,7 @@ async function run() {
   // Log row shows a thumbnail.
   const rowThumb = await page.evaluate(() => {
     const heading = [...document.querySelectorAll("h2")].find((h) =>
-      h.textContent.includes("היומן של היום"),
+      h.textContent.includes("יומן האוכל של היום"),
     );
     const section = heading?.closest("section");
     return section ? section.querySelectorAll("img").length : 0;

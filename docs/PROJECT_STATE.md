@@ -4,7 +4,26 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (**Nutrition Clarity Pass — Part 1**: a
+> Last reviewed: Phase 3.xx (**Nutrition Clarity Pass — Part 2**: a
+> presentation/copy-only hierarchy pass on `/nutrition` (`NutritionView`) that
+> makes the screen read as a food-logging command center. The add actions are now
+> grouped into a single **`הוספת אוכל`** section (helper `בחר איך לרשום את הארוחה
+> שלך`) with an explicit order: **primary** `סרוק צלחת` card (active or inert
+> `בקרוב`) + attached `איך עובד ניתוח AI?` link → **secondary** two-up `הוסף ידנית`
+> (`/nutrition/add`) + `בחר מהמאגר` (`/nutrition/library`) → **shortcut** full-width
+> `הוסף שוב` (disabled with `אין עדיין ארוחות אחרונות` when no recents). `בחר מהמאגר`
+> is now a first-class command-area action (QA `openPicker` clicks the first match).
+> The journal was renamed **`היומן של היום` → `יומן האוכל של היום`** (its empty state
+> is now calm + button-free, since the command area owns every add action); the QA
+> heading assertion in `qa/food-library-check.mjs` was updated to match. **`מועדפים`**
+> chips moved to their own compact section **below** the journal; **`מעקבים נוספים`**
+> (water + supplements) stays lower and clearly secondary; `MacroSummary` padding
+> tightened `p-5`→`p-4`. **No** change to `FoodLog` schema, localStorage keys, backup
+> format, AI route/activation, photo storage, macro/water/supplement logic, or save
+> behaviour; food photos still never stored; AI results never auto-saved. e2e: two
+> new Part-2 assertions (command area + summary/secondary-trackers) and the renamed
+> empty-journal test (53 passed). See [`NUTRITION_CLARITY_PASS.md`](NUTRITION_CLARITY_PASS.md).)
+> Prior: Phase 3.xx (**Nutrition Clarity Pass — Part 1**: a
 > presentation/copy-only hierarchy pass on `/nutrition` (`NutritionView`). The
 > screen reads top-down as a food-logging command center — (1) `MacroSummary`,
 > (2) photo-first **`סרוק צלחת`** primary (or inert **`בקרוב`**

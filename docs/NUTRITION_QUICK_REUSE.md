@@ -12,8 +12,8 @@ re-entering its quantity + macros every time, the Nutrition screen now offers:
 1. **`אכלת לאחרונה`** — a compact, horizontally-scrolling row of the foods you
    logged most recently. Each card shows the food name, meal-type badge,
    quantity, calories and protein/carbs/fat, plus a **`הוסף שוב`** button.
-2. **`הוסף שוב` on every journal entry** — each row in *היומן של היום* has a small
-   `הוסף שוב` action that duplicates that entry into today's journal.
+2. **`הוסף שוב` on every journal entry** — each row in *יומן האוכל של היום* has a
+   small `הוסף שוב` action that duplicates that entry into today's journal.
 
 Tapping `הוסף שוב` creates a **new** food-log entry for today using the previous
 entry's values, and shows a calm, auto-dismissing confirmation:
