@@ -26,28 +26,39 @@ export function PageHeader({
 
 export function SectionHeader({
   title,
+  hint,
   action,
   accent,
   className,
 }: {
   title: string;
+  /** Optional one-line helper under the title, clarifying the section's role
+   *  (e.g. status snapshot vs. actions). Kept short to avoid clutter. */
+  hint?: string;
   action?: React.ReactNode;
   /** Optional CSS color for a small leading dot, giving sections module identity. */
   accent?: string;
   className?: string;
 }) {
   return (
-    <div className={cn("mb-3 flex items-center justify-between gap-2", className)}>
-      <h2 className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.08em] text-faint">
-        {accent && (
-          <span
-            aria-hidden="true"
-            className="h-1.5 w-1.5 rounded-full"
-            style={{ background: accent }}
-          />
+    <div className={cn("mb-3 flex items-end justify-between gap-2", className)}>
+      <div className="min-w-0">
+        <h2 className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.08em] text-faint">
+          {accent && (
+            <span
+              aria-hidden="true"
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ background: accent }}
+            />
+          )}
+          {title}
+        </h2>
+        {hint && (
+          <p className="mt-1 text-[11.5px] font-medium leading-tight text-faint">
+            {hint}
+          </p>
         )}
-        {title}
-      </h2>
+      </div>
       {action}
     </div>
   );

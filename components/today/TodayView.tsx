@@ -134,7 +134,7 @@ function NextActionCard({ action }: { action: NextAction }) {
         style={{ background: `var(--accent-${action.tone}-soft)` }}
       />
       <div className="relative">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span
             className="flex h-5 w-5 items-center justify-center rounded-full"
             style={{
@@ -147,6 +147,7 @@ function NextActionCard({ action }: { action: NextAction }) {
           <p className="text-[11px] font-semibold uppercase tracking-wide text-faint">
             הפעולה הבאה שלך
           </p>
+          <span className="text-[11px] font-medium text-faint">· כדי להתקדם היום</span>
           {action.optional && (
             <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] font-bold text-faint">
               אופציונלי
@@ -418,20 +419,29 @@ export function TodayView() {
         </div>
       </Card>
 
-      {/* Next action — the single most important step right now */}
-      <NextActionCard action={nextAction} />
-
-      {/* Active right now — what's live takes priority and sits high on the page:
-          a gym visit in progress (live timer) and/or an unsaved workout draft.
-          Each self-hides when not relevant, so this slot only appears when there
-          is genuinely something active. Gym check-in/out logic is unchanged —
-          this only promotes the live card's placement. */}
+      {/* Active right now — what's genuinely LIVE leads the command area, above
+          the suggested next step, so an in-progress session is never buried under
+          a generic prompt: a gym visit in progress (live timer) and/or an unsaved
+          workout draft. Each self-hides when not relevant, so this slot only
+          appears when there is something active. Gym check-in/out logic is
+          unchanged — this only promotes the live card's placement. */}
       {activeGymVisit && <GymTodayCard />}
       <ActiveWorkoutResumeCard />
 
-      {/* Daily status strip */}
+      {/* Next action — the single most important suggested step right now. When a
+          session is live (above) this reads as the secondary "what's next", but it
+          always answers "what should I do to move the day forward?". */}
+      <NextActionCard action={nextAction} />
+
+      {/* Daily status strip — read-only snapshot. Distinct from "פעולות מהירות"
+          below: this answers "where do I stand?" (status), the next answers
+          "what can I tap now?" (actions). The helper line makes the split explicit. */}
       <section>
-        <SectionHeader title="מבט מהיר" accent="var(--accent)" />
+        <SectionHeader
+          title="מבט מהיר"
+          hint="סטטוס קצר של היום"
+          accent="var(--accent)"
+        />
         <div className="grid grid-cols-2 gap-2.5">
           {habits.map((stat) => (
             <StatusCell key={stat.key} stat={stat} />
@@ -439,9 +449,14 @@ export function TodayView() {
         </div>
       </section>
 
-      {/* Quick actions */}
+      {/* Quick actions — tappable shortcuts (premium card tiles), visually
+          distinct from the quieter status cells above. */}
       <section>
-        <SectionHeader title="פעולות מהירות" accent="var(--accent)" />
+        <SectionHeader
+          title="פעולות מהירות"
+          hint="פעולות שאפשר לבצע עכשיו"
+          accent="var(--accent)"
+        />
         <div className="grid grid-cols-4 gap-2.5">
           <QuickAction
             href="/workouts?new=1"

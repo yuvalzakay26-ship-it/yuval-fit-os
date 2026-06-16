@@ -24,7 +24,21 @@
 > moved to the cloud** — only request/access metadata lives in Supabase. Rerun the
 > SQL to upgrade existing installs (`create table if not exists` + safe
 > `drop/create policy`). See [`BETA_ACCESS_SYSTEM.md`](BETA_ACCESS_SYSTEM.md).)
-> Latest: Phase 3.xx (**Today Product Clarity Pass — Part 2**: a follow-up
+> Latest: Phase 3.xx (**Today Product Clarity Pass — Part 3**: a hierarchy
+> pass on the Today command area, presentation/copy only. (1) **What is live now
+> leads** — an active gym visit and/or in-progress workout draft are reordered
+> ABOVE the suggested next-action card so a session already in progress is never
+> buried under a generic prompt. (2) **`הפעולה הבאה`** keeps its `הפעולה הבאה שלך`
+> label but gains a clarifying `· כדי להתקדם היום` "why" line; the label row now
+> wraps so it can't overflow at 360 px. (3) **`מבט מהיר` vs `פעולות מהירות`** are
+> given distinct one-line helpers (`סטטוס קצר של היום` vs `פעולות שאפשר לבצע עכשיו`)
+> via a new optional `hint` on `SectionHeader`, making the status-vs-actions split
+> explicit; the quiet status cells already read differently from the premium action
+> tiles. **No** `lib/today.ts` next-action logic, `lib/gym-attendance.ts` logic,
+> storage keys, schemas, backup format, routes, gates, or save behaviour changed;
+> all Part 1/2 + water + active-workout + gym-copy behaviour preserved. Today e2e
+> spec extended (49 passed). See [`TODAY_CLARITY_PASS.md`](TODAY_CLARITY_PASS.md).)
+> Prior: Phase 3.xx (**Today Product Clarity Pass — Part 2**: a follow-up
 > affordance/copy pass after real-UI feedback that the Part 1 collapsible
 > `סיכום היום` row looked static (users couldn't tell it was tappable). The bare
 > heading-row toggle is now a **full card-like `<button>`** that unmistakably

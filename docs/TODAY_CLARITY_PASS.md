@@ -1,5 +1,82 @@
 # Today — Product Clarity Pass
 
+## Part 3 — sharpen the command-area hierarchy
+
+Parts 1–2 fixed the `סיכום היום` duplication and made its toggle obviously
+interactive. Real-UI feedback was that the Today screen still read as a long
+stack of similar-weight cards — the **top of the page** didn't clearly answer, in
+order: *what's my status? → what's active? → what should I do next? → what can I
+tap now? → what's secondary?* Part 3 is a **hierarchy/copy pass only** (no schema,
+key, route, logic, or save-behaviour change) that makes the top feel like one
+command area and gives the two "quick" sections distinct roles.
+
+### What was clarified
+
+**1. What is LIVE now leads the command area.** The active-state cards (a live
+gym visit with its running timer, and/or an in-progress workout draft) were
+rendered *under* the suggested next-action card. They are now reordered to sit
+**directly under the daily-progress hero and above `הפעולה הבאה`**, so a session
+already in progress is the most prominent thing — never buried under a generic
+prompt. Each card still self-hides when nothing is active, so a calm day shows
+only the hero + next-action. Gym check-in/out and draft logic are untouched —
+this is placement only.
+
+**2. `הפעולה הבאה` reads as "do this to move forward".** The card keeps its
+`הפעולה הבאה שלך` label and gains a small clarifying line, `· כדי להתקדם היום`,
+so the card's *purpose* is explicit, not just its title. The CTA copy is already
+direct and driven by the existing next-action ladder (`הוסף מים`, `הוסף אוכל`,
+`התחל אימון`, `סמן תוספים`, `פתח התקדמות`) — unchanged. Because water is only ever
+suggested when **no** water is logged yet today, an over-goal day never prompts
+"add more water". The label row now uses `flex-wrap` so the label + "why" line +
+optional `אופציונלי` badge can never overflow at 360 px.
+
+**3. `מבט מהיר` and `פעולות מהירות` are given distinct roles.** Both sections
+looked similar. They now carry a short helper under the title, via a new optional
+`hint` prop on `SectionHeader`:
+
+| Section | Helper | Role |
+|---|---|---|
+| `מבט מהיר` | `סטטוס קצר של היום` | **status snapshot** — read-only at-a-glance |
+| `פעולות מהירות` | `פעולות שאפשר לבצע עכשיו` | **actions** — tappable shortcuts |
+
+The visual treatment already differs (quiet `bg-surface-2` status cells vs.
+premium sheen action tiles with gradient icons); the helper copy makes the
+status-vs-action split unmistakable without adding clutter.
+
+### Secondary sections (unchanged behaviour, confirmed priority)
+
+`נוכחות במכון` stays an idle entry point low on the page **only when no visit is
+live** (a live visit is promoted to the command area above; a saved historical
+visit keeps the lower, clear `צפה בביקור היום` state from Part 1). `סיכום היום`
+remains the collapsible, closed-by-default details section from Part 1/2. `עוד`
+(Learn + Progress) stays at the bottom as quiet secondary links — it never
+competes with the core daily actions.
+
+### What stayed unchanged (Part 3)
+
+- `lib/today.ts` next-action ladder + completion logic, `lib/gym-attendance.ts`
+  check-in/out/re-entry/stats — byte-for-byte unchanged.
+- Part 1/2 work preserved: `סיכום היום` collapsed-by-default card-like toggle with
+  `פתח`/`סגור`, state-aware gym copy, the active-workout resume flow.
+- Water work preserved: global celebration, app-wide colours, uncapped
+  percentage, reset from Today, over-goal caution state.
+- No storage keys, schemas, backup format, routes, bottom nav, gates, auth,
+  Supabase, AI routes, or save behaviour changed. No new dependencies. Existing
+  soft-premium visual style kept.
+
+### Manual QA — 360 px / 390 px (Part 3)
+
+- 360 px & 390 px, light + dark, RTL: no horizontal overflow. The next-action
+  label row wraps (`flex-wrap`) so `הפעולה הבאה שלך · כדי להתקדם היום` (+ optional
+  badge) never pushes past the card; the section helpers sit on their own line
+  under the title and wrap cleanly.
+- With a live workout draft and/or gym visit seeded, the active card renders
+  above the next-action card (asserted in `today-command-center.spec.ts`); all
+  cards remain comfortable touch targets and the bottom nav + scroll-to-top
+  button still clear them.
+
+---
+
 ## Part 2 — make the summary control obviously interactive
 
 Part 1 collapsed `סיכום היום` by default, but real-UI feedback was that the

@@ -83,11 +83,39 @@ test("Today renders the primary command area", async ({ page }) => {
   // Daily progress + the single most-important next action are both present.
   await expect(page.getByText("התקדמות היום")).toBeVisible();
   await expect(page.getByText("הפעולה הבאה שלך")).toBeVisible();
+  // The next-action card carries its clarifying "why" subtitle.
+  await expect(page.getByText("כדי להתקדם היום")).toBeVisible();
   // Compact status overview + quick actions still render.
   await expect(page.getByRole("heading", { name: "מבט מהיר" })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "פעולות מהירות" }),
   ).toBeVisible();
+});
+
+test("Quick Glance and Quick Actions read as distinct roles", async ({
+  page,
+}) => {
+  await seedBase(page);
+  await page.goto("/");
+  // Each section carries a short helper that splits "status" from "actions".
+  await expect(page.getByText("סטטוס קצר של היום")).toBeVisible();
+  await expect(page.getByText("פעולות שאפשר לבצע עכשיו")).toBeVisible();
+});
+
+test("a live workout draft leads the command area, above the next action", async ({
+  page,
+}) => {
+  await seedBase(page);
+  await seedWorkoutDraft(page);
+  await page.goto("/");
+  // What is genuinely active should sit above the suggested next action.
+  const active = page.getByText("אימון בתהליך");
+  const nextAction = page.getByText("הפעולה הבאה שלך");
+  await expect(active).toBeVisible();
+  await expect(nextAction).toBeVisible();
+  const activeBox = await active.boundingBox();
+  const nextBox = await nextAction.boundingBox();
+  expect(activeBox && nextBox && activeBox.y < nextBox.y).toBeTruthy();
 });
 
 test("an in-progress workout draft is surfaced high on Today", async ({
