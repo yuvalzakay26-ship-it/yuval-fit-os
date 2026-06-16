@@ -101,3 +101,68 @@ test("150% shows the non-medical caution state", async ({ page }) => {
   // The explicit non-medical disclaimer is present.
   await expect(page.getByText("האפליקציה אינה מהווה ייעוץ רפואי.")).toBeVisible();
 });
+
+// ===== Follow-up: app-wide celebration + shared status on Today/home =====
+// (docs/WATER_GOAL_GLOBAL_CELEBRATION.md)
+
+const CELEBRATION = '[data-water-celebration="active"]';
+
+test("no celebration overlay renders while under goal", async ({ page }) => {
+  await seedWater(page, 1000); // 50%
+  await page.goto("/");
+  await expect(page.locator(CELEBRATION)).toHaveCount(0);
+});
+
+test("crossing the goal from the water page triggers the global celebration", async ({
+  page,
+}) => {
+  await seedWater(page, 1800); // 90% — one add will cross.
+  await page.goto("/nutrition/water");
+  await expect(page.locator(CELEBRATION)).toHaveCount(0);
+
+  // Add a custom amount that crosses 2000ml.
+  await page.getByLabel('כמות מותאמת במ"ל').fill("300");
+  await page.getByLabel("הוסף כמות מותאמת").click();
+
+  await expect(page.locator(CELEBRATION)).toBeVisible();
+  // It self-dismisses (no modal, nothing to close).
+  await expect(page.locator(CELEBRATION)).toHaveCount(0, { timeout: 4000 });
+});
+
+test("crossing the goal from Today/home triggers the global celebration", async ({
+  page,
+}) => {
+  await seedWater(page, 1800); // 90% — water is already started, so the card shows.
+  await page.goto("/");
+  await expect(page.locator(CELEBRATION)).toHaveCount(0);
+
+  // The compact Today water card's quick-add cup (250ml) crosses the goal.
+  await page.getByRole("button", { name: /הוסף כוס/ }).first().click();
+
+  await expect(page.locator(CELEBRATION)).toBeVisible();
+});
+
+test("Today water card shows the amber attention status (not plain blue)", async ({
+  page,
+}) => {
+  await seedWater(page, 2500); // 125%
+  await page.goto("/");
+  // The over-goal copy is visible on Today without opening /nutrition/water.
+  const card = page.locator('[data-water-status="attention"]');
+  await expect(card).toBeVisible();
+  await expect(card.getByText("שתית יותר מהיעד שהגדרת להיום")).toBeVisible();
+});
+
+test("Today water card shows the rose caution status outside /nutrition/water", async ({
+  page,
+}) => {
+  await seedWater(page, 3000); // 150%
+  await page.goto("/");
+  const card = page.locator('[data-water-status="caution"]');
+  await expect(card).toBeVisible();
+  await expect(card.getByText("חריגה משמעותית מיעד המים היומי")).toBeVisible();
+  // The non-medical disclaimer reaches Today too.
+  await expect(
+    card.getByText("האפליקציה אינה מהווה ייעוץ רפואי."),
+  ).toBeVisible();
+});

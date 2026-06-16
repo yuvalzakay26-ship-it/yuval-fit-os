@@ -74,10 +74,13 @@ export function WaterGoalBanner({
   totalMl,
   goalMl,
   className,
+  compact = false,
 }: {
   totalMl: number;
   goalMl: number;
   className?: string;
+  /** Slimmer treatment for embedding inside the compact water card. */
+  compact?: boolean;
 }) {
   const info = getWaterStatus(totalMl, goalMl);
   const copy = waterStatusCopy(info.status);
@@ -92,7 +95,8 @@ export function WaterGoalBanner({
       aria-live="polite"
       data-water-status={info.status}
       className={cn(
-        "sheen relative overflow-hidden rounded-2xl border p-4",
+        "sheen relative overflow-hidden rounded-2xl border",
+        compact ? "p-3" : "p-4",
         tone.container,
         className,
       )}
@@ -119,28 +123,46 @@ export function WaterGoalBanner({
         </>
       )}
 
-      <div className="relative flex items-start gap-3">
+      <div className={cn("relative flex items-start", compact ? "gap-2.5" : "gap-3")}>
         <span
           className={cn(
-            "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
+            "flex shrink-0 items-center justify-center rounded-2xl",
+            compact ? "h-9 w-9" : "h-11 w-11",
             tone.iconWrap,
           )}
         >
-          <Icon className="h-6 w-6" />
+          <Icon className={compact ? "h-5 w-5" : "h-6 w-6"} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className={cn("flex items-center gap-1.5 text-[15px] font-extrabold leading-snug", tone.title)}>
-            {tone.celebrate && <SparkIcon className="h-4 w-4 text-[color:var(--accent-water)]" />}
+          <p
+            className={cn(
+              "flex items-center gap-1.5 font-extrabold leading-snug",
+              compact ? "text-[13.5px]" : "text-[15px]",
+              tone.title,
+            )}
+          >
+            {tone.celebrate && (
+              <SparkIcon className="h-4 w-4 text-[color:var(--accent-water)]" />
+            )}
             {copy.title}
           </p>
           {copy.lines.map((line) => (
-            <p key={line} className={cn("mt-1 text-[13px] font-medium leading-relaxed", tone.line)}>
+            <p
+              key={line}
+              className={cn(
+                "mt-1 font-medium leading-relaxed",
+                compact ? "text-[12px]" : "text-[13px]",
+                tone.line,
+              )}
+            >
               {line}
             </p>
           ))}
-          <p className={cn("mt-1.5 text-[12px] font-semibold tabular-nums", tone.line)}>
-            {info.percent}% מהיעד שהגדרת
-          </p>
+          {!compact && (
+            <p className={cn("mt-1.5 text-[12px] font-semibold tabular-nums", tone.line)}>
+              {info.percent}% מהיעד שהגדרת
+            </p>
+          )}
         </div>
       </div>
     </div>

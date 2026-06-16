@@ -11,7 +11,8 @@ import {
   useWaterLogs,
 } from "@/lib/fitness-store";
 import { DEFAULT_WATER_GOAL_ML } from "@/lib/fitness-types";
-import { formatLiters, parseOptionalNumber, todayISO } from "@/lib/utils";
+import { getWaterStatus } from "@/lib/water-status";
+import { cn, formatLiters, parseOptionalNumber, todayISO } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Field";
@@ -26,7 +27,7 @@ import {
 import { WaterGauge } from "./WaterGauge";
 import { WaterGoalBanner } from "./WaterGoalBanner";
 import { WaterPresetChips } from "./WaterPresetChips";
-import { WATER_HELPER_COPY, waterStatusLine } from "./water-copy";
+import { WATER_HELPER_COPY, waterStatusLine, waterStatusTheme } from "./water-copy";
 
 const TIME_FORMAT = new Intl.DateTimeFormat("he-IL", {
   hour: "2-digit",
@@ -57,6 +58,10 @@ export function WaterTracker() {
   const entries = log ? [...log.entries].reverse() : []; // newest first
   const reached = goal > 0 && total >= goal;
   const remaining = Math.max(0, goal - total);
+  // Shared status theme tints the hero gauge + wash to match every other water
+  // surface (blue → amber → rose) as the user goes over the goal.
+  const { status } = getWaterStatus(total, goal);
+  const theme = waterStatusTheme(status);
 
   const handleAdd = (ml: number) => logWater(today, ml);
 
@@ -88,14 +93,14 @@ export function WaterTracker() {
       {/* Hero gauge */}
       <Card
         variant="raised"
-        className="module-water sheen relative overflow-hidden p-6"
+        className={cn(theme.module, theme.glow, "sheen relative overflow-hidden p-6")}
       >
         <div
           className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full opacity-60 blur-2xl"
-          style={{ background: "var(--accent-water-soft)" }}
+          style={{ background: theme.glowBg }}
         />
         <div className="relative flex flex-col items-center text-center">
-          <WaterGauge value={total} goal={goal} size={168} />
+          <WaterGauge value={total} goal={goal} size={168} tintVars={theme.gaugeVars} />
           <p className="mt-4 text-[26px] font-extrabold leading-none tabular-nums text-foreground">
             {formatLiters(total)}
             <span className="text-[15px] font-semibold text-muted">

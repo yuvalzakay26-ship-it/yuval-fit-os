@@ -3,6 +3,7 @@ import { Header } from "./Header";
 import { RouteTransition } from "./RouteTransition";
 import { ScrollToTop } from "./ScrollToTop";
 import { GuestModeBanner } from "@/components/access/GuestModeBanner";
+import { WaterGoalCelebrationOverlay } from "@/components/water/WaterGoalCelebrationOverlay";
 
 /**
  * App-wide chrome: sticky header, scrollable content area, fixed bottom nav,
@@ -19,6 +20,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
       <ScrollToTop />
       <BottomNav />
+      {/* App-wide water-goal celebration (pointer-events-none, self-dismissing). */}
+      <WaterGoalCelebrationOverlay />
     </div>
   );
 }

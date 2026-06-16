@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 import { CheckIcon, DropletIcon } from "@/components/ui/icons";
 
@@ -19,12 +19,18 @@ export function WaterGauge({
   size = 132,
   showLabel = true,
   className,
+  tintVars,
 }: {
   value: number;
   goal: number;
   size?: number;
   showLabel?: boolean;
   className?: string;
+  /**
+   * Optional CSS custom properties (`--water-from` / `--water-to`) that retint
+   * the fill — used to shift the gauge to amber/rose when over the daily goal.
+   */
+  tintVars?: Record<string, string>;
 }) {
   const uid = useId().replace(/[:]/g, "");
   const clipId = `water-clip-${uid}`;
@@ -49,7 +55,7 @@ export function WaterGauge({
   return (
     <div
       className={cn("relative shrink-0", className)}
-      style={{ width: size, height: size }}
+      style={{ width: size, height: size, ...tintVars } as CSSProperties}
     >
       <svg
         viewBox="0 0 100 100"

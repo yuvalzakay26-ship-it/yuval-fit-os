@@ -8,6 +8,7 @@
 import { useSyncExternalStore } from "react";
 import {
   DEFAULT_SETTINGS,
+  DEFAULT_WATER_GOAL_ML,
   DEFAULT_WATER_PRESETS,
   type FavoriteFood,
   type FoodLog,
@@ -22,6 +23,16 @@ import {
 } from "./fitness-types";
 import * as storage from "./storage";
 import { clearAllGymData } from "./gym-attendance";
+import {
+  clearWaterCelebrationFlag,
+  maybeCelebrateWaterGoalCrossing,
+  rearmWaterCelebration,
+} from "./water-goal-events";
+
+/** Today's total ml for a date from a logs array (0 when none). */
+function waterTotalForDate(logs: WaterLog[], date: string): number {
+  return logs.find((log) => log.date === date)?.totalMl ?? 0;
+}
 
 const EMPTY_WORKOUTS: WorkoutSession[] = [];
 const EMPTY_FOODLOGS: FoodLog[] = [];
@@ -253,21 +264,40 @@ export function clearAllFavoriteFoods(): void {
 }
 
 export function logWater(date: string, amountMl: number): void {
+  // Capture the pre-add total so we can detect crossing into the daily goal.
+  const prevTotal = waterTotalForDate(storage.getWaterLogs(), date);
   storage.addWaterEntry(date, amountMl);
   waterLogsCache = storage.getWaterLogs();
   notify();
+
+  // App-wide celebration when this drink crossed today's goal (fires once/day;
+  // see lib/water-goal-events.ts). Centralized here so every add surface — the
+  // detail screen, Today, any quick-add card — triggers it identically.
+  const goal = storage.getSettings().waterGoalMl ?? DEFAULT_WATER_GOAL_ML;
+  const nextTotal = waterTotalForDate(waterLogsCache, date);
+  maybeCelebrateWaterGoalCrossing({
+    date,
+    prevTotalMl: prevTotal,
+    nextTotalMl: nextTotal,
+    goalMl: goal,
+  });
 }
 
 export function removeWaterEntry(date: string, entryId: string): void {
   storage.deleteWaterEntry(date, entryId);
   waterLogsCache = storage.getWaterLogs();
   notify();
+  // Dropping back below the goal re-arms the celebration for that day.
+  const goal = storage.getSettings().waterGoalMl ?? DEFAULT_WATER_GOAL_ML;
+  if (waterTotalForDate(waterLogsCache, date) < goal) rearmWaterCelebration(date);
 }
 
 export function resetWaterDay(date: string): void {
   storage.resetWaterDay(date);
   waterLogsCache = storage.getWaterLogs();
   notify();
+  // A reset clears the day, so reaching the goal again should celebrate again.
+  rearmWaterCelebration(date);
 }
 
 /** Persist a new set of water presets (stored inside settings). */
@@ -324,6 +354,9 @@ export function resetAll(): void {
   // Gym attendance lives in its own module/keys (outside STORAGE_KEYS), so clear
   // it explicitly here — "reset all data" should remove gym visits too.
   clearAllGymData();
+  // The water-celebration flag is isolated bookkeeping (not data / not backed
+  // up); clear it so a fresh start can celebrate again the same day.
+  clearWaterCelebrationFlag();
   invalidate();
   notify();
 }

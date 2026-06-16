@@ -649,6 +649,113 @@ body {
   animation: water-bubble 3s ease-in-out infinite;
 }
 
+/* ===== App-wide water goal celebration overlay ===== */
+/* A short, premium one-shot moment: a blue glow wash, a diagonal liquid sweep,
+   a popped badge, and a few drops/bubbles. CSS-light (no canvas/WebGL), capped
+   at ~1.5s by JS, and pointer-events-none so it never blocks the app. */
+@keyframes water-celebrate-fade {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes water-celebrate-sweep {
+  0% {
+    transform: translateX(-70%) skewX(-12deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(70%) skewX(-12deg);
+    opacity: 0;
+  }
+}
+@keyframes water-celebrate-badge {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  70% {
+    transform: scale(1);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+@keyframes water-celebrate-bubble {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(-46vh) scale(0.5);
+    opacity: 0;
+  }
+}
+@keyframes water-celebrate-drop {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(42vh) scale(0.6);
+    opacity: 0;
+  }
+}
+
+.water-celebrate-glow {
+  background: radial-gradient(
+    circle at 50% 45%,
+    var(--accent-water-soft) 0%,
+    transparent 60%
+  );
+  animation: water-celebrate-fade 1.5s ease-out both;
+}
+.water-celebrate-sweep {
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(56, 189, 248, 0.28) 50%,
+    transparent 60%
+  );
+  animation: water-celebrate-sweep 1.3s ease-in-out both;
+}
+.water-celebrate-badge {
+  animation: water-celebrate-badge 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.water-celebrate-bubble {
+  background: rgba(56, 189, 248, 0.55);
+  animation: water-celebrate-bubble 1.4s ease-in both;
+}
+.water-celebrate-drop {
+  background: rgba(56, 189, 248, 0.45);
+  animation: water-celebrate-drop 1.3s ease-in both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
   .animate-fade-in,
@@ -657,11 +764,21 @@ body {
   .animate-glow-pulse,
   .water-wave,
   .water-wave-slow,
-  .water-bubble {
+  .water-bubble,
+  .water-celebrate-badge {
     animation: none !important;
   }
   .water-shimmer::before {
     animation: none !important;
+    display: none;
+  }
+  /* Reduced motion: keep only a brief, static blue glow — drop all travel. */
+  .water-celebrate-glow {
+    animation: water-celebrate-fade 1.2s ease-out both;
+  }
+  .water-celebrate-sweep,
+  .water-celebrate-bubble,
+  .water-celebrate-drop {
     display: none;
   }
 }

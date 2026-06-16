@@ -47,6 +47,72 @@ export const WATER_GOAL_HINT =
  */
 export type WaterBannerTone = "celebrate" | "calm" | "attention" | "caution";
 
+/**
+ * Shared colour treatment per water status, so every surface (Today card,
+ * Nutrition card, water detail) shifts together: blue while on track / completed,
+ * amber once meaningfully over the goal, rose for a significant over-goal. Pure
+ * class tokens + a couple of inline CSS vars to retint the gauge fill — no logic.
+ *
+ * The progression the user asked for: normal/completed reads blue/water-like;
+ * attention warms to amber; caution clearly becomes rose/red.
+ */
+export interface WaterStatusTheme {
+  /** Card background wash class (module tint or amber/rose fill). */
+  module: string;
+  /** Accent text colour for the small label + status line. */
+  accentText: string;
+  /** "Open" chip background + text. */
+  chip: string;
+  /** Soft colour for the decorative glow blob behind the card. */
+  glowBg: string;
+  /** Emphasis shadow (used to make the completed state feel premium). */
+  glow: string;
+  /** Inline vars that retint the gauge fill; undefined keeps the default blue. */
+  gaugeVars?: Record<string, string>;
+}
+
+export function waterStatusTheme(status: WaterStatus): WaterStatusTheme {
+  switch (status) {
+    case "attention":
+      return {
+        module: "bg-amber-50 dark:bg-amber-400/10",
+        accentText: "text-amber-700 dark:text-amber-300",
+        chip: "bg-amber-100 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200",
+        glowBg: "rgba(245, 158, 11, 0.14)",
+        glow: "",
+        gaugeVars: { "--water-from": "#fbbf24", "--water-to": "#f59e0b" },
+      };
+    case "caution":
+      return {
+        module: "bg-rose-50 dark:bg-rose-500/10",
+        accentText: "text-rose-700 dark:text-rose-300",
+        chip: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-200",
+        glowBg: "rgba(244, 63, 94, 0.14)",
+        glow: "",
+        gaugeVars: { "--water-from": "#fb7185", "--water-to": "#e11d48" },
+      };
+    case "completed":
+      // Celebratory blue — same water hue, but lifted with a glow.
+      return {
+        module: "module-water",
+        accentText: "text-[color:var(--accent-water)]",
+        chip: "bg-[color:var(--accent-water-soft)] text-[color:var(--accent-water)]",
+        glowBg: "var(--accent-water-soft)",
+        glow: "shadow-glow-water",
+      };
+    case "soft_over":
+    case "under_goal":
+    default:
+      return {
+        module: "module-water",
+        accentText: "text-[color:var(--accent-water)]",
+        chip: "bg-[color:var(--accent-water-soft)] text-[color:var(--accent-water)]",
+        glowBg: "var(--accent-water-soft)",
+        glow: "",
+      };
+  }
+}
+
 export interface WaterStatusCopy {
   tone: WaterBannerTone;
   /** Primary line. */
