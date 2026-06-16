@@ -24,7 +24,24 @@
 > moved to the cloud** — only request/access metadata lives in Supabase. Rerun the
 > SQL to upgrade existing installs (`create table if not exists` + safe
 > `drop/create policy`). See [`BETA_ACCESS_SYSTEM.md`](BETA_ACCESS_SYSTEM.md).)
-> Latest: Phase 3.xx (**Disabled nutrition scan card**: when AI is **not**
+> Latest: Phase 3.xx (**Today Product Clarity Pass — Part 1**: a UX
+> clarity/hierarchy pass on the Today screen so it reads as a daily command
+> center, not a stack of same-weight cards. Two changes, presentation only:
+> (1) **`סיכום היום` is demoted to a collapsible section, closed by default** —
+> it duplicated the compact `מבט מהיר` status strip at full visual weight, so the
+> detailed nutrition + workout cards now hide behind a toggle (`aria-expanded`)
+> whose header still surfaces the one fact the strip lacks (protein-toward-goal,
+> e.g. `נותרו 80 ג׳ חלבון`). (2) **Gym card copy is state-aware**: when a visit
+> was already saved today the primary action is now **`צפה בביקור היום`**
+> (link to `/gym`) with a quiet `נכנסתי שוב למכון` re-entry path, instead of a
+> bold `נכנסתי למכון` that sounded like a duplicate check-in — the same-day
+> re-entry confirmation dialog is unchanged. The active gym visit and in-progress
+> workout draft stay promoted directly under Next Action. **No** `lib/today.ts` /
+> `lib/gym-attendance.ts` logic, storage keys, schemas, backup format, routes,
+> gates, or save behaviour changed; water + active-workout behaviour preserved.
+> `e2e/today-command-center.spec.ts` added (5 specs); full e2e 47 passed. See
+> [`TODAY_CLARITY_PASS.md`](TODAY_CLARITY_PASS.md).)
+> Prior: Phase 3.xx (**Disabled nutrition scan card**: when AI is **not**
 > configured, `/nutrition` no longer hides the scan slot — it shows a calm,
 > inert **`בקרוב`** "coming soon" card (`PhotoScanCardDisabled` in
 > `components/nutrition/PhotoScanCard.tsx`) so users see the feature exists.

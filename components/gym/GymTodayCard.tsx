@@ -97,10 +97,13 @@ function ActiveCard({ startedAt }: { startedAt: string }) {
 function IdleCard({
   subtitle,
   context,
+  visitedToday,
   onCheckIn,
 }: {
   subtitle: string;
   context: string;
+  /** A visit was already completed today — show "view" as primary, not check-in. */
+  visitedToday: boolean;
   onCheckIn: () => void;
 }) {
   return (
@@ -136,13 +139,35 @@ function IdleCard({
           </Link>
         </div>
 
-        <button
-          type="button"
-          onClick={onCheckIn}
-          className="tap energy-gradient mt-4 flex w-full items-center justify-center gap-1.5 rounded-2xl px-4 py-3 text-[15px] font-bold text-[color:var(--accent-contrast)] shadow-glow-energy"
-        >
-          <DoorEnterIcon className="h-[18px] w-[18px]" /> נכנסתי למכון
-        </button>
+        {/* When a visit is already saved today the primary action must NOT read
+            like starting a duplicate visit. Promote "view today's visit" instead,
+            and keep a quiet "checked in again" path (still guarded by the same-day
+            re-entry confirmation in the parent). Logic is unchanged. */}
+        {visitedToday ? (
+          <>
+            <Link
+              href="/gym"
+              className="tap energy-gradient mt-4 flex w-full items-center justify-center gap-1.5 rounded-2xl px-4 py-3 text-[15px] font-bold text-[color:var(--accent-contrast)] shadow-glow-energy"
+            >
+              <ChevronIcon className="h-[18px] w-[18px] rotate-180" /> צפה בביקור היום
+            </Link>
+            <button
+              type="button"
+              onClick={onCheckIn}
+              className="tap mt-2 flex w-full items-center justify-center gap-1.5 rounded-2xl px-4 py-2.5 text-[13px] font-semibold text-muted"
+            >
+              <DoorEnterIcon className="h-4 w-4" /> נכנסתי שוב למכון
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={onCheckIn}
+            className="tap energy-gradient mt-4 flex w-full items-center justify-center gap-1.5 rounded-2xl px-4 py-3 text-[15px] font-bold text-[color:var(--accent-contrast)] shadow-glow-energy"
+          >
+            <DoorEnterIcon className="h-[18px] w-[18px]" /> נכנסתי למכון
+          </button>
+        )}
       </div>
     </Card>
   );
@@ -184,7 +209,12 @@ export function GymTodayCard() {
 
   return (
     <>
-      <IdleCard subtitle={subtitle} context={context} onCheckIn={handleCheckIn} />
+      <IdleCard
+        subtitle={subtitle}
+        context={context}
+        visitedToday={visitedToday}
+        onCheckIn={handleCheckIn}
+      />
       <ConfirmDialog
         open={confirmReentry}
         title="כבר נשמר ביקור במכון היום"

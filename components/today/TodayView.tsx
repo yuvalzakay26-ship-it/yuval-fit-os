@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   activeSupplements,
@@ -333,6 +334,21 @@ export function TodayView() {
   const showWaterCard = nextAction.key !== "water";
   const showSupplementsCard = hasSupplements;
 
+  // "סיכום היום" is the *detailed* read of nutrition + workout. The compact
+  // "מבט מהיר" strip above already answers "what's my status today?" at a glance,
+  // so the detailed summary is demoted to a collapsible section (closed by
+  // default) — same info, lower priority, no second wall of full-weight cards.
+  // The collapsed header still surfaces the one fact the strip can't: protein
+  // progress toward the goal.
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const proteinHint = proteinGoal
+    ? totals.protein >= proteinGoal
+      ? "יעד החלבון הושלם 🎯"
+      : `נותרו ${Math.max(0, Math.round(proteinGoal - totals.protein))} ג׳ חלבון`
+    : totals.protein > 0
+      ? `${Math.round(totals.protein)} ג׳ חלבון`
+      : "טרם נרשמה תזונה";
+
   return (
     <div className="space-y-5">
       {/* Greeting */}
@@ -475,10 +491,39 @@ export function TodayView() {
         </section>
       )}
 
-      {/* Daily summary — nutrition + workout */}
-      <section className="space-y-4">
-        <SectionHeader title="סיכום היום" accent="var(--accent-nutrition)" />
+      {/* Daily summary — nutrition + workout. Demoted to a collapsible section so
+          it no longer duplicates the "מבט מהיר" strip at full visual weight. The
+          toggle header carries a compact protein hint (the one detail the strip
+          omits); tapping it reveals the richer nutrition + workout cards. */}
+      <section className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setSummaryOpen((v) => !v)}
+          aria-expanded={summaryOpen}
+          className="tap flex w-full items-center justify-between gap-2"
+        >
+          <span className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.08em] text-faint">
+            <span
+              aria-hidden="true"
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ background: "var(--accent-nutrition)" }}
+            />
+            סיכום היום
+          </span>
+          <span className="flex min-w-0 items-center gap-1.5 text-faint">
+            <span className="truncate text-[12px] font-medium text-muted">
+              {proteinHint}
+            </span>
+            <ChevronIcon
+              className={`h-4 w-4 shrink-0 transition-transform duration-200 ${
+                summaryOpen ? "-rotate-90" : "rotate-90"
+              }`}
+            />
+          </span>
+        </button>
 
+        {summaryOpen && (
+          <div className="space-y-4">
         {/* Nutrition */}
         <Card className="module-nutrition sheen relative overflow-hidden p-4">
           <div
@@ -594,6 +639,8 @@ export function TodayView() {
             </Link>
           </div>
         </Card>
+          </div>
+        )}
       </section>
 
       {/* Secondary — learn + progress */}
