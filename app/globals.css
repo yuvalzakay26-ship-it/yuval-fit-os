@@ -756,6 +756,117 @@ body {
   animation: water-celebrate-drop 1.3s ease-in both;
 }
 
+/* ===== App-wide supplement "taken" success celebration overlay ===== */
+/* Deliberately distinct from the blue water moment: a calm mint/emerald + violet
+   glow wash, a gentle sweep, a popped check badge, drifting capsules, and a few
+   warm-gold sparkles. CSS-light (no canvas/WebGL), capped at ~1.3s by JS, and
+   pointer-events-none so it never blocks the app. UX feedback only. */
+@keyframes supplement-celebrate-fade {
+  0% {
+    opacity: 0;
+  }
+  14% {
+    opacity: 1;
+  }
+  78% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes supplement-celebrate-sweep {
+  0% {
+    transform: translateX(-70%) skewX(-12deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(70%) skewX(-12deg);
+    opacity: 0;
+  }
+}
+@keyframes supplement-celebrate-badge {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  70% {
+    transform: scale(1);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+@keyframes supplement-celebrate-capsule {
+  0% {
+    transform: translateY(0) scale(0.9);
+    opacity: 0;
+  }
+  22% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(-44vh) scale(0.6);
+    opacity: 0;
+  }
+}
+@keyframes supplement-celebrate-spark {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+
+.supplement-celebrate-glow {
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgba(16, 185, 129, 0.16) 0%,
+    var(--accent-supplement-soft) 34%,
+    transparent 64%
+  );
+  animation: supplement-celebrate-fade 1.3s ease-out both;
+}
+.supplement-celebrate-sweep {
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(16, 185, 129, 0.22) 50%,
+    transparent 60%
+  );
+  animation: supplement-celebrate-sweep 1.2s ease-in-out both;
+}
+.supplement-celebrate-badge {
+  animation: supplement-celebrate-badge 1.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.supplement-celebrate-capsule {
+  color: var(--accent-supplement);
+  animation: supplement-celebrate-capsule 1.25s ease-in both;
+}
+.supplement-celebrate-spark {
+  /* Warm gold accent — premium, not clinical. */
+  color: #f5b942;
+  animation: supplement-celebrate-spark 1.1s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
   .animate-fade-in,
@@ -765,7 +876,8 @@ body {
   .water-wave,
   .water-wave-slow,
   .water-bubble,
-  .water-celebrate-badge {
+  .water-celebrate-badge,
+  .supplement-celebrate-badge {
     animation: none !important;
   }
   .water-shimmer::before {
@@ -779,6 +891,15 @@ body {
   .water-celebrate-sweep,
   .water-celebrate-bubble,
   .water-celebrate-drop {
+    display: none;
+  }
+  /* Reduced motion: keep only a brief, static mint/violet glow — drop all travel. */
+  .supplement-celebrate-glow {
+    animation: supplement-celebrate-fade 1.1s ease-out both;
+  }
+  .supplement-celebrate-sweep,
+  .supplement-celebrate-capsule,
+  .supplement-celebrate-spark {
     display: none;
   }
 }

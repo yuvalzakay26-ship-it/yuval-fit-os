@@ -4,6 +4,7 @@ import { RouteTransition } from "./RouteTransition";
 import { ScrollToTop } from "./ScrollToTop";
 import { GuestModeBanner } from "@/components/access/GuestModeBanner";
 import { WaterGoalCelebrationOverlay } from "@/components/water/WaterGoalCelebrationOverlay";
+import { SupplementTakenCelebrationOverlay } from "@/components/supplements/SupplementTakenCelebrationOverlay";
 
 /**
  * App-wide chrome: sticky header, scrollable content area, fixed bottom nav,
@@ -22,6 +23,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <BottomNav />
       {/* App-wide water-goal celebration (pointer-events-none, self-dismissing). */}
       <WaterGoalCelebrationOverlay />
+      {/* App-wide supplement-taken success celebration (distinct theme, same pattern). */}
+      <SupplementTakenCelebrationOverlay />
     </div>
   );
 }

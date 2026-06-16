@@ -28,6 +28,7 @@ import {
   maybeCelebrateWaterGoalCrossing,
   rearmWaterCelebration,
 } from "./water-goal-events";
+import { maybeCelebrateSupplementTaken } from "./supplement-events";
 
 /** Today's total ml for a date from a logs array (0 when none). */
 function waterTotalForDate(logs: WaterLog[], date: string): number {
@@ -326,9 +327,23 @@ export function removeSupplement(id: string): void {
 }
 
 export function toggleSupplementTaken(supplementId: string, date: string): void {
+  // Capture the pre-toggle state so we can detect the not-taken → taken edge.
+  const wasTaken = storage.isSupplementTaken(supplementId, date);
   storage.toggleSupplementTaken(supplementId, date);
   supplementLogsCache = storage.getSupplementLogs();
   notify();
+
+  // App-wide success celebration when this tap marked the supplement as taken
+  // today (fires only on the false→true edge; see lib/supplement-events.ts).
+  // Centralized here so every surface — Today's card, the Supplements screen,
+  // any quick-action — triggers it identically. UX feedback only; no medical
+  // claim, dosage, or recommendation.
+  const isTaken = storage.isSupplementTaken(supplementId, date);
+  const supplementName =
+    (supplementsCache ?? storage.getSupplements()).find(
+      (s) => s.id === supplementId,
+    )?.name ?? "";
+  maybeCelebrateSupplementTaken({ wasTaken, isTaken, supplementName });
 }
 
 export function clearAllSupplements(): void {

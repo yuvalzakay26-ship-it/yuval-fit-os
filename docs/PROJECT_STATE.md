@@ -4,7 +4,35 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (**Nutrition Clarity Pass — Part 2**: a
+> Last reviewed: Phase 3.xx (**Supplement Taken Celebration**: a new app-wide,
+> one-shot success moment that plays when a supplement is marked **taken today**
+> — distinct in meaning and theme from the water-goal celebration (water =
+> reaching a daily goal; supplement = confirming a single item was logged). New
+> event seam `lib/supplement-events.ts` (`yfos:supplement-taken`,
+> `maybeCelebrateSupplementTaken` fires **only** on the not-taken → taken edge),
+> a `SupplementTakenCelebrationOverlay` mounted once in `AppShell`
+> (`pointer-events-none`, `aria-hidden` visuals + a `role="status"` SR
+> announcement, self-dismisses ~1.3s), and `supplement-celebrate-*` CSS in
+> `globals.css` with a `prefers-reduced-motion` static-glow fallback. The trigger
+> is centralized in the existing `toggleSupplementTaken` store mutation, so every
+> surface (Today's `SupplementsCard`, the `SupplementsTracker` screen, any
+> quick-action) celebrates identically — **no parallel storage path**. Theme is a
+> calm mint/emerald + violet glow, a check badge on the supplement gradient,
+> drifting capsules, and warm-gold sparkles (no clinical imagery, no water-blue).
+> Copy is neutral: **`{name} הוזן בהצלחה`** — a "logged successfully"
+> confirmation only, **no** recommendation/dosage/health claim
+> (`מומלץ`/`בריא`/`חובה`/`טוב לגוף` explicitly avoided). It does **NOT** fire on
+> render, hydration, loading existing logs, re-tapping an already-taken item,
+> un-marking, backup restore, or settings changes; un-mark → re-mark may fire
+> again (no per-day flag — the toggle state is the guard, so no new persisted
+> state / no backup-schema change). **No** change to supplement/log schema,
+> localStorage keys, backup format, water/nutrition/workout/gym schemas, the
+> water celebration, auth/beta/guest/admin/Supabase, AI routes, or privacy/terms;
+> no new dependencies. e2e: new `supplement-celebration.spec.ts` (load = no
+> overlay; mark on Today shows `קריאטין הוזן בהצלחה`; mark on the Supplements
+> screen shows `ויטמין D הוזן בהצלחה`; re-tap/un-mark no-ops; un-mark → re-mark
+> fires again). See [`SUPPLEMENT_TAKEN_CELEBRATION.md`](SUPPLEMENT_TAKEN_CELEBRATION.md).)
+> Prior: Phase 3.xx (**Nutrition Clarity Pass — Part 2**: a
 > presentation/copy-only hierarchy pass on `/nutrition` (`NutritionView`) that
 > makes the screen read as a food-logging command center. The add actions are now
 > grouped into a single **`הוספת אוכל`** section (helper `בחר איך לרשום את הארוחה
