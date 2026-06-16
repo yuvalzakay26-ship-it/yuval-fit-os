@@ -20,6 +20,7 @@ import {
 } from "@/lib/active-workout-draft";
 import { lastPerformance } from "@/lib/analytics";
 import { getExerciseById } from "@/lib/seed-exercises";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -70,6 +71,11 @@ export function WorkoutsView() {
   // (null on the server, real value after hydration). See `lib/active-workout-draft.ts`.
   const draft = useActiveWorkoutDraft();
   const [discardOpen, setDiscardOpen] = useState(false);
+
+  // When a meaningful draft exists, the restore card up top is the primary path
+  // ("המשך אימון"). The hero's start action then steps down to a secondary weight
+  // so two strong primaries never compete for "what do I do now?".
+  const hasActiveDraft = hasMeaningfulWorkoutDraft(draft);
 
   const openBuilder = (seed: BuilderSeed | null) => {
     setBuilderSeed(seed);
@@ -156,7 +162,7 @@ export function WorkoutsView() {
         <>
           {/* Returning to an unsaved session — premium restore prompt. Only
               shown for a meaningful draft, so an untouched builder never nags. */}
-          {hasMeaningfulWorkoutDraft(draft) && draft && (
+          {hasActiveDraft && draft && (
             <DraftRestoreCard
               draft={draft}
               onContinue={continueDraft}
@@ -226,38 +232,45 @@ export function WorkoutsView() {
                 </div>
               </div>
 
-              <Button
-                onClick={() => openBuilder(null)}
-                size="lg"
-                className="strength-gradient shadow-glow-strength sheen mt-4 w-full"
-              >
-                <PlusIcon className="h-5 w-5" /> אימון חדש
-              </Button>
+              {/* Two clearly-ranked actions: start a workout now (primary) vs.
+                  save a reusable plan for later (secondary). When a draft is
+                  live, "המשך אימון" up top owns the primary weight, so the start
+                  button here steps down to secondary. */}
+              <div className="mt-4 space-y-2.5">
+                <Button
+                  onClick={() => openBuilder(null)}
+                  size="lg"
+                  variant={hasActiveDraft ? "secondary" : "primary"}
+                  className={cn(
+                    "w-full",
+                    !hasActiveDraft &&
+                      "strength-gradient shadow-glow-strength sheen",
+                  )}
+                >
+                  <PlayIcon className="h-5 w-5" /> התחל אימון
+                </Button>
+                <Button
+                  onClick={() => setEditingTemplate("new")}
+                  variant="secondary"
+                  className="w-full"
+                >
+                  <PlusIcon className="h-4 w-4" /> צור תבנית חדשה
+                </Button>
+              </div>
             </div>
           </Card>
 
-          {/* Gym attendance — a quiet link to the separate "time at the gym"
-              tracker. Distinct from logging a workout. */}
-          <Link href="/gym" className="tap block" aria-label="נוכחות במכון">
-            <Card className="module-energy sheen flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-energy-soft)] text-[color:var(--accent-energy)]">
-                <DoorEnterIcon className="h-[22px] w-[22px]" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[15px] font-bold leading-tight text-foreground">
-                  נוכחות במכון
-                </p>
-                <p className="mt-0.5 truncate text-[12.5px] text-muted">
-                  כניסה, יציאה וזמן שהייה במכון
-                </p>
-              </div>
-              <ChevronIcon className="h-4 w-4 shrink-0 rotate-180 text-faint" />
-            </Card>
-          </Link>
-
+          {/* Templates are the main content of the hub — saved plans you start
+              from in one tap. Kept directly under the command area so the page
+              guides you toward picking one. */}
           <section>
             <SectionHeader
               title="תבניות אימון"
+              hint={
+                templates.length > 0
+                  ? "בחר תבנית מוכנה והתחל להתאמן"
+                  : undefined
+              }
               accent="var(--accent-strength)"
               action={
                 <button
@@ -308,6 +321,26 @@ export function WorkoutsView() {
               </div>
             )}
           </section>
+
+          {/* Gym attendance — a quiet, secondary link to the separate "time at
+              the gym" tracker. Distinct from logging a workout, so it sits below
+              the templates rather than competing with starting one. */}
+          <Link href="/gym" className="tap block" aria-label="נוכחות במכון">
+            <Card className="module-energy sheen flex items-center gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-energy-soft)] text-[color:var(--accent-energy)]">
+                <DoorEnterIcon className="h-[22px] w-[22px]" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[15px] font-bold leading-tight text-foreground">
+                  נוכחות במכון
+                </p>
+                <p className="mt-0.5 truncate text-[12.5px] text-muted">
+                  כניסה, יציאה וזמן שהייה — בנפרד מהאימון
+                </p>
+              </div>
+              <ChevronIcon className="h-4 w-4 shrink-0 rotate-180 text-faint" />
+            </Card>
+          </Link>
         </>
       )}
 
@@ -327,46 +360,27 @@ export function WorkoutsView() {
           }
         />
         {workouts.length === 0 ? (
-          <Card
-            variant="raised"
-            className="module-strength sheen relative overflow-hidden p-7 text-center"
-          >
+          // Calm, compact empty state. The command center above already offers
+          // "התחל אימון", so history stays secondary and doesn't re-duplicate the
+          // primary CTA — it just explains what will appear here.
+          <div className="module-strength sheen relative flex flex-col items-center gap-3 overflow-hidden rounded-3xl border border-dashed border-border-strong bg-surface/50 px-6 py-8 text-center">
             <div
-              className="pointer-events-none absolute -start-12 -top-16 h-44 w-44 rounded-full opacity-60 blur-2xl"
+              className="pointer-events-none absolute -end-10 -top-10 h-28 w-28 rounded-full opacity-50 blur-2xl"
               style={{ background: "var(--accent-strength-soft)" }}
             />
-            <div
-              className="pointer-events-none absolute -end-14 -bottom-14 h-40 w-40 rounded-full opacity-50 blur-2xl"
-              style={{ background: "var(--accent-energy-soft)" }}
-            />
-            <div className="relative flex flex-col items-center">
-              <span className="strength-gradient sheen flex h-16 w-16 items-center justify-center rounded-3xl text-[color:var(--accent-contrast)] shadow-glow-strength">
-                <DumbbellIcon className="h-8 w-8" />
-              </span>
-              <p className="mt-4 text-[17px] font-extrabold leading-tight text-foreground">
+            <span className="strength-gradient shadow-glow-strength sheen relative flex h-12 w-12 items-center justify-center rounded-2xl text-[color:var(--accent-contrast)]">
+              <DumbbellIcon className="h-6 w-6" />
+            </span>
+            <div className="relative">
+              <p className="text-[14.5px] font-bold text-foreground">
                 כאן ייבנה סיפור הכוח שלך
               </p>
-              <p className="mt-1.5 max-w-[17rem] text-[13px] leading-relaxed text-muted">
-                כל אימון שתתעד נשמר כאן — סטים, משקלים ונפח כולל. ככה תראה את
-                ההתקדמות מצטברת שבוע אחרי שבוע.
+              <p className="mt-1 max-w-[17rem] text-[12.5px] leading-relaxed text-muted">
+                אימונים שתתעד יופיעו כאן — סטים, משקלים ונפח מצטבר, שבוע אחרי
+                שבוע.
               </p>
-              <div className="mt-5 flex w-full max-w-[16rem] flex-col gap-2.5">
-                <Button
-                  onClick={() => openBuilder(null)}
-                  className="strength-gradient shadow-glow-strength sheen w-full"
-                >
-                  <PlayIcon className="h-5 w-5" /> התחל אימון ראשון
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => setEditingTemplate("new")}
-                  className="w-full"
-                >
-                  <PlusIcon className="h-4 w-4" /> צור תבנית
-                </Button>
-              </div>
             </div>
-          </Card>
+          </div>
         ) : (
           <WorkoutHistory
             workouts={workouts}

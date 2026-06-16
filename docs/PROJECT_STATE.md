@@ -4,7 +4,36 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 3.xx (**Protein Goal Celebration**: a new app-wide,
+> Last reviewed: Phase 3.xx (**Workouts Clarity Pass — Part 1**: a UX
+> clarity/layout/copy pass on the `/workouts` hub — no new features, no schema /
+> localStorage-key / backup-format / behavior changes. All edits are in
+> `components/workouts/WorkoutsView.tsx`. The hub now reads as a training
+> **command center** weighted top-down: an in-progress draft
+> (`DraftRestoreCard`, **"המשך אימון"**) leads; the hero replaces the single vague
+> **"אימון חדש"** with a clear **primary "התחל אימון"** (free workout,
+> `openBuilder(null)`) + **secondary "צור תבנית חדשה"** (`setEditingTemplate("new")`);
+> when a meaningful draft exists the hero's start steps **down** to the secondary
+> Button variant (off the strength gradient) so "המשך אימון" alone owns the
+> primary weight. Templates are the **main content** directly under the command
+> area, with a new `SectionHeader` `hint` — **"בחר תבנית מוכנה והתחל להתאמן"**
+> (shown only when templates exist); title **"תבניות אימון"** and the
+> **"תבנית חדשה"** action are unchanged, and the app keeps **"תבנית"** terminology
+> everywhere (no switch to "תכנית"). The **gym attendance** card moved from above
+> the templates to **below** them (still a quiet `/gym` link; subtitle sharpened to
+> **"כניסה, יציאה וזמן שהייה — בנפרד מהאימון"**) — no gym logic/schema/same-day
+> change. The large empty **workout-history** card (which duplicated the top CTA)
+> is now a **calm, compact dashed** empty state — **"כאן ייבנה סיפור הכוח שלך"**
+> with no competing CTA. **No** change to workout/template/draft/gym/nutrition/
+> water/supplement schemas, localStorage keys, backup format, auth/beta/guest/
+> admin/Supabase/AI routes, privacy/terms, active-draft recovery,
+> start-from-template, create/edit/delete template, history, gym check-in/out,
+> exercise reorder, save-as-template, or the water/supplement/protein/Today/
+> Nutrition clarity work; no new dependencies. e2e: new
+> `workouts-command-hierarchy.spec.ts` (command center primary/secondary; draft
+> leads above the hero and softens it; templates render their own "התחל אימון";
+> gym link stays secondary; empty history is calm with no duplicate CTA) — full
+> suite **70 passed**. See [`WORKOUTS_CLARITY_PASS.md`](WORKOUTS_CLARITY_PASS.md).)
+> Prior: Phase 3.xx (**Protein Goal Celebration**: a new app-wide,
 > one-shot moment that plays when today's logged protein crosses into the user's
 > **configured** daily protein goal (`Settings.proteinGoal`) — distinct in
 > meaning and theme from the water-goal (water goal) and supplement-taken (single
