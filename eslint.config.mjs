@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Gate-enabled e2e build output (scripts/e2e.mjs builds into .next-auth via
+    // NEXT_DIST_DIR). Generated/minified, gitignored, not source — same as .next.
+    ".next-auth/**",
   ]),
 ]);
 

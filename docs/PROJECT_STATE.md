@@ -4,7 +4,19 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: **Creator trust card on the signed-out entry screen**. A small,
+> Last reviewed: **Lint ignores the gate-enabled e2e build output (`.next-auth`)**.
+> A **tooling-only** fix: `eslint.config.mjs` `globalIgnores` now also lists
+> **`.next-auth/**`** alongside `.next/**`/`out/**`/`build/**`. `.next-auth` is the
+> **generated, minified build output of the gate-enabled e2e build** (`scripts/e2e.mjs`
+> builds with dummy Supabase config into `.next-auth` via `NEXT_DIST_DIR`); it is
+> **gitignored and not source code**. Before this, `npm run lint` walked into that
+> folder after an e2e run and exited 1 with hundreds of errors from generated files
+> even though tracked source was clean — now it is ignored exactly like `.next`. **No
+> runtime app code, tests, or e2e build behaviour changed.** Validation (run in order):
+> `npm run test:e2e` ✓ (creates `.next-auth`), `npm run lint` ✓ exit 0 with `.next-auth`
+> present, `npm run build` ✓, `npm run test:e2e` ✓.
+>
+> Prior: **Creator trust card on the signed-out entry screen**. A small,
 > static **creator trust card** (`data-creator-card`, titled `יוצר המערכת`) was
 > added to `BetaSignInScreen`
 > ([`components/access/BetaAuthGate.tsx`](../components/access/BetaAuthGate.tsx)),
