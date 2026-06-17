@@ -11,8 +11,9 @@
 // Scenarios (run in this order so the working tree ends on a clean no-env build):
 //   1. Gate disabled (NEXT_PUBLIC_BETA_DISABLE_GATE=1): the app is reachable —
 //      proving the testing seam + that the existing app still renders.
-//   2. Configured (dummy Supabase env): the sign-in screen renders (Google +
-//      email magic link), Hebrew RTL, mobile-safe, no overflow.
+//   2. Configured (dummy Supabase env): the sign-in screen renders — Google is
+//      the ONLY active method; the email magic-link UI is hidden; the guest
+//      button is visible but LOCKED ("בקרוב"). Hebrew RTL, mobile-safe, no overflow.
 //   3. No env (production fail-closed): the "not configured" screen blocks the
 //      app — no dev "continue" button, no crash.
 //
@@ -243,10 +244,13 @@ async function mockSupabaseApproved(ctx) {
   );
 }
 
-// A single-context walk through guest mode (configured/dummy-env server):
-//   click "המשך כאורח" → app opens locally, "שלום אורח", guest banner, NO
-//   Supabase session; /admin/beta stays locked; signing in clears guest and
-//   greets by name; exiting guest from Settings returns to the sign-in screen.
+// A walk through guest mode (configured/dummy-env server). Public guest ENTRY is
+// currently DISABLED — the "המשך כאורח" button is locked ("בקרוב") and creates no
+// session — so this first verifies the lock, then seeds the guest flag directly
+// to confirm the DORMANT guest infrastructure still works: app opens locally,
+// "שלום אורח", guest banner, NO Supabase session; /admin/beta stays locked;
+// signing in clears guest and greets by name; exiting guest from Settings
+// returns to the sign-in screen.
 async function runGuestFlow(browser) {
   const errors = [];
   const attach = (page, tag) => {
@@ -260,20 +264,51 @@ async function runGuestFlow(browser) {
     page.on("pageerror", (e) => errors.push(`[${tag}] pageerror: ${e.message}`));
   };
 
-  /* --- Enter as guest -------------------------------------------------- */
+  /* --- Guest entry is LOCKED: clicking it must do nothing -------------- */
+  const ctxLock = await browser.newContext({
+    viewport: { width: 390, height: 900 },
+    colorScheme: "dark",
+  });
+  await ctxLock.addInitScript(seedGates);
+  const lockPage = await ctxLock.newPage();
+  attach(lockPage, "guest-locked");
+  await lockPage.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  await lockPage.waitForTimeout(250);
+
+  const lockedBtn = lockPage.locator("[data-guest-continue]");
+  check("[guest-locked] guest button visible", await lockedBtn.isVisible());
+  check("[guest-locked] guest button disabled", await lockedBtn.isDisabled());
+  // Force a click past the disabled state — it has no handler, so nothing happens.
+  await lockedBtn.click({ force: true }).catch(() => {});
+  await lockPage.waitForTimeout(300);
+  check(
+    "[guest-locked] no guest flag written on click",
+    (await readGuestFlag(lockPage)) === null,
+  );
+  check(
+    "[guest-locked] still on the sign-in screen (did not enter)",
+    await lockPage
+      .getByRole("heading", { name: "כניסה לבטא של Fit OS" })
+      .isVisible(),
+  );
+  await ctxLock.close();
+
+  /* --- Dormant guest infra still works when a flag is present --------- */
   const ctx = await browser.newContext({
     viewport: { width: 390, height: 900 },
     colorScheme: "dark",
   });
   await ctx.addInitScript(seedGates);
+  // Seed the guest flag directly (the public entry button is disabled) to prove
+  // the kept-intact guest infrastructure still opens the app locally.
+  await ctx.addInitScript(() => {
+    try {
+      localStorage.setItem("yuval-fit-os:guest-session:v1", "1");
+    } catch {}
+  });
   const page = await ctx.newPage();
   attach(page, "guest");
   await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(250);
-
-  const guestBtn = page.getByRole("button", { name: /המשך כאורח/ });
-  check("[guest] guest button on sign-in screen", await guestBtn.isVisible());
-  await guestBtn.click();
   await page.waitForTimeout(400);
 
   check(
@@ -427,22 +462,31 @@ try {
         await page.getByRole("heading", { name: "כניסה לבטא של Fit OS" }).isVisible(),
       );
       check(
-        `[${tag}] Google button present`,
-        await page.getByRole("button", { name: /המשך עם Google/ }).isVisible(),
+        `[${tag}] Google button present + enabled`,
+        await page.getByRole("button", { name: /המשך עם Google/ }).isEnabled(),
+      );
+      // Email magic-link UI is HIDDEN: no email input, no "send link" button.
+      check(
+        `[${tag}] email input absent`,
+        (await page.locator('input[type="email"]').count()) === 0,
       );
       check(
-        `[${tag}] email magic-link button present`,
-        await page.getByRole("button", { name: /שלח קישור כניסה לאימייל/ }).isVisible(),
+        `[${tag}] email magic-link button absent`,
+        (await page.getByRole("button", { name: /שלח קישור כניסה/ }).count()) === 0,
       );
-      // Guest escape: the "המשך כאורח" button + its helper text are present.
+      // Guest: the "המשך כאורח" button is visible but LOCKED (disabled +
+      // "בקרוב"), with the coming-soon helper text.
+      const guestBtn2 = page.locator("[data-guest-continue]");
+      check(`[${tag}] guest button present`, await guestBtn2.isVisible());
+      check(`[${tag}] guest button disabled`, await guestBtn2.isDisabled());
       check(
-        `[${tag}] guest button present`,
-        await page.getByRole("button", { name: /המשך כאורח/ }).isVisible(),
+        `[${tag}] guest "בקרוב" badge present`,
+        await guestBtn2.getByText("בקרוב").isVisible(),
       );
       check(
-        `[${tag}] guest helper text present`,
+        `[${tag}] guest coming-soon helper text present`,
         await page
-          .getByText("כניסה כאורח שומרת נתונים במכשיר הזה בלבד.")
+          .getByText("כניסה כאורח תהיה זמינה בהמשך. בינתיים אפשר להתחבר עם Google.")
           .isVisible(),
       );
       check(

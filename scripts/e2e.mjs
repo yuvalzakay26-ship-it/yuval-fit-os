@@ -8,12 +8,27 @@
 // stay per-server in the config (read at request time via the force-dynamic page).
 import { spawnSync } from "node:child_process";
 
-const env = { ...process.env, NEXT_PUBLIC_BETA_DISABLE_GATE: "1" };
-
-function run(command, args) {
-  const result = spawnSync(command, args, { stdio: "inherit", env, shell: true });
+function run(command, args, env) {
+  const result = spawnSync(command, args, {
+    stdio: "inherit",
+    env: { ...process.env, ...env },
+    shell: true,
+  });
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
-run("next", ["build"]);
-run("playwright", ["test"]);
+// Main build (.next) — gate BYPASSED so the suite can reach app surfaces without
+// a live Supabase project. Served on :3939 / :3940 (see playwright.config.ts).
+run("next", ["build"], { NEXT_PUBLIC_BETA_DISABLE_GATE: "1" });
+
+// Auth-entry build (.next-auth) — gate ENABLED + dummy Supabase config so the
+// real sign-in screen renders (no network: getSession() reads local storage and
+// resolves to "signed out"). Served on :3941 for e2e/auth-entry.spec.ts. The
+// dummy URL/key are syntactically valid placeholders, never real credentials.
+run("next", ["build"], {
+  NEXT_DIST_DIR: ".next-auth",
+  NEXT_PUBLIC_SUPABASE_URL: "https://e2e-dummy.supabase.co",
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: "e2e-dummy-anon-key",
+});
+
+run("playwright", ["test"], {});

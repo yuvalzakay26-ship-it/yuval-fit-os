@@ -4,7 +4,42 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: **Workout Recommendation V1 — recommend an existing template
+> Last reviewed: **Auth Entry Polish — Google-only access, locked guest, no top
+> clipping**. A **UI-level** change to the signed-out sign-in screen
+> ([`components/access/BetaAuthGate.tsx`](../components/access/BetaAuthGate.tsx) →
+> `BetaSignInScreen`) that makes the entry cleaner and more intentional, with **no
+> change to any auth/gate logic, Supabase config, RLS, the approved-email gate, the
+> request-access flow, admin, or guest internals**. Three things changed: (1) the
+> **top-clipping** on short mobile heights is fixed — the screen is now an
+> `overflow-y-auto` scroll container wrapping a `min-h-full items-center` flex box
+> (the standard non-clipping centered-modal pattern), so the brand logo is fully
+> visible at **360px and 390px**, content stays centered when it fits and scrolls
+> from the very top when taller, with safe-area top/bottom padding and no
+> horizontal overflow (the config-notice screen got the same fix). (2) **Google is
+> now the only active sign-in method** (`המשך עם Google`); the **email magic-link
+> UI is removed from the screen** (no email input, no "שלח קישור כניסה" button) —
+> the subtitle is now *"התחבר עם Google כדי להמשיך."* `signInWithEmailLink` stays in
+> `lib/beta-access.ts` (unused by the UI, not deleted). (3) **Guest entry is visible
+> but LOCKED** — the `המשך כאורח` button renders `disabled` + `aria-disabled` with a
+> **`בקרוב`** badge and helper *"כניסה כאורח תהיה זמינה בהמשך. בינתיים אפשר להתחבר
+> עם Google."*; it has **no click handler**, so it creates no guest session, writes
+> no `localStorage` key, and enters nothing. **Guest infrastructure is untouched and
+> dormant**: `lib/guest-session.ts`, `useAppIdentity` guest support, the guest
+> banner, the Settings "צא ממצב אורח" action, and the gate's "already a guest →
+> open app" branch all remain, so guest entry can be re-enabled by restoring the
+> handler. **Unchanged:** Google OAuth behaviour, beta approval/denied/blocked
+> flow, `BetaWelcomeNotice`, `WelcomeGate`, profile onboarding, public legal pages
+> (`/privacy`, `/terms`, `/ai-disclaimer`), all fitness schemas + storage keys.
+> e2e: the suite gained a **gate-ENABLED** second build — `scripts/e2e.mjs` now also
+> builds with dummy Supabase config into `.next-auth` (`next.config.ts` reads
+> `NEXT_DIST_DIR`), served on **:3941**, so the real sign-in screen can be tested.
+> New [`e2e/auth-entry.spec.ts`](../e2e/auth-entry.spec.ts) (logo not clipped; no
+> horizontal overflow; Google visible+enabled; no email input/button; guest visible
+> but disabled/`aria-disabled` with `בקרוב`; clicking guest writes no key + stays on
+> the screen; legal links work) runs at **both 360px and 390px** (`auth-360` /
+> `auth-390` projects). Validation: `npm run lint` ✓ (0 errors, 1 pre-existing
+> warning), `npm run build` ✓ (TypeScript clean), `npm run test:e2e` **115 green**.
+> Prior: **Workout Recommendation V1 — recommend an existing template
 > from the profile**. The first time the saved Personal Training Profile is used
 > to *guide* the user (it was previously collect-and-display only). A new
 > **deterministic, local-first, NO-AI** layer maps the profile onto **one existing

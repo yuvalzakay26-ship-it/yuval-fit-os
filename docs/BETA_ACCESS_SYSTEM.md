@@ -45,11 +45,14 @@ BetaAuthGate         (z-108)  → Supabase auth + approved-email gate (REAL gate
    local work isn't blocked.
 2. **Loading**: the session (then the approval check) is resolving — a calm
    branded loader.
-3. **Signed out**: the Fit OS sign-in screen — **Continue with Google**, an
-   **email magic-link** option, and a **"continue as guest"** (`המשך כאורח`)
-   escape (see *Guest mode* below).
+3. **Signed out**: the Fit OS sign-in screen. **Google is currently the ONLY
+   active entry method** (`המשך עם Google`). The **email magic-link UI is hidden**
+   from the screen and the **"continue as guest"** button is shown but **locked**
+   (`בקרוב` / coming soon) — see *Guest mode* below.
 4. **Guest session active (no real user)**: the overlay disappears and the
-   **normal app shell only** is revealed — local-only, no admin.
+   **normal app shell only** is revealed — local-only, no admin. (Reachable only
+   when a guest flag is already present; the entry button that used to set it is
+   temporarily disabled — see *Guest mode*.)
 5. **Signed in + approved + active**: the overlay disappears, the app is revealed.
 6. **Signed in but not approved / blocked / errored**: `BetaAccessDenied`.
 
@@ -87,10 +90,24 @@ longer in the production gate chain**. The files are kept in the repo as a
 development-only fallback reference, but the Supabase beta gate is now the real
 boundary. Nothing in production depends on the old code.
 
-### Guest mode (`המשך כאורח`)
-The sign-in screen offers a secondary **"continue as guest"** button beneath an
-`או` divider, with the helper text *"כניסה כאורח שומרת נתונים במכשיר הזה בלבד."*
-It enters a **purely local** guest session — there is **no** auth here:
+### Guest mode (`המשך כאורח`) — public entry temporarily DISABLED
+> **Product decision (current):** Google is the only active entry method. The
+> guest button on the sign-in screen is **visible but locked** — it is rendered
+> `disabled` + `aria-disabled` with a **`בקרוב`** badge and the helper text
+> *"כניסה כאורח תהיה זמינה בהמשך. בינתיים אפשר להתחבר עם Google."* Clicking it
+> does **nothing**: it creates no guest session, writes no `localStorage` key,
+> and enters nothing. The email magic-link UI is also hidden from the screen.
+>
+> **The guest infrastructure is intentionally kept intact** — `lib/guest-session.ts`,
+> `useAppIdentity` guest support, the guest banner, and the Settings "צא ממצב
+> אורח" action all remain, dormant — so guest entry can be re-enabled later by
+> simply restoring the button's handler. Only the *public entry point* is off.
+> An already-present guest flag (e.g. from before this change, or seeded in tests)
+> still opens the app exactly as described below; nothing in the app internals
+> changed.
+
+When guest entry is enabled, the button enters a **purely local** guest session —
+there is **no** auth here:
 
 - A single device flag — `localStorage["yuval-fit-os:guest-session:v1"] = "1"`
   (see `lib/guest-session.ts`) — is the *only* state. Guest mode creates **no**

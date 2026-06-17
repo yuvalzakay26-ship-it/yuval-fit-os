@@ -7,23 +7,16 @@ import { isPublicInfoPath } from "@/lib/public-paths";
 import {
   type AccessDecision,
   fetchAccessDecision,
-  signInWithEmailLink,
   signInWithGoogle,
   touchLastSeen,
   useBetaSession,
 } from "@/lib/beta-access";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
-import {
-  enterGuestSession,
-  exitGuestSession,
-  useGuestSession,
-} from "@/lib/guest-session";
+import { exitGuestSession, useGuestSession } from "@/lib/guest-session";
 import { BetaAccessDenied } from "./BetaAccessDenied";
-import { Input, Label } from "@/components/ui/Field";
 import {
   BrandMark,
-  CheckCircleIcon,
   DoorEnterIcon,
   LockIcon,
   ShieldIcon,
@@ -39,16 +32,21 @@ import {
  *     notice; development shows the notice with a "continue anyway" escape so
  *     local work isn't blocked. Never silently opens the app in production.
  *  2. Loading: the session (and then the approval check) is resolving.
- *  3. Signed out: the Fit OS sign-in screen (Google + email magic link + a
- *     "continue as guest" escape that opens the app locally only).
+ *  3. Signed out: the Fit OS sign-in screen. Google is currently the ONLY active
+ *     entry method; the email magic-link UI is hidden and the "continue as guest"
+ *     button is shown as a locked "coming soon" option (disabled, opens nothing).
  *  4. Signed in + approved + active: overlay disappears, the app is revealed.
  *  5. Signed in but not approved / blocked / errored: the BetaAccessDenied screen.
  *
- * GUEST MODE: a purely local "continue as guest" flag (lib/guest-session.ts)
- * opens the normal app shell ONLY — it creates no Supabase user / approved row /
- * access request and grants no admin rights. A real Supabase sign-in always wins
- * (and clears the guest flag); the admin panel still requires a real admin via
- * RLS, so a guest can never reach /admin/beta.
+ * GUEST MODE (dormant at the entry screen): the purely local "continue as guest"
+ * flag (lib/guest-session.ts) and all guest support in the app internals are kept
+ * intact, but the public entry button is temporarily DISABLED — it creates no
+ * guest session, writes no localStorage key, and enters nothing. The internals
+ * stay so guest mode can be re-enabled later without rebuilding it. When active,
+ * a guest session opens the normal app shell ONLY — no Supabase user / approved
+ * row / access request and no admin rights; a real Supabase sign-in always wins
+ * (and clears the guest flag), and the admin panel still requires a real admin
+ * via RLS, so a guest can never reach /admin/beta.
  *
  * Like the other gates, the app shell is always mounted underneath so entering
  * is instant (no remount). Overlays are fixed and scroll-locked; z-index sits
@@ -148,7 +146,7 @@ function BetaGateOverlay() {
   if (!email && guest) return null;
 
   // --- Signed out -----------------------------------------------------------
-  if (!email) return <BetaSignInScreen onGuest={enterGuestSession} />;
+  if (!email) return <BetaSignInScreen />;
 
   // --- Signed in, checking approval ----------------------------------------
   if (decision === null) return <BetaGateLoading label="בודק הרשאות גישה…" />;
@@ -198,12 +196,10 @@ function BetaGateLoading({ label = "טוען את Fit OS…" }: { label?: string
 
 /* ------------------------------ Sign-in screen -------------------------- */
 
-function BetaSignInScreen({ onGuest }: { onGuest: () => void }) {
+function BetaSignInScreen() {
   useLockBodyScroll();
   const titleId = useId();
-  const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState<"google" | "email" | null>(null);
-  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState<"google" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleGoogle = async () => {
@@ -221,190 +217,132 @@ function BetaSignInScreen({ onGuest }: { onGuest: () => void }) {
     // On success the browser redirects to Google, so we stay "busy".
   };
 
-  const handleEmail = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setError(null);
-    if (!email.trim() || !email.includes("@")) {
-      setError("הזן כתובת אימייל תקינה.");
-      return;
-    }
-    setBusy("email");
-    const { error: err } = await signInWithEmailLink(email);
-    setBusy(null);
-    if (err) {
-      setError("שליחת קישור הכניסה נכשלה. נסה שוב בעוד רגע.");
-      return;
-    }
-    setSent(true);
-  };
-
   return (
+    // Outer = the fixed, full-height scroll container. Inner = a `min-h-full`
+    // flex box that centers the card when it fits but grows (and stays fully
+    // scrollable from the very top, logo included) when the content is taller
+    // than the viewport. This min-h-full + items-center pattern is what prevents
+    // the old top-clipping on short mobile heights (360/390px) — a plain
+    // `items-center` scroll container clips the overflow above the centre line.
     <div
       data-beta-gate
       dir="rtl"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      className="fixed inset-0 z-[108] flex min-h-dvh items-center justify-center overflow-y-auto px-6 py-10 text-foreground animate-fade-in"
+      className="fixed inset-0 z-[108] overflow-y-auto text-foreground animate-fade-in"
       style={{
         backgroundColor: "var(--background)",
         backgroundImage:
           "radial-gradient(125% 80% at 50% -12%, var(--accent-soft) 0%, transparent 52%)," +
           "radial-gradient(110% 55% at 50% 118%, var(--accent-soft) 0%, transparent 58%)," +
           "linear-gradient(180deg, var(--surface) 0%, var(--background) 100%)",
-        paddingTop: "max(2.5rem, env(safe-area-inset-top))",
-        paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))",
       }}
     >
-      <div className="w-full max-w-sm animate-fade-up">
-        <div className="mx-auto mb-7 flex h-20 w-20 items-center justify-center rounded-[1.6rem] brand-logo text-white shadow-glow">
-          <BrandMark className="h-11 w-11" />
-        </div>
-
-        <h1
-          id={titleId}
-          className="text-center text-[25px] font-bold tracking-tight"
-        >
-          כניסה לבטא של Fit OS
-        </h1>
-        <p className="mx-auto mt-2.5 max-w-[20rem] text-center text-[14px] leading-relaxed text-muted">
-          התחבר עם האימייל שאושר כדי להמשיך.
-        </p>
-
-        <div className="mt-7 rounded-[1.75rem] border border-border bg-surface/80 p-6 shadow-float backdrop-blur-xl">
-          {sent ? (
-            <div className="text-center">
-              <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[color:var(--accent-soft)] text-accent">
-                <CheckCircleIcon className="h-8 w-8" filled />
-              </span>
-              <p className="text-[15px] font-bold text-foreground">
-                הקישור נשלח לאימייל
-              </p>
-              <p className="mx-auto mt-2 max-w-[18rem] text-[13px] leading-relaxed text-muted">
-                שלחנו קישור כניסה אל{" "}
-                <span dir="ltr" className="font-semibold text-foreground">
-                  {email.trim()}
-                </span>
-                . פתח אותו מאותו מכשיר כדי להיכנס.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setSent(false);
-                  setError(null);
-                }}
-                className="tap mt-5 text-[13px] font-semibold text-accent"
-              >
-                שלח לאימייל אחר
-              </button>
-            </div>
-          ) : (
-            <>
-              {/* Google */}
-              <button
-                type="button"
-                onClick={handleGoogle}
-                disabled={busy !== null}
-                className="tap flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl border border-border-strong bg-surface px-4 text-[15px] font-bold text-foreground outline-none hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] disabled:opacity-60"
-              >
-                <GoogleGlyph className="h-5 w-5" />
-                {busy === "google" ? "מתחבר…" : "המשך עם Google"}
-              </button>
-
-              {/* Divider */}
-              <div className="my-5 flex items-center gap-3">
-                <span className="h-px flex-1 bg-border" />
-                <span className="text-[11.5px] font-semibold text-faint">או</span>
-                <span className="h-px flex-1 bg-border" />
-              </div>
-
-              {/* Email magic link */}
-              <form onSubmit={handleEmail}>
-                <Label htmlFor="beta-email">אימייל</Label>
-                <Input
-                  id="beta-email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  dir="ltr"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (error) setError(null);
-                  }}
-                  className="text-center"
-                />
-                <button
-                  type="submit"
-                  disabled={busy !== null}
-                  className="tap mt-3 h-14 w-full rounded-2xl brand-gradient text-[15px] font-bold text-[color:var(--accent-contrast)] shadow-glow outline-none focus-visible:ring-4 focus-visible:ring-[color:var(--ring)] disabled:opacity-60"
-                >
-                  {busy === "email" ? "שולח…" : "שלח קישור כניסה לאימייל"}
-                </button>
-              </form>
-            </>
-          )}
-
-          {error && (
-            <p
-              role="alert"
-              className="mt-4 flex items-center justify-center gap-1.5 text-center text-[13px] font-semibold text-red-500"
-            >
-              <WarningIcon className="h-4 w-4 shrink-0" />
-              {error}
-            </p>
-          )}
-
-          {/* Divider before the local guest escape. */}
-          <div className="my-5 flex items-center gap-3">
-            <span className="h-px flex-1 bg-border" />
-            <span className="text-[11.5px] font-semibold text-faint">או</span>
-            <span className="h-px flex-1 bg-border" />
+      <div
+        className="flex min-h-full items-center justify-center px-6 py-10"
+        style={{
+          paddingTop: "max(2.5rem, env(safe-area-inset-top))",
+          paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))",
+        }}
+      >
+        <div className="w-full max-w-sm animate-fade-up">
+          <div
+            data-auth-logo
+            className="mx-auto mb-7 flex h-20 w-20 items-center justify-center rounded-[1.6rem] brand-logo text-white shadow-glow"
+          >
+            <BrandMark className="h-11 w-11" />
           </div>
 
-          {/* Continue as guest — a purely local session (no Supabase account). */}
-          <button
-            type="button"
-            data-guest-continue
-            onClick={onGuest}
-            disabled={busy !== null}
-            className="tap flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl border border-border-strong bg-surface px-4 text-[15px] font-bold text-foreground outline-none hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] disabled:opacity-60"
+          <h1
+            id={titleId}
+            className="text-center text-[25px] font-bold tracking-tight"
           >
-            <DoorEnterIcon className="h-[18px] w-[18px] text-accent" />
-            המשך כאורח
-          </button>
-          <p className="mt-3 text-center text-[12px] leading-relaxed text-muted">
-            כניסה כאורח שומרת נתונים במכשיר הזה בלבד.
+            כניסה לבטא של Fit OS
+          </h1>
+          <p className="mx-auto mt-2.5 max-w-[20rem] text-center text-[14px] leading-relaxed text-muted">
+            התחבר עם Google כדי להמשיך.
           </p>
-        </div>
 
-        <div className="mt-6 flex items-start gap-2.5 rounded-2xl border border-border bg-surface-2/60 px-4 py-3 text-right">
-          <LockIcon className="mt-0.5 h-[18px] w-[18px] shrink-0 text-accent" />
-          <p className="text-[12.5px] leading-relaxed text-muted">
-            הכניסה מזהה מי רשאי להשתמש בבטא. הנתונים האישיים עדיין נשמרים במכשיר
-            הזה בלבד, אלא אם נוסיף סנכרון ענן בעתיד.
-          </p>
-        </div>
+          <div className="mt-7 rounded-[1.75rem] border border-border bg-surface/80 p-6 shadow-float backdrop-blur-xl">
+            {/* Google — the only active sign-in method for now. */}
+            <button
+              type="button"
+              onClick={handleGoogle}
+              disabled={busy !== null}
+              className="tap flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl border border-border-strong bg-surface px-4 text-[15px] font-bold text-foreground outline-none hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] disabled:opacity-60"
+            >
+              <GoogleGlyph className="h-5 w-5" />
+              {busy === "google" ? "מתחבר…" : "המשך עם Google"}
+            </button>
 
-        {/* Public info links — readable before signing in (see lib/public-paths). */}
-        <nav className="mt-5 flex items-center justify-center gap-2 text-[12.5px] font-semibold text-muted">
-          <Link
-            href="/privacy"
-            className="tap underline outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]"
-          >
-            מדיניות פרטיות
-          </Link>
-          <span aria-hidden="true" className="text-faint">
-            ·
-          </span>
-          <Link
-            href="/terms"
-            className="tap underline outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]"
-          >
-            תנאי שימוש
-          </Link>
-        </nav>
+            {error && (
+              <p
+                role="alert"
+                className="mt-4 flex items-center justify-center gap-1.5 text-center text-[13px] font-semibold text-red-500"
+              >
+                <WarningIcon className="h-4 w-4 shrink-0" />
+                {error}
+              </p>
+            )}
+
+            {/* Divider before the (coming-soon) guest option. */}
+            <div className="my-5 flex items-center gap-3">
+              <span className="h-px flex-1 bg-border" />
+              <span className="text-[11.5px] font-semibold text-faint">או</span>
+              <span className="h-px flex-1 bg-border" />
+            </div>
+
+            {/* Continue as guest — VISIBLE but locked ("coming soon"). It is
+                disabled so it creates NO guest session, writes NO localStorage
+                key, and enters nothing. The guest infrastructure itself stays
+                intact (lib/guest-session.ts, useAppIdentity) for a future pass. */}
+            <button
+              type="button"
+              data-guest-continue
+              disabled
+              aria-disabled="true"
+              title="כניסה כאורח תהיה זמינה בהמשך"
+              className="flex h-14 w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-2xl border border-border bg-surface-2/50 px-4 text-[15px] font-bold text-muted opacity-60 outline-none"
+            >
+              <DoorEnterIcon className="h-[18px] w-[18px] text-muted" />
+              המשך כאורח
+              <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-[11px] font-semibold text-faint">
+                בקרוב
+              </span>
+            </button>
+            <p className="mt-3 text-center text-[12px] leading-relaxed text-muted">
+              כניסה כאורח תהיה זמינה בהמשך. בינתיים אפשר להתחבר עם Google.
+            </p>
+          </div>
+
+          <div className="mt-6 flex items-start gap-2.5 rounded-2xl border border-border bg-surface-2/60 px-4 py-3 text-right">
+            <LockIcon className="mt-0.5 h-[18px] w-[18px] shrink-0 text-accent" />
+            <p className="text-[12.5px] leading-relaxed text-muted">
+              הכניסה מזהה מי רשאי להשתמש בבטא. הנתונים האישיים עדיין נשמרים במכשיר
+              הזה בלבד, אלא אם נוסיף סנכרון ענן בעתיד.
+            </p>
+          </div>
+
+          {/* Public info links — readable before signing in (see lib/public-paths). */}
+          <nav className="mt-5 flex items-center justify-center gap-2 text-[12.5px] font-semibold text-muted">
+            <Link
+              href="/privacy"
+              className="tap underline outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]"
+            >
+              מדיניות פרטיות
+            </Link>
+            <span aria-hidden="true" className="text-faint">
+              ·
+            </span>
+            <Link
+              href="/terms"
+              className="tap underline outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-[color:var(--ring)]"
+            >
+              תנאי שימוש
+            </Link>
+          </nav>
+        </div>
       </div>
     </div>
   );
@@ -424,19 +362,24 @@ function BetaConfigNotice({ onDevContinue }: { onDevContinue: () => void }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      className="fixed inset-0 z-[108] flex min-h-dvh items-center justify-center overflow-y-auto px-6 py-10 text-foreground animate-fade-in"
+      className="fixed inset-0 z-[108] overflow-y-auto text-foreground animate-fade-in"
       style={{
         backgroundColor: "var(--background)",
         backgroundImage:
           "radial-gradient(125% 80% at 50% -12%, var(--accent-soft) 0%, transparent 52%)," +
           "linear-gradient(180deg, var(--surface) 0%, var(--background) 100%)",
-        paddingTop: "max(2.5rem, env(safe-area-inset-top))",
-        paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))",
       }}
     >
-      <div className="w-full max-w-sm animate-fade-up">
-        <div className="rounded-[1.75rem] border border-border bg-surface/80 p-6 shadow-float backdrop-blur-xl">
-          <div className="relative mx-auto mb-6 h-20 w-20">
+      <div
+        className="flex min-h-full items-center justify-center px-6 py-10"
+        style={{
+          paddingTop: "max(2.5rem, env(safe-area-inset-top))",
+          paddingBottom: "max(2.5rem, env(safe-area-inset-bottom))",
+        }}
+      >
+        <div className="w-full max-w-sm animate-fade-up">
+          <div className="rounded-[1.75rem] border border-border bg-surface/80 p-6 shadow-float backdrop-blur-xl">
+            <div className="relative mx-auto mb-6 h-20 w-20">
             <span className="relative flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-surface-2 text-muted shadow-soft">
               <ShieldIcon className="h-10 w-10" />
             </span>
@@ -483,6 +426,7 @@ function BetaConfigNotice({ onDevContinue }: { onDevContinue: () => void }) {
               המשך בכל זאת (פיתוח בלבד)
             </button>
           )}
+          </div>
         </div>
       </div>
     </div>
