@@ -35,6 +35,9 @@ interface WorkoutRecommendationCardProps {
   onCreateTemplate: () => void;
 }
 
+/** Anchor used by the optional "ראה תבניות נוספות" link to reach the list below. */
+const TEMPLATES_ANCHOR = "#workout-templates";
+
 /** Shared muted shell for the quiet CTA states (1–3). */
 function QuietCta({
   title,
@@ -83,7 +86,7 @@ export function WorkoutRecommendationCard({
     return (
       <QuietCta
         title="המלצת אימון אישית"
-        body="מלא פרופיל אימון קצר כדי שנוכל להציע לך תבנית התחלה מתאימה."
+        body="מלא פרופיל אימון קצר כדי לקבל המלצת התחלה."
         action={
           <Link
             href="/training-profile"
@@ -101,7 +104,7 @@ export function WorkoutRecommendationCard({
     return (
       <QuietCta
         title="השלם פרופיל כדי לקבל המלצה"
-        body="חסרות כמה תשובות בסיסיות כדי שנוכל להציע תבנית התחלה."
+        body="חסרות כמה תשובות בסיסיות כדי להציע תבנית מתאימה."
         action={
           <Link
             href="/training-profile"
@@ -119,7 +122,7 @@ export function WorkoutRecommendationCard({
     return (
       <QuietCta
         title="אין עדיין תבניות להמלצה"
-        body="צור תבנית אימון, ובהמשך נוכל להמליץ על התבנית שהכי מתאימה לפרופיל שלך."
+        body="אין עדיין תבניות שאפשר להמליץ עליהן. צור תבנית ראשונה ונמליץ על המתאימה לפרופיל שלך."
         action={
           <Button size="sm" variant="secondary" onClick={onCreateTemplate}>
             <PlusIcon className="h-4 w-4" /> צור תבנית חדשה
@@ -138,7 +141,7 @@ export function WorkoutRecommendationCard({
     return (
       <QuietCta
         title="אין עדיין תבניות להמלצה"
-        body="צור תבנית אימון, ובהמשך נוכל להמליץ על התבנית שהכי מתאימה לפרופיל שלך."
+        body="אין עדיין תבניות שאפשר להמליץ עליהן. צור תבנית ראשונה ונמליץ על המתאימה לפרופיל שלך."
         action={
           <Button size="sm" variant="secondary" onClick={onCreateTemplate}>
             <PlusIcon className="h-4 w-4" /> צור תבנית חדשה
@@ -180,15 +183,23 @@ export function WorkoutRecommendationCard({
 
         {/* The recommended EXISTING template — name + careful explanation. */}
         <div className="rounded-2xl border border-border bg-surface-2 p-3.5">
-          <p className="text-[16px] font-extrabold leading-tight text-foreground">
+          <p className="text-[11px] font-semibold text-faint">
+            התבנית המומלצת
+          </p>
+          <p className="mt-0.5 text-[16px] font-extrabold leading-tight text-foreground">
             {template.title}
           </p>
           <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
             {recommendation.explanation}
           </p>
+        </div>
 
-          {recommendation.reasons.length > 0 && (
-            <ul className="mt-3 flex flex-wrap gap-2">
+        {/* "Why this one?" — the existing reason signals, framed as a section so
+            the match feels explained rather than asserted. */}
+        {recommendation.reasons.length > 0 && (
+          <div>
+            <p className="text-[13px] font-bold text-foreground">למה דווקא זו?</p>
+            <ul className="mt-2 flex flex-wrap gap-2">
               {recommendation.reasons.map((reason) => (
                 <li
                   key={reason}
@@ -199,7 +210,17 @@ export function WorkoutRecommendationCard({
                 </li>
               ))}
             </ul>
-          )}
+          </div>
+        )}
+
+        {/* "Your next step" — turn the suggestion into a clear, low-pressure
+            action, and make explicit that it can be changed at any time. */}
+        <div className="rounded-2xl border border-border bg-surface px-3.5 py-3">
+          <p className="text-[13px] font-bold text-foreground">הצעד הבא שלך</p>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
+            התחל אימון ראשון מהתבנית הזאת, ואז תוכל לעדכן את הפרופיל או לבחור תבנית
+            אחרת בכל רגע.
+          </p>
         </div>
 
         <div className="space-y-2.5">
@@ -219,6 +240,12 @@ export function WorkoutRecommendationCard({
           >
             <PencilIcon className="h-[18px] w-[18px]" /> ערוך פרופיל
           </Link>
+          <a
+            href={TEMPLATES_ANCHOR}
+            className="tap mx-auto block w-fit px-2 py-1 text-center text-[12.5px] font-semibold text-muted hover:text-foreground"
+          >
+            ראה תבניות נוספות
+          </a>
         </div>
       </div>
     </Card>

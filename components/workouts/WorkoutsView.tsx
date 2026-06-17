@@ -28,6 +28,7 @@ import { Card } from "@/components/ui/Card";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { SectionHeader } from "@/components/ui/PageHeader";
 import {
+  CheckIcon,
   ChevronIcon,
   CopyIcon,
   DoorEnterIcon,
@@ -36,6 +37,7 @@ import {
   PlayIcon,
   PlusIcon,
   TargetIcon,
+  XIcon,
 } from "@/components/ui/icons";
 import { WorkoutBuilder, type BuilderSeed } from "./WorkoutBuilder";
 import { WorkoutHistory } from "./WorkoutHistory";
@@ -76,6 +78,13 @@ export function WorkoutsView() {
   const draft = useActiveWorkoutDraft();
   const [discardOpen, setDiscardOpen] = useState(false);
 
+  // Non-invasive confirmation shown once after the user starts from the workout
+  // recommendation card. Pure local UI state — it touches no active-workout draft
+  // field and is cleared whenever the builder closes, so the start flow itself is
+  // untouched. See docs/WORKOUT_RECOMMENDATION_V1.md (V1.1).
+  const [startedFromRecommendation, setStartedFromRecommendation] =
+    useState(false);
+
   // Workout Recommendation V1 — deterministic, local-only mapping of the saved
   // personal profile onto one existing template. Reactive + SSR-safe (profile is
   // null on the server / first hydration, so the card renders the no-profile CTA
@@ -95,6 +104,7 @@ export function WorkoutsView() {
     setBuilderSeed(seed);
     setResumingDraft(false);
     setEditingTemplate(null);
+    setStartedFromRecommendation(false);
     setBuilding(true);
   };
 
@@ -102,6 +112,14 @@ export function WorkoutsView() {
     setBuilding(false);
     setBuilderSeed(null);
     setResumingDraft(false);
+    setStartedFromRecommendation(false);
+  };
+
+  // Start the recommended template through the normal flow, then flag the
+  // one-off confirmation banner. Same start path — only an extra UI hint.
+  const startFromRecommendation = (template: WorkoutTemplate) => {
+    startFromTemplate(template);
+    setStartedFromRecommendation(true);
   };
 
   // Resume the auto-saved draft: open the builder seeded from it, in resume mode.
@@ -161,12 +179,38 @@ export function WorkoutsView() {
   return (
     <div className="space-y-6">
       {building ? (
-        <WorkoutBuilder
-          initial={builderSeed}
-          resumed={resumingDraft}
-          onSaved={closeBuilder}
-          onCancel={closeBuilder}
-        />
+        <>
+          {/* One-off, dismissible confirmation that this builder was opened from
+              the profile-based recommendation. Non-invasive: it carries no draft
+              state and clears with the builder. */}
+          {startedFromRecommendation && (
+            <div
+              data-testid="recommendation-start-notice"
+              className="sheen relative flex items-start gap-3 overflow-hidden rounded-2xl border border-[color:var(--accent-soft)] bg-[color:var(--accent-soft)] px-3.5 py-3"
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-surface text-accent">
+                <CheckIcon className="h-[18px] w-[18px]" />
+              </span>
+              <p className="min-w-0 flex-1 text-[12.5px] font-semibold leading-relaxed text-foreground">
+                מעולה, התחלת מהתבנית שהומלצה לפי הפרופיל שלך.
+              </p>
+              <button
+                type="button"
+                onClick={() => setStartedFromRecommendation(false)}
+                aria-label="סגור הודעה"
+                className="tap -me-1 -mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-faint hover:text-foreground"
+              >
+                <XIcon className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          <WorkoutBuilder
+            initial={builderSeed}
+            resumed={resumingDraft}
+            onSaved={closeBuilder}
+            onCancel={closeBuilder}
+          />
+        </>
       ) : editingTemplate ? (
         <TemplateEditor
           template={editingTemplate === "new" ? null : editingTemplate}
@@ -281,14 +325,15 @@ export function WorkoutsView() {
           <WorkoutRecommendationCard
             result={recommendation}
             templates={templates}
-            onStartTemplate={startFromTemplate}
+            onStartTemplate={startFromRecommendation}
             onCreateTemplate={() => setEditingTemplate("new")}
           />
 
           {/* Templates are the main content of the hub — saved plans you start
               from in one tap. Kept directly under the command area so the page
-              guides you toward picking one. */}
-          <section>
+              guides you toward picking one. The id anchors the recommendation
+              card's optional "ראה תבניות נוספות" link. */}
+          <section id="workout-templates" className="scroll-mt-4">
             <SectionHeader
               title="תבניות אימון"
               hint={

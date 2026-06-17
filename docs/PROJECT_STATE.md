@@ -4,7 +4,40 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: **Lint ignores the gate-enabled e2e build output (`.next-auth`)**.
+> Last reviewed: **Workout Recommendation V1.1 — Recommendation Guidance Polish**.
+> A **UX / copy / presentation** pass on top of V1 — **no** logic, schema or flow
+> change. The recommendation now explains itself: the card on `/workouts` keeps
+> header *"המלצת התחלה לפי הפרופיל שלך"* + subtitle *"מצאנו תבנית שיכולה להתאים
+> להתחלה שלך."*, shows a labelled **"התבנית המומלצת"** block (name + graded
+> explanation), a new **"למה דווקא זו?"** section rendering the existing 2–4 reason
+> chips, and a new **"הצעד הבא שלך"** section (*"התחל אימון ראשון מהתבנית הזאת, ואז
+> תוכל לעדכן את הפרופיל או לבחור תבנית אחרת בכל רגע."*). CTA hierarchy: primary
+> **"התחל אימון"**, secondary **"ערוך פרופיל"**, quiet optional **"ראה תבניות
+> נוספות"** anchoring to the templates list (`#workout-templates`). Starting from
+> the card shows a **non-invasive, dismissible** confirmation banner (*"מעולה,
+> התחלת מהתבנית שהומלצה לפי הפרופיל שלך."*) — pure local UI state
+> (`startedFromRecommendation` in [`WorkoutsView`](../components/workouts/WorkoutsView.tsx)),
+> **no active-workout draft field added** and it clears with the builder, so the
+> start-from-template flow is untouched. The profile compact block
+> ([`TrainingProfileView`](../components/profile/TrainingProfileView.tsx)) is now
+> titled **"המלצת אימון מחכה לך"** (body *"על בסיס הפרופיל שמילאת, אפשר לראות במסך
+> האימונים תבנית התחלה מומלצת."*, CTA **"עבור להמלצה"**), still link-only to
+> `/workouts`. Fallback copy clarified (no-profile *"מלא פרופיל אימון קצר כדי לקבל
+> המלצת התחלה."*, incomplete *"חסרות כמה תשובות בסיסיות כדי להציע תבנית מתאימה."*,
+> no-templates *"אין עדיין תבניות שאפשר להמליץ עליהן…"*), each with a single CTA.
+> Framing stays honest — confidence is the **unchanged** graded value and no
+> "חובה"/"הכי טוב"/"יבטיח תוצאות"/"שורף שומן"/"חיטוב"/"מבנה גוף"/medical wording.
+> **Unchanged:** `lib/workout-recommendation.ts` scoring/signals/confidence,
+> `yfos:personal-profile:v1` + profile schema, `WorkoutTemplate` + active-draft
+> schemas, backup/restore, beta welcome, onboarding, nutrition/water/supplement/
+> protein/gym schemas, auth/beta/guest/admin/Supabase, AI routes, legal pages; no
+> new dependencies; localStorage-only. e2e: `workout-recommendation.spec.ts` now
+> also asserts the "למה דווקא זו?" / "הצעד הבא שלך" sections and the start-confirmation
+> banner. Validation: `npm run lint` ✓ (0 errors, 1 pre-existing warning),
+> `npm run build` ✓ (TypeScript clean), `npm run test:e2e` **117 green**. See
+> [`WORKOUT_RECOMMENDATION_V1.md`](WORKOUT_RECOMMENDATION_V1.md) (V1.1 section).
+>
+> Prior: **Lint ignores the gate-enabled e2e build output (`.next-auth`)**.
 > A **tooling-only** fix: `eslint.config.mjs` `globalIgnores` now also lists
 > **`.next-auth/**`** alongside `.next/**`/`out/**`/`build/**`. `.next-auth` is the
 > **generated, minified build output of the gate-enabled e2e build** (`scripts/e2e.mjs`

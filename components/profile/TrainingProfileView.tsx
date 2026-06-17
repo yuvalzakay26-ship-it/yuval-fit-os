@@ -487,24 +487,21 @@ function ProfileRecommendationBlock({ profile }: { profile: TrainingProfile }) {
       <Link
         href="/workouts"
         className="tap block"
-        aria-label={`המלצת התחלה: ${recommendation.templateName} — פתח באימונים`}
+        aria-label={`המלצת אימון מחכה לך: ${recommendation.templateName} — עבור למסך האימונים`}
       >
         <Card className="sheen relative flex items-start gap-3 overflow-hidden">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-soft)] text-accent">
             <SparkIcon className="h-[22px] w-[22px]" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-accent">
-              המלצת התחלה לפי הפרופיל שלך
-            </p>
-            <p className="mt-0.5 text-[15px] font-extrabold leading-tight text-foreground">
-              {recommendation.templateName}
+            <p className="text-[15px] font-bold leading-tight text-foreground">
+              המלצת אימון מחכה לך
             </p>
             <p className="mt-1 text-[12px] leading-relaxed text-muted">
-              {recommendation.explanation}
+              על בסיס הפרופיל שמילאת, אפשר לראות במסך האימונים תבנית התחלה מומלצת.
             </p>
             <span className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-bold text-accent">
-              פתח באימונים
+              עבור להמלצה
               <ChevronIcon className="h-3.5 w-3.5 rotate-180" />
             </span>
           </div>

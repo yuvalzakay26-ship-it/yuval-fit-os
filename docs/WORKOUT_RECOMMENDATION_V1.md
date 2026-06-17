@@ -5,6 +5,12 @@
 > start. It is **not** a workout-plan generator, **not** AI, and **never** creates
 > templates or exercises.
 
+> **V1.1 — Recommendation Guidance Polish** (see the dedicated section at the end)
+> is a UX/copy pass on top of V1. The scoring logic in
+> `lib/workout-recommendation.ts` is **unchanged**; only the presentation and copy
+> were refined to explain _why_ a template fits, show the user's _next step_, and
+> keep the framing honest and non-coercive.
+
 ## Scope
 
 After the user fills the personal profile, the Workouts page should feel smarter:
@@ -159,10 +165,90 @@ profile already had, so **older profiles still qualify**; the newer
 ## Tests
 
 - e2e: `e2e/workout-recommendation.spec.ts` — no-profile CTA; incomplete-profile
-  CTA; recommendation names an existing template; "התחל אימון" starts it; "ערוך
-  פרופיל" links to `/training-profile`; no-templates fallback; profile-summary
-  compact block. Full suite **107 green**.
+  CTA; recommendation names an existing template **and shows the "למה דווקא זו?" /
+  "הצעד הבא שלך" sections**; "התחל אימון" starts it **and surfaces the V1.1
+  confirmation banner**; "ערוך פרופיל" links to `/training-profile`; no-templates
+  fallback; profile-summary compact block. Full suite **117 green**.
 - No unit-test framework exists in the repo (Playwright-only), so the
   deterministic logic is pinned through the e2e cases above (beginner → full-body
   preference, no-templates fallback, deterministic winner, existing-template-only,
   no body-field influence).
+
+---
+
+## V1.1 — Recommendation Guidance Polish
+
+A **UX / copy / presentation** pass that makes the recommendation feel useful,
+understandable and action-oriented — without changing any logic, schema or flow.
+It answers three questions for the user: **why** this template fits, **what to do
+next**, and that this is a **safe, changeable starting point** — not a forced plan.
+
+### What changed
+
+**Recommendation card (`components/workouts/WorkoutRecommendationCard.tsx`)** — a
+clearer hierarchy:
+
+- Header **"המלצת התחלה לפי הפרופיל שלך"** + subtitle _"מצאנו תבנית שיכולה להתאים
+  להתחלה שלך."_ + the graded confidence badge (unchanged source).
+- A labelled **"התבנית המומלצת"** block: the existing template name (emphasised)
+  + the careful, confidence-graded explanation.
+- A new **"למה דווקא זו?"** section rendering the existing 2–4 reason chips
+  (wrap-clean, no overflow).
+- A new **"הצעד הבא שלך"** section: _"התחל אימון ראשון מהתבנית הזאת, ואז תוכל
+  לעדכן את הפרופיל או לבחור תבנית אחרת בכל רגע."_
+- CTA hierarchy: primary **"התחל אימון"**, secondary **"ערוך פרופיל"**, and a
+  quiet optional link **"ראה תבניות נוספות"** that anchors to the templates list
+  (`#workout-templates`) on the same page.
+
+**Recommended-start confirmation (`components/workouts/WorkoutsView.tsx`)** — when
+the user starts from the recommendation card, a **non-invasive, dismissible
+banner** appears above the builder: _"מעולה, התחלת מהתבנית שהומלצה לפי הפרופיל
+שלך."_ It is **pure local UI state** (`startedFromRecommendation`): it touches no
+active-workout draft field, persists nothing, and clears when the builder closes.
+The start path itself is the unchanged start-from-template flow.
+
+**Profile summary block (`components/profile/TrainingProfileView.tsx`)** — the
+compact block is now titled **"המלצת אימון מחכה לך"** with body _"על בסיס הפרופיל
+שמילאת, אפשר לראות במסך האימונים תבנית התחלה מומלצת."_ and CTA **"עבור להמלצה"**.
+Still **link-only** to `/workouts` (start stays where the flow is owned); the
+`aria-label` keeps naming the template for clarity/determinism.
+
+**Fallback copy** — each state keeps exactly one CTA, with clearer copy:
+
+- No profile → _"מלא פרופיל אימון קצר כדי לקבל המלצת התחלה."_
+- Incomplete profile → _"חסרות כמה תשובות בסיסיות כדי להציע תבנית מתאימה."_
+- No templates → _"אין עדיין תבניות שאפשר להמליץ עליהן…"_
+
+### Honest framing (kept)
+
+Confidence stays graded by the **unchanged** logic and the copy never overclaims
+— no "חובה", "הכי טוב", "יבטיח תוצאות", "שורף שומן", "חיטוב", "מבנה גוף" or
+medical claims. High/medium/low explanations are the existing graded sentences
+(see *Confidence + copy* above); the card uses careful wording throughout
+("יכולה להתאים", "נקודת התחלה", "אפשר לשנות בכל רגע").
+
+### What stayed unchanged (V1.1)
+
+- `lib/workout-recommendation.ts` scoring, signals, confidence grading and
+  explanations — **no logic change** (display metadata only via existing fields).
+- `yfos:personal-profile:v1`, profile schema, workout/template schema, the
+  active-workout **draft schema** and the start-from-template flow.
+- Backup/restore, beta welcome flow, auth/beta/guest/admin/Supabase, onboarding,
+  nutrition/water/supplement/protein/gym schemas, AI routes and legal pages.
+- No new dependencies; localStorage-only.
+
+### Manual QA notes (V1.1 — 360px / 390px)
+
+- `/workouts` with a complete profile + templates at **360px and 390px**: card
+  shows the labelled template block, the "למה דווקא זו?" chips wrap cleanly with
+  **no horizontal overflow**, and the "הצעד הבא שלך" section reads clearly.
+- CTA hierarchy holds: "התחל אימון" leads, "ערוך פרופיל" is secondary, "ראה
+  תבניות נוספות" is a quiet tertiary link that scrolls to the templates list.
+- The card never outranks the draft-restore card and never overpowers the command
+  center hero.
+- Tapping "התחל אימון" opens the builder seeded with the template title and shows
+  the dismissible confirmation banner; dismissing it or closing the builder
+  clears it; starting a *non-recommended* workout never shows it.
+- `/training-profile` saved summary shows the "המלצת אימון מחכה לך" block linking
+  to `/workouts`.
+- Re-verified `age/height/weight/sex` changes never alter the recommendation.

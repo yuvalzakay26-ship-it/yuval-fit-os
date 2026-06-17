@@ -123,6 +123,10 @@ test("profile + templates → recommendation card names an existing template", a
   // narrow split — and it is named verbatim.
   await expect(card.getByText("Full Body")).toBeVisible();
   await expect(card.getByText("גב בלבד")).toHaveCount(0);
+  // V1.1 guidance hierarchy: the "why this one" and "next step" sections frame
+  // the suggestion as explained and action-oriented.
+  await expect(card.getByText("למה דווקא זו?")).toBeVisible();
+  await expect(card.getByText("הצעד הבא שלך")).toBeVisible();
   // At least one reason chip is shown.
   await expect(card.getByText("מתאים לרמת מתחיל")).toBeVisible();
 });
@@ -140,6 +144,10 @@ test("clicking 'התחל אימון' starts the recommended existing template", 
   // The normal start-from-template flow opens the builder seeded with the
   // recommended template's title.
   await expect(page.locator("#workout-title")).toHaveValue("Full Body");
+  // V1.1: a non-invasive confirmation banner acknowledges the recommended start.
+  await expect(
+    page.getByTestId("recommendation-start-notice"),
+  ).toBeVisible();
 });
 
 test("'ערוך פרופיל' links to the training profile", async ({ page }) => {
@@ -178,11 +186,9 @@ test("the profile saved summary shows a compact recommendation block", async ({
   await page.goto("/training-profile");
 
   // Saved summary state renders the compact block linking to /workouts.
-  await expect(
-    page.getByText("המלצת התחלה לפי הפרופיל שלך"),
-  ).toBeVisible();
+  await expect(page.getByText("המלצת אימון מחכה לך")).toBeVisible();
   const open = page.getByRole("link", {
-    name: /המלצת התחלה: Full Body/,
+    name: /המלצת אימון מחכה לך: Full Body/,
   });
   await expect(open).toBeVisible();
   await expect(open).toHaveAttribute("href", "/workouts");
