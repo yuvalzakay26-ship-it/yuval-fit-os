@@ -48,7 +48,9 @@ BetaAuthGate         (z-108)  → Supabase auth + approved-email gate (REAL gate
 3. **Signed out**: the Fit OS sign-in screen. **Google is currently the ONLY
    active entry method** (`המשך עם Google`). The **email magic-link UI is hidden**
    from the screen and the **"continue as guest"** button is shown but **locked**
-   (`בקרוב` / coming soon) — see *Guest mode* below.
+   (`בקרוב` / coming soon) — see *Guest mode* below. The screen also carries a
+   subtle, static **creator trust card** (`יוצר המערכת`) introducing who built
+   the system — see *Creator trust card* below.
 4. **Guest session active (no real user)**: the overlay disappears and the
    **normal app shell only** is revealed — local-only, no admin. (Reachable only
    when a guest flag is already present; the entry button that used to set it is
@@ -126,6 +128,24 @@ there is **no** auth here:
 - All fitness data stays `localStorage`-only — identical to every other user.
 - Guest mode is reachable only from the **sign-in screen** (configured state).
   The not-configured screen still **fails closed** for real sign-in.
+
+### Creator trust card (signed-out screen)
+The signed-out sign-in screen carries a small, static **creator trust card**
+(`data-creator-card`, titled **`יוצר המערכת`**) below the privacy/security note
+and above the privacy/terms links. It introduces who built the system and what it
+is for, to build trust on the public entry screen:
+
+- **Fit OS פותחה ומנוהלת על ידי יובל זכאי — מרצה במכללת אורט ומיישם בינה מלאכותית.**
+- **המערכת נבנתה כדי לעזור לנהל אימונים, תזונה והרגלים בצורה מסודרת, אישית ופרטית.**
+- **פרטי יצירת קשר יתווספו בהמשך למשתמשים מאושרים בלבד.**
+
+> **Product decision:** this screen is **public**, so it intentionally shows
+> **no phone number, address, WhatsApp link, or any direct contact action** —
+> only name + role + a short trust statement. Exposing a contact number here
+> invites spam/unwanted contact. If contact details are ever needed, they belong
+> **inside the approved-user app experience**, not on the public entry screen.
+> The card is information-only: no buttons, no external links. It is styled to
+> stay calm and subtle — never louder than the Google sign-in card.
 
 ### Identity & greeting
 `lib/app-identity.ts` (`useAppIdentity` / `greetingFor`) is the single place the

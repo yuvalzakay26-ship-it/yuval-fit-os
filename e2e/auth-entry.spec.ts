@@ -107,6 +107,28 @@ test("guest entry is visible but locked, and creates no session when clicked", a
   ).toBeVisible();
 });
 
+test("creator trust card is shown without any public phone/contact number", async ({
+  page,
+}) => {
+  const card = page.locator("[data-creator-card]");
+  await expect(card).toBeVisible();
+
+  // Title + the trust statement (name, role, AI-applier descriptor).
+  await expect(card.getByRole("heading", { name: "יוצר המערכת" })).toBeVisible();
+  await expect(card.getByText(/יובל זכאי/)).toBeVisible();
+  await expect(card.getByText(/מרצה במכללת אורט/)).toBeVisible();
+  await expect(card.getByText(/מיישם.*בינה מלאכותית/)).toBeVisible();
+
+  // PRODUCT DECISION: this public screen must NOT expose a phone number or any
+  // direct contact action. Guard against a phone digit sequence, tel:/wa.me
+  // links, and the WhatsApp affordance creeping back in.
+  const cardText = (await card.innerText()).replace(/\s+/g, " ");
+  expect(cardText).not.toMatch(/\+?\d[\d\-() ]{6,}\d/);
+  await expect(card.locator('a[href^="tel:"]')).toHaveCount(0);
+  await expect(card.locator('a[href*="wa.me"]')).toHaveCount(0);
+  await expect(card.locator('a[href*="whatsapp"]')).toHaveCount(0);
+});
+
 test("public legal links still work from the entry screen", async ({ page }) => {
   await page.getByRole("link", { name: "מדיניות פרטיות" }).click();
   await expect(page).toHaveURL(/\/privacy$/);

@@ -324,6 +324,34 @@ function BetaSignInScreen() {
             </p>
           </div>
 
+          {/* Creator trust card — static "who built this" note. Calm and subtle,
+              styled like the privacy note above so it never competes with the
+              Google sign-in card. INTENTIONALLY shows NO public phone / contact:
+              this screen is public, so contact details are deferred to the
+              approved-user experience (see docs/BETA_ACCESS_SYSTEM.md). */}
+          <div
+            data-creator-card
+            className="mt-4 rounded-2xl border border-border bg-surface-2/60 px-4 py-3.5 text-right"
+          >
+            <div className="flex items-center gap-2">
+              <SparkIcon className="h-[17px] w-[17px] shrink-0 text-accent" />
+              <h2 className="text-[13px] font-bold text-foreground">
+                יוצר המערכת
+              </h2>
+            </div>
+            <p className="mt-2 text-[12.5px] leading-relaxed text-muted">
+              Fit OS פותחה ומנוהלת על ידי יובל זכאי — מרצה במכללת אורט ומיישם
+              בינה מלאכותית.
+            </p>
+            <p className="mt-2 text-[12.5px] leading-relaxed text-muted">
+              המערכת נבנתה כדי לעזור לנהל אימונים, תזונה והרגלים בצורה מסודרת,
+              אישית ופרטית.
+            </p>
+            <p className="mt-2 text-[11.5px] leading-relaxed text-faint">
+              פרטי יצירת קשר יתווספו בהמשך למשתמשים מאושרים בלבד.
+            </p>
+          </div>
+
           {/* Public info links — readable before signing in (see lib/public-paths). */}
           <nav className="mt-5 flex items-center justify-center gap-2 text-[12.5px] font-semibold text-muted">
             <Link

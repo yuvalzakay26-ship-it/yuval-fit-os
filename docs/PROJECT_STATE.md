@@ -4,7 +4,30 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: **Auth Entry Polish — Google-only access, locked guest, no top
+> Last reviewed: **Creator trust card on the signed-out entry screen**. A small,
+> static **creator trust card** (`data-creator-card`, titled `יוצר המערכת`) was
+> added to `BetaSignInScreen`
+> ([`components/access/BetaAuthGate.tsx`](../components/access/BetaAuthGate.tsx)),
+> placed **below the privacy/security note and above the privacy/terms links**. It
+> introduces who built the system to build trust on the public entry screen:
+> *"Fit OS פותחה ומנוהלת על ידי יובל זכאי — מרצה במכללת אורט ומיישם בינה מלאכותית."* +
+> *"המערכת נבנתה כדי לעזור לנהל אימונים, תזונה והרגלים בצורה מסודרת, אישית ופרטית."* +
+> a faint *"פרטי יצירת קשר יתווספו בהמשך למשתמשים מאושרים בלבד."* It is styled like
+> the privacy note (calm `SparkIcon`, `bg-surface-2/60`) so it never competes with
+> the Google sign-in card. **PRODUCT DECISION: this public screen shows NO phone
+> number, address, WhatsApp link, or contact action** — only name + role + a short
+> trust statement; contact details, if ever needed, belong inside the approved-user
+> app experience. The card is information-only (no buttons/links). **Unchanged:**
+> Google OAuth, guest-disabled/email-hidden states, beta access flow, admin/
+> allowed-users/request logic, `BetaWelcomeNotice`, `WelcomeGate`, profile
+> onboarding, public pages, schemas/storage/backup. e2e: `auth-entry.spec.ts`
+> gained a check that the card is visible with `יובל זכאי` / `מרצה במכללת אורט` /
+> `מיישם … בינה מלאכותית` and **no phone number / `tel:` / `wa.me` / whatsapp link**,
+> running at both 360px and 390px alongside the existing logo/Google/email/guest/
+> legal checks. Validation: `npm run lint` ✓ (changed files clean), `npm run build`
+> ✓, `npm run test:e2e` ✓.
+>
+> Prior: **Auth Entry Polish — Google-only access, locked guest, no top
 > clipping**. A **UI-level** change to the signed-out sign-in screen
 > ([`components/access/BetaAuthGate.tsx`](../components/access/BetaAuthGate.tsx) →
 > `BetaSignInScreen`) that makes the entry cleaner and more intentional, with **no
@@ -39,7 +62,7 @@
 > the screen; legal links work) runs at **both 360px and 390px** (`auth-360` /
 > `auth-390` projects). Validation: `npm run lint` ✓ (0 errors, 1 pre-existing
 > warning), `npm run build` ✓ (TypeScript clean), `npm run test:e2e` **115 green**.
-> Prior: **Workout Recommendation V1 — recommend an existing template
+> Earlier: **Workout Recommendation V1 — recommend an existing template
 > from the profile**. The first time the saved Personal Training Profile is used
 > to *guide* the user (it was previously collect-and-display only). A new
 > **deterministic, local-first, NO-AI** layer maps the profile onto **one existing
