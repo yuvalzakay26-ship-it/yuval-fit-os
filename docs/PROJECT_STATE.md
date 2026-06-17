@@ -4,7 +4,58 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: **Workout History / Progress Polish — Phase 1**. A **UX / copy /
+> Last reviewed: **Personal Path V1 — Small Safe Version**. A small, **local-first,
+> deterministic, NO-AI** guidance layer that helps the user understand their next
+> step by *connecting* existing pieces — the saved profile (via the recommendation
+> result), the workout recommendation, and saved history — into one "where am I /
+> what's my next step" card. **Not** a plan generator: it creates no exercises,
+> programs or templates, prescribes nothing medical/diet/body, calls no AI/network,
+> and adds **no** new storage key or schema field (pure derived state). New pure
+> helper [`lib/personal-path.ts`](../lib/personal-path.ts) `personalPathState(
+> recommendation, workouts)` returns a discriminated `PersonalPathState`:
+> `no-profile` / `incomplete-profile` / `ready-to-start`(recommendation) /
+> `in-progress`(workoutCount · lastWorkoutDate · profileComplete · recommendation?).
+> It is a pure function of the existing **`WorkoutRecommendationResult`** (which
+> already encodes profile completeness, so **age/height/weight/sex/adaptation are
+> never read** for path logic) + saved workouts (newest-first). Precedence is
+> intentional — **once any workout is saved the user is "in-progress"** so the card
+> never tells someone who already trained to "fill a profile". New presentational
+> [`PersonalPathCard`](../components/workouts/PersonalPathCard.tsx)
+> (`data-testid="personal-path"`, compact calm `Card`, eyebrow **"הצעד הבא שלך"** +
+> title **"המסלול האישי שלך"**): **ready-to-start** shows **"הצעד הראשון שלך: להתחיל
+> מהתבנית המומלצת."** + **"התחל מההמלצה"** + "אפשר לשנות בכל רגע."; **in-progress**
+> shows **"התחלת לבנות רצף…"** + 1–3 chips (**"פרופיל הושלם"** · **"אימונים שנשמרו:
+> {count}"** · **"אימון אחרון: {date}"**) + primary **"התחל אימון נוסף"** (free
+> workout) + secondary **"צפה בהתקדמות"** (→`/progress`) + optional quiet **"חזור
+> להמלצה"** (scrolls to the recommendation card) + footnote **"ככל שתשמור יותר
+> אימונים, הכיוון יהיה ברור יותר."** Mounted on
+> [`WorkoutsView`](../components/workouts/WorkoutsView.tsx) **below the recommendation
+> card** and command center, and **below the active-draft restore card** (so it never
+> overpowers the stronger actions). On `/workouts` the **`no-profile` /
+> `incomplete-profile` states are intentionally deferred** to the recommendation
+> card directly above (which already owns that exact "fill/complete profile" prompt),
+> so the hub never stacks two near-identical profile cards — the helper + card still
+> implement those states for a future no-recommendation-card placement. CTAs reuse
+> existing flows only: "התחל מההמלצה" → the same `startFromRecommendation`,
+> "התחל אימון נוסף" → `openBuilder(null)`, "צפה בהתקדמות" → `/progress`,
+> "חזור להמלצה" → scroll to `#workout-recommendation`. **State 5** ("השלמת אימון
+> מההמלצה…") is **already served** by the existing `WorkoutCompletionCard` (no new
+> field); **`/progress` placement deferred** (already dense + self-referential CTA) —
+> documented as a follow-up. **Unchanged:** `WorkoutSession`/`WorkoutExerciseEntry`/
+> `SetEntry`/`WorkoutTemplate` schemas, `yfos:active-workout-draft:v1` + `yfos:workouts`
+> + `yfos:personal-profile:v1` + profile schema, backup/restore, **recommendation
+> scoring** (`lib/workout-recommendation.ts` untouched), active builder + completion
+> card behaviour, nutrition/water/supplement/protein/gym schemas, auth/beta/guest/
+> admin/Supabase, AI routes, legal pages; no new dependencies; localStorage-only.
+> e2e: new [`personal-path.spec.ts`](../e2e/personal-path.spec.ts) (no-profile defers
+> to the recommendation card; ready-to-start first-step guidance; in-progress count +
+> next step; "התחל אימון נוסף" opens the free builder; "צפה בהתקדמות" → `/progress`;
+> card never sits above the draft-restore card; no overflow at 360px/390px).
+> Validation: `npm run lint` ✓ (0 errors, 1 pre-existing warning), `npm run build` ✓
+> (TypeScript clean), `npm run test:e2e` **146 green**. See
+> [`PERSONAL_PATH_V1.md`](PERSONAL_PATH_V1.md).
+>
+> Prior: **Workout History / Progress Polish — Phase 1**. A **UX / copy /
 > presentation** pass that makes saved workout history and the Progress screen
 > clearer and quietly motivating once workouts exist — **no** schema, storage-key,
 > calculation, backup/restore, or behaviour change; everything derives **read-only**

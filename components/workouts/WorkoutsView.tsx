@@ -25,6 +25,7 @@ import {
   useActiveWorkoutDraft,
 } from "@/lib/active-workout-draft";
 import { lastPerformance } from "@/lib/analytics";
+import { personalPathState } from "@/lib/personal-path";
 import { getExerciseById } from "@/lib/seed-exercises";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -50,6 +51,7 @@ import { TemplateEditor } from "./TemplateEditor";
 import { DraftRestoreCard } from "./DraftRestoreCard";
 import { WorkoutRecommendationCard } from "./WorkoutRecommendationCard";
 import { WorkoutCompletionCard } from "./WorkoutCompletionCard";
+import { PersonalPathCard } from "./PersonalPathCard";
 
 function emptySets(count: number): WorkoutExerciseEntry["sets"] {
   return Array.from({ length: count }, (_, i) => ({
@@ -117,6 +119,15 @@ export function WorkoutsView() {
     [profile, templates],
   );
 
+  // Personal Path V1 — a calm "where am I / what's my next step" state derived
+  // purely from the recommendation result + saved workouts (no new data, no new
+  // storage key). Rendered on the hub below the recommendation card; never above
+  // the draft-restore card or command center. See lib/personal-path.ts.
+  const pathState = useMemo(
+    () => personalPathState(recommendation, workouts),
+    [recommendation, workouts],
+  );
+
   // When a meaningful draft exists, the restore card up top is the primary path
   // ("המשך אימון"). The hero's start action then steps down to a secondary weight
   // so two strong primaries never compete for "what do I do now?".
@@ -169,6 +180,23 @@ export function WorkoutsView() {
   const startFromRecommendation = (template: WorkoutTemplate) => {
     startFromTemplate(template);
     setStartedFromRecommendation(true);
+  };
+
+  // Personal-path "התחל מההמלצה" → resolve the recommended template by id and run
+  // the exact same recommended-start flow as the recommendation card. No-op if the
+  // template vanished between derivation and click (defensive).
+  const startRecommendationById = (templateId: string) => {
+    const template = templates.find((t) => t.id === templateId);
+    if (template) startFromRecommendation(template);
+  };
+
+  // Personal-path "חזור להמלצה" → smooth-scroll the recommendation card into view.
+  const backToRecommendation = () => {
+    if (typeof document !== "undefined") {
+      document
+        .getElementById("workout-recommendation")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   // Resume the auto-saved draft: open the builder seeded from it, in resume mode.
@@ -387,13 +415,36 @@ export function WorkoutsView() {
           {/* Workout recommendation — sits below the command area and above the
               templates list, so a returning user with a profile is guided to a
               good starting template. It never outranks the draft restore card
-              above (which stays the strongest action when a draft exists). */}
-          <WorkoutRecommendationCard
-            result={recommendation}
-            templates={templates}
-            onStartTemplate={startFromRecommendation}
-            onCreateTemplate={() => setEditingTemplate("new")}
-          />
+              above (which stays the strongest action when a draft exists). The
+              id anchors the personal-path card's "חזור להמלצה" scroll. */}
+          <div id="workout-recommendation" className="scroll-mt-4">
+            <WorkoutRecommendationCard
+              result={recommendation}
+              templates={templates}
+              onStartTemplate={startFromRecommendation}
+              onCreateTemplate={() => setEditingTemplate("new")}
+            />
+          </div>
+
+          {/* Personal Path V1 — a compact, calm "next step" card connecting the
+              profile, recommendation and saved history. Placed directly under the
+              recommendation card (and below the draft-restore card + command
+              center), so it guides without overpowering the stronger actions.
+              On /workouts the no-profile / incomplete states are intentionally
+              deferred to the recommendation card directly above (which already
+              owns that exact "fill / complete your profile" prompt), so the hub
+              never shows two near-identical profile cards. The card itself still
+              implements those states for a future placement that has no
+              recommendation card (e.g. /progress) — see docs/PERSONAL_PATH_V1.md. */}
+          {(pathState.kind === "ready-to-start" ||
+            pathState.kind === "in-progress") && (
+            <PersonalPathCard
+              state={pathState}
+              onStartAnother={() => openBuilder(null)}
+              onStartRecommendation={startRecommendationById}
+              onBackToRecommendation={backToRecommendation}
+            />
+          )}
 
           {/* Templates are the main content of the hub — saved plans you start
               from in one tap. Kept directly under the command area so the page
