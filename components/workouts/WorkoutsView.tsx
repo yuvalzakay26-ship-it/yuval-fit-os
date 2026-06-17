@@ -63,6 +63,11 @@ export function WorkoutsView() {
     () => searchParams.get("new") === "1",
   );
   const [builderSeed, setBuilderSeed] = useState<BuilderSeed | null>(null);
+  // Display-only origin hint for the builder hero ("מתאמן לפי: …") — the template
+  // name when the session was started from a saved/recommended template, else
+  // null (a free workout / resumed draft has no single source template). Pure UI;
+  // never persisted, never part of any schema.
+  const [builderSource, setBuilderSource] = useState<string | null>(null);
   // True only when the builder was opened by *restoring* the auto-saved draft,
   // so it can resume the existing draft slot instead of treating it as a
   // conflict. Reset on every other open and on close.
@@ -100,8 +105,9 @@ export function WorkoutsView() {
   // so two strong primaries never compete for "what do I do now?".
   const hasActiveDraft = hasMeaningfulWorkoutDraft(draft);
 
-  const openBuilder = (seed: BuilderSeed | null) => {
+  const openBuilder = (seed: BuilderSeed | null, source: string | null = null) => {
     setBuilderSeed(seed);
+    setBuilderSource(source);
     setResumingDraft(false);
     setEditingTemplate(null);
     setStartedFromRecommendation(false);
@@ -111,6 +117,7 @@ export function WorkoutsView() {
   const closeBuilder = () => {
     setBuilding(false);
     setBuilderSeed(null);
+    setBuilderSource(null);
     setResumingDraft(false);
     setStartedFromRecommendation(false);
   };
@@ -127,6 +134,7 @@ export function WorkoutsView() {
     const current = getActiveWorkoutDraft();
     if (!current) return;
     setBuilderSeed(fromActiveWorkoutDraft(current));
+    setBuilderSource(null);
     setResumingDraft(true);
     setEditingTemplate(null);
     setBuilding(true);
@@ -156,7 +164,7 @@ export function WorkoutsView() {
           : emptySets(template.defaultSetCount ?? 3);
         return { exerciseId, sets };
       });
-    openBuilder({ title: template.title, entries });
+    openBuilder({ title: template.title, entries }, template.title);
   };
 
   const duplicateLastWorkout = () => {
@@ -207,6 +215,7 @@ export function WorkoutsView() {
           <WorkoutBuilder
             initial={builderSeed}
             resumed={resumingDraft}
+            sourceLabel={builderSource}
             onSaved={closeBuilder}
             onCancel={closeBuilder}
           />

@@ -4,7 +4,48 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: **Workout Recommendation V1.1 — Recommendation Guidance Polish**.
+> Last reviewed: **Active Workout UX Polish — Phase 1**. A **UX / copy / layout**
+> clarity pass on the active-workout builder
+> ([`WorkoutBuilder`](../components/workouts/WorkoutBuilder.tsx)) so that after a
+> user starts a session it reads as *"you are inside an active workout — here are
+> your exercises, log your sets, finish when ready, your draft is safe."*
+> **Presentation only — no** schema, storage-key, start-from-template,
+> recommendation, calculation or save-semantics change. The hero keeps its pulsing
+> **"אימון פעיל"** eyebrow and now adds a **display-only "מתאמן לפי: {templateName}"**
+> origin line when the session was started from a saved/recommended template
+> (driven by a new `sourceLabel` prop on the builder, set from `template.title` in
+> [`WorkoutsView`](../components/workouts/WorkoutsView.tsx) `startFromTemplate`;
+> **null** for a free workout / resumed draft — it is rendered only, never written
+> to `entries`/draft/history and never touches the editable title). A calm,
+> action-oriented helper sits under the title (*"התחל בבחירת תרגיל, ואז הוסף סטים
+> ומשקלים."* with no exercises → *"הוסף סטים, עדכן משקלים וסיים כשאתה מוכן."* once
+> there are exercises). The exercise list now opens with a clear **"תרגילי האימון
+> ({count})"** section heading from the **first** exercise (the collapse-all /
+> reorder controls stay gated to **2+**). Set inputs gained a faint **`0`**
+> placeholder + `aria-label`s (data meaning unchanged — empty still = 0). The
+> in-hero auto-save line now reads **"נשמר אוטומטית כטיוטה"** to make the
+> draft-safety explicit. The recommendation-start banner
+> (`data-testid="recommendation-start-notice"`, *"מעולה, התחלת מהתבנית שהומלצה…"*)
+> is **preserved** and still local-only/dismissible; it shows only for a
+> recommended start, never a plain template start. Finish/save (**"סיים ושמור
+> אימון"** primary, **"ביטול"** secondary, confirm-gated leave with **"מחק טיוטה
+> וצא"**) is unchanged — ending a workout was **not** made easier and no
+> confirmation removed. **Unchanged:** `WorkoutSession`/`WorkoutExerciseEntry`/
+> `SetEntry` + `addWorkout` payload, `WorkoutTemplate`, the active-draft schema/key
+> `yfos:active-workout-draft:v1` + `yfos:workouts`, auto-save/restore + conflict
+> prompt, reorder, collapsible cards, exercise picker, no-duplicate rule,
+> `lib/workout-recommendation.ts`, profile/nutrition/water/supplement/protein/gym
+> schemas, backup/restore, auth/beta/guest/admin/Supabase, AI routes, legal pages;
+> no new dependencies; localStorage-only. e2e: new
+> [`active-workout-ux.spec.ts`](../e2e/active-workout-ux.spec.ts) (template start
+> shows "אימון פעיל" + "מתאמן לפי" + "תרגילי האימון"; free workout shows the active
+> header but no origin line; add-set works; finish/save records + returns to the
+> hub; draft restore works; no horizontal overflow at 360px). Validation:
+> `npm run lint` ✓ (0 errors, 1 pre-existing warning), `npm run build` ✓
+> (TypeScript clean), `npm run test:e2e` **122 green**. See
+> [`ACTIVE_WORKOUT_UX_POLISH.md`](ACTIVE_WORKOUT_UX_POLISH.md).
+>
+> Prior: **Workout Recommendation V1.1 — Recommendation Guidance Polish**.
 > A **UX / copy / presentation** pass on top of V1 — **no** logic, schema or flow
 > change. The recommendation now explains itself: the card on `/workouts` keeps
 > header *"המלצת התחלה לפי הפרופיל שלך"* + subtitle *"מצאנו תבנית שיכולה להתאים
@@ -862,7 +903,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | --- | --- | --- |
 | Today dashboard | Daily command center: greeting, completion ring, deterministic next-action card, status strip, module cards (workout, macros, water, supplements). Optional-aware (supplements never block the day) | `components/today/TodayView.tsx`, `lib/today.ts`, `docs/TODAY_QUICK_START.md` |
 | System Hub ("מרכז מערכת") | Premium `/more` hub gathering all secondary tools into module-coloured categories (pure navigation) | `components/more/SystemHubView.tsx`, `docs/NAVIGATION_SYSTEM_HUB.md` |
-| Workouts | Log sessions, build from templates, view history; the active session (builder) is a premium muscle-aware "live workout" experience with an explicit drag-only exercise reorder mode (Pointer-Events drag + keyboard, no data loss) and **collapsible exercise cards** (per-card chevron + `מזער הכל`/`פתח הכל`, visual-only) to tame long sessions | `components/workouts/*`, `docs/ACTIVE_WORKOUT_SESSION_UX.md`, `docs/ACTIVE_WORKOUT_REORDER.md`, `docs/ACTIVE_WORKOUT_COLLAPSIBLE_CARDS.md` |
+| Workouts | Log sessions, build from templates, view history; the active session (builder) is a premium muscle-aware "live workout" experience with a clear **"אימון פעיל"** header (+ display-only `מתאמן לפי: {template}` origin line, action helper, `תרגילי האימון` section label, draft-safety copy), an explicit drag-only exercise reorder mode (Pointer-Events drag + keyboard, no data loss) and **collapsible exercise cards** (per-card chevron + `מזער הכל`/`פתח הכל`, visual-only) to tame long sessions | `components/workouts/*`, `docs/ACTIVE_WORKOUT_SESSION_UX.md`, `docs/ACTIVE_WORKOUT_UX_POLISH.md`, `docs/ACTIVE_WORKOUT_REORDER.md`, `docs/ACTIVE_WORKOUT_COLLAPSIBLE_CARDS.md` |
 | Exercise Library | 133 exercises, images, instructions, external demo videos | `components/exercises/*`, `lib/seed-exercises.ts` |
 | Nutrition | Daily food logs + macro totals, plus **quick reuse**: an `אכלת לאחרונה` row and per-entry `הוסף שוב` that re-log a previous food in one tap (derived from logs, no new storage). Crossing the **configured protein goal** via any add surface fires an app-wide celebration overlay | `components/nutrition/NutritionView.tsx`, `lib/nutrition-reuse.ts`, `lib/protein-goal-events.ts`, `docs/NUTRITION_QUICK_REUSE.md`, `docs/PROTEIN_GOAL_CELEBRATION.md` |
 | Food Library | Visual catalogue of foods to log from | `components/nutrition/FoodLibrary*`, `lib/food-library.ts` |

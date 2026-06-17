@@ -87,6 +87,7 @@ export interface BuilderSeed {
 export function WorkoutBuilder({
   initial,
   resumed = false,
+  sourceLabel = null,
   onSaved,
   onCancel,
 }: {
@@ -97,6 +98,14 @@ export function WorkoutBuilder({
    * auto-save resumes immediately, re-writing the same draft slot.
    */
   resumed?: boolean;
+  /**
+   * Display-only origin hint — the template name when this session was started
+   * from a saved/recommended template. Shown in the hero as "מתאמן לפי: …" so the
+   * user knows what they are training by. Pure presentation: it carries no schema
+   * field, is never persisted into the draft or history, and does not affect the
+   * editable title (which the user may freely rename).
+   */
+  sourceLabel?: string | null;
   onSaved: (session: WorkoutSession) => void;
   onCancel: () => void;
 }) {
@@ -439,32 +448,42 @@ export function WorkoutBuilder({
         />
 
         <div className="relative space-y-4">
-          {/* Eyebrow: a live pulse dot says "you're now training". */}
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2.5 w-2.5">
-              <span
-                className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
-                style={{ background: "var(--mg)" }}
-              />
-              <span
-                className="relative inline-flex h-2.5 w-2.5 rounded-full"
-                style={{ background: "var(--mg)" }}
-              />
-            </span>
-            <span
-              className="text-[11px] font-bold uppercase tracking-[0.08em]"
-              style={{ color: "var(--mg)" }}
-            >
-              אימון פעיל
-            </span>
-            {muscleGroups.length > 0 && (
-              <span className="truncate text-[11px] font-semibold text-faint">
-                · {eyebrow}
+          {/* Eyebrow: a live pulse dot says "you're now training", with an
+              optional "מתאמן לפי: …" origin line when started from a template. */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span
+                  className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
+                  style={{ background: "var(--mg)" }}
+                />
+                <span
+                  className="relative inline-flex h-2.5 w-2.5 rounded-full"
+                  style={{ background: "var(--mg)" }}
+                />
               </span>
+              <span
+                className="text-[11px] font-bold uppercase tracking-[0.08em]"
+                style={{ color: "var(--mg)" }}
+              >
+                אימון פעיל
+              </span>
+              {muscleGroups.length > 0 && (
+                <span className="truncate text-[11px] font-semibold text-faint">
+                  · {eyebrow}
+                </span>
+              )}
+            </div>
+            {sourceLabel && (
+              <p className="text-[12.5px] leading-snug text-muted">
+                מתאמן לפי:{" "}
+                <span className="font-bold text-foreground">{sourceLabel}</span>
+              </p>
             )}
           </div>
 
-          {/* Editable workout title — the headline of the session. */}
+          {/* Editable workout title — the headline of the session — with a calm,
+              action-oriented helper so it's clear what to do next. */}
           <div>
             <Label htmlFor="workout-title">כותרת האימון</Label>
             <Input
@@ -474,6 +493,11 @@ export function WorkoutBuilder({
               placeholder="לדוגמה: אימון גב ויד אחורית"
               className="text-[17px] font-bold"
             />
+            <p className="mt-1.5 text-[12px] leading-relaxed text-muted">
+              {entries.length === 0
+                ? "התחל בבחירת תרגיל, ואז הוסף סטים ומשקלים."
+                : "הוסף סטים, עדכן משקלים וסיים כשאתה מוכן."}
+            </p>
           </div>
 
           {/* Calm auto-save feedback — appears once the draft has been saved and
@@ -487,7 +511,7 @@ export function WorkoutBuilder({
               >
                 <CheckCircleIcon className="h-3.5 w-3.5" />
               </span>
-              <span>נשמר אוטומטית</span>
+              <span>נשמר אוטומטית כטיוטה</span>
               {savedTime && (
                 <span className="text-faint/70 tabular-nums">· {savedTime}</span>
               )}
@@ -538,11 +562,17 @@ export function WorkoutBuilder({
           with 2+ exercises. Toggles a dedicated reorder mode (see below) rather
           than making every card draggable all the time, so normal scrolling and
           set-input taps are never hijacked by a stray drag on mobile. */}
-      {entries.length >= 2 && (
+      {entries.length >= 1 && (
         <div className="flex flex-wrap items-center justify-between gap-2 px-0.5 pt-1">
-          <span className="text-[12.5px] font-bold text-muted">
-            <span className="tabular-nums">{entries.length}</span> תרגילים
-          </span>
+          <h2 className="text-[13px] font-extrabold text-foreground">
+            תרגילי האימון{" "}
+            <span className="font-bold tabular-nums text-muted">
+              ({entries.length})
+            </span>
+          </h2>
+          {/* The collapse + reorder controls are only useful with 2+ exercises;
+              with a single exercise the header stands alone. */}
+          {entries.length >= 2 && (
           <div className="flex items-center gap-2">
             {/* Collapse all / expand all — a small secondary control, only
                 outside reorder mode (reorder has its own focused compact list).
@@ -576,6 +606,7 @@ export function WorkoutBuilder({
               {reordering ? "סיום סידור" : "סדר תרגילים"}
             </button>
           </div>
+          )}
         </div>
       )}
 
@@ -757,6 +788,8 @@ export function WorkoutBuilder({
                       type="number"
                       inputMode="decimal"
                       min={0}
+                      placeholder="0"
+                      aria-label={`משקל (ק"ג), סט ${set.setNumber}`}
                       className="h-10 bg-surface px-2 text-center text-[15px] font-semibold"
                       value={set.weightKg || ""}
                       onChange={(e) =>
@@ -769,6 +802,8 @@ export function WorkoutBuilder({
                       type="number"
                       inputMode="numeric"
                       min={0}
+                      placeholder="0"
+                      aria-label={`חזרות, סט ${set.setNumber}`}
                       className="h-10 bg-surface px-2 text-center text-[15px] font-semibold"
                       value={set.reps || ""}
                       onChange={(e) =>
