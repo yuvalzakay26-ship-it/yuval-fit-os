@@ -113,7 +113,19 @@ pre-existing warning), `npm run test:e2e` — see [§11](#11-validation--test-re
 
 ## 2. Code duplication audit
 
-### 2.1 Celebration overlays — **highest-ROI consolidation**
+### 2.1 Celebration overlays — **highest-ROI consolidation** ✅ APPLIED (Phase 2A)
+
+> **Status: COMPLETED in System Optimization Phase 2A (2026-06-17).** Extracted
+> `components/celebrations/CelebrationOverlay.tsx` — exporting the
+> `useCelebrationTrigger(eventName, durationMs, onTrigger?)` state-machine hook
+> and the `<CelebrationOverlay>` non-modal shell (CSS classes derived from one
+> `variant` prop). The three overlay files are now thin wrappers that keep their
+> exact events, durations, decorations, copy, `data-*-celebration` hooks, and the
+> supplement's per-event name. **No** behaviour/copy/timing/trigger/key/event
+> changes; `lib/*-events.ts` untouched. Validation: lint ✓, build ✓, e2e **100
+> green** (all celebration specs included). See
+> [`SYSTEM_OPTIMIZATION_PHASE_2A.md`](SYSTEM_OPTIMIZATION_PHASE_2A.md). The
+> original analysis is retained below for reference.
 
 `WaterGoalCelebrationOverlay.tsx`, `ProteinGoalCelebrationOverlay.tsx`, and
 `SupplementTakenCelebrationOverlay.tsx` are ~80–85% identical. All three share the
@@ -132,7 +144,7 @@ Only the event name, duration (1.3–1.5s), copy, and decorative shapes differ.
 |---|---|
 | Files | `components/water/WaterGoalCelebrationOverlay.tsx`, `components/nutrition/ProteinGoalCelebrationOverlay.tsx`, `components/supplements/SupplementTakenCelebrationOverlay.tsx` |
 | Duplication type | Structural copy-paste (~70 boilerplate lines × 3) |
-| Suggested helper | `components/ui/CelebrationOverlay.tsx` accepting `{ eventName, durationMs, parseDetail?, renderContent(runId) }` |
+| Suggested helper | `components/ui/CelebrationOverlay.tsx` accepting `{ eventName, durationMs, parseDetail?, renderContent(runId) }` *(as built in Phase 2A: `components/celebrations/CelebrationOverlay.tsx` — a `useCelebrationTrigger(eventName, durationMs, onTrigger?)` hook + a presentational `<CelebrationOverlay>` shell)* |
 | Risk | **low** — independent, never co-mounted; behaviour identical if event dispatch/teardown preserved |
 | Benefit | ~150 fewer lines; one place for timer/a11y; trivial to add a 4th celebration |
 
@@ -379,7 +391,7 @@ No visual changes in this phase — recommendations only.
 
 | Title | Files | Benefit | Risk | Test requirements |
 |---|---|---|---|---|
-| Extract `CelebrationOverlay` primitive | new `components/ui/CelebrationOverlay.tsx`; 3 overlay files | −~150 LOC; single a11y/timer source | low | Re-run `protein-`/`supplement-`/`water-` celebration specs; verify each event still fires + animates |
+| ✅ **DONE (Phase 2A)** — Extract `CelebrationOverlay` primitive | new `components/celebrations/CelebrationOverlay.tsx`; 3 overlay files | −~150 LOC; single a11y/timer source | low | Re-run `protein-`/`supplement-`/`water-` celebration specs; verify each event still fires + animates → **100 green** |
 | Extract `e2e/fixtures.ts` | new `e2e/fixtures.ts`; 8 specs | Test maintainability + schema resilience | low | Full e2e suite green (no behaviour change) |
 | Replace `waitForTimeout(150)` with a poll | `e2e/scroll-lock.spec.ts` | De-flake | low | Scroll-lock spec green |
 | Docs: archive completed plan/process docs + mark deprecated | `docs/` (+ new `docs/archive/`) | Less clutter; clearer canon | low | None (docs only) |

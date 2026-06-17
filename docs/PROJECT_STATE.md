@@ -4,7 +4,34 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 4.5 (**Scroll-lock cleanup bugfix** — a **bugfix-only**
+> Last reviewed: **System Optimization Phase 2A — CelebrationOverlay extraction**
+> (a **safe refactor only** — **no** change to runtime behaviour, copy, triggers,
+> timing, storage/session keys, event names, or celebration business logic). The
+> three near-identical celebration overlays (water goal, protein goal, supplement
+> taken) shared an ~85% copy-pasted skeleton: the one-shot `active`/`runId`
+> state machine, a `window` event listener + `setTimeout` teardown, the
+> `pointer-events-none`/`aria-hidden`/high-z-index fixed shell, the glow/sweep/
+> center-badge layout, and a separate `role="status"` SR announcement. That
+> shared skeleton now lives in one primitive,
+> [`components/celebrations/CelebrationOverlay.tsx`](../components/celebrations/CelebrationOverlay.tsx),
+> which exports `useCelebrationTrigger(eventName, durationMs, onTrigger?)` (the
+> state machine) and `<CelebrationOverlay>` (the non-modal visual shell; CSS
+> classes derived from one `variant` prop — `water-celebrate` →
+> `water-celebrate-{glow,sweep,badge}`). The three components
+> (`WaterGoalCelebrationOverlay`, `ProteinGoalCelebrationOverlay`,
+> `SupplementTakenCelebrationOverlay`) stay as thin wrappers, each keeping its own
+> event subscription, exact duration (1.5s / 1.4s / 1.3s), decorative particles,
+> icon, badge pill, Hebrew copy, `data-*-celebration` attribute (the e2e hooks),
+> and — for supplements — the per-event name read from the event detail. Their
+> public exports and `AppShell` mount points are unchanged; `lib/water-goal-events.ts`,
+> `lib/protein-goal-events.ts`, and `lib/supplement-events.ts` were **not** touched.
+> Net ~150 fewer lines and a single source for the timer + a11y behaviour.
+> Validation: `npm run lint` ✓ (0 errors, 1 pre-existing warning), `npm run build`
+> ✓ (TypeScript clean, unchanged route table), `npm run test:e2e` **100 green** —
+> including all water/protein/supplement celebration specs. See
+> [`SYSTEM_OPTIMIZATION_AUDIT_PHASE_1.md`](SYSTEM_OPTIMIZATION_AUDIT_PHASE_1.md)
+> §2.1 (P1, marked applied).
+> Prior: Phase 4.5 (**Scroll-lock cleanup bugfix** — a **bugfix-only**
 > change: **no** change to the profile schema/fields, `yfos:personal-profile:v1`,
 > localStorage/sessionStorage keys, backup/restore, the beta/profile onboarding
 > order, the centered-modal/wizard UX, or required-answer validation. **Root
