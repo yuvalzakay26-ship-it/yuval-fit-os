@@ -10,6 +10,7 @@ import {
   getExerciseById,
 } from "@/lib/seed-exercises";
 import { cn } from "@/lib/utils";
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 import { Input } from "@/components/ui/Field";
 import {
   CheckIcon,
@@ -81,18 +82,17 @@ export function ExercisePicker({
   const [query, setQuery] = useState("");
 
   // The picker is mounted only while open (see WorkoutBuilder), so every open
-  // is a fresh mount with default filter/query — no stale state to reset. This
-  // effect only manages side effects: background scroll lock + Escape to close.
+  // is a fresh mount with default filter/query — no stale state to reset.
+  // Background scroll lock goes through the shared counter-based hook; this
+  // effect only wires Escape-to-close.
+  useBodyScrollLock();
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKeyDown);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = prevOverflow;
     };
   }, [onClose]);
 

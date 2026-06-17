@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import type { ExerciseVideo } from "@/lib/fitness-types";
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 import { XIcon } from "@/components/ui/icons";
 import { ExerciseVideoButton } from "./ExerciseVideoButton";
 
@@ -28,18 +29,18 @@ export function ExerciseImageViewer({
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
 
+  // Background scroll lock goes through the shared counter-based hook (active
+  // only while open); this effect wires Escape-to-close and initial focus.
+  useBodyScrollLock(open);
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKeyDown);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     closeRef.current?.focus();
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = prevOverflow;
     };
   }, [open, onClose]);
 

@@ -13,6 +13,7 @@ import {
   useBetaSession,
 } from "@/lib/beta-access";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 import {
   enterGuestSession,
   exitGuestSession,
@@ -161,15 +162,11 @@ function BetaGateOverlay() {
 
 /* ------------------------------ Scroll lock ----------------------------- */
 // A tiny helper so each overlay screen locks the body while mounted. Kept as a
-// hook used by the overlay screens (not the always-null "allowed" branch).
+// hook used by the overlay screens (not the always-null "allowed" branch). It
+// delegates to the shared counter-based lock so stacking with the beta welcome
+// notice / profile prompt can never leave the body wedged at overflow: hidden.
 function useLockBodyScroll() {
-  useEffect(() => {
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, []);
+  useBodyScrollLock();
 }
 
 /* ------------------------------ Loading screen -------------------------- */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId } from "react";
+import { useId } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { isPublicInfoPath } from "@/lib/public-paths";
@@ -9,6 +9,7 @@ import {
   useBetaWelcomeSeen,
 } from "@/lib/beta-welcome";
 import { useAppAccessGranted } from "@/lib/app-access";
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 import {
   BrandMark,
   ChatIcon,
@@ -68,14 +69,9 @@ function NoticeScreen() {
   const titleId = useId();
   const descId = useId();
 
-  // Lock background scroll while the welcome notice is up.
-  useEffect(() => {
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, []);
+  // Lock background scroll while the welcome notice is up (shared counter-based
+  // lock so the handoff to the profile onboarding prompt never leaks).
+  useBodyScrollLock();
 
   return (
     <div

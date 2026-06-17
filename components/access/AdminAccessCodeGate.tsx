@@ -6,6 +6,7 @@ import {
   isAdminCodeValid,
   useAdminAccessGranted,
 } from "@/lib/admin-access";
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 import {
   EyeIcon,
   EyeOffIcon,
@@ -56,13 +57,7 @@ function GateScreen() {
   const [reveal, setReveal] = useState(false);
 
   // Lock body scroll while the gate is visible; restore on unmount (grant).
-  useEffect(() => {
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, []);
+  useBodyScrollLock();
 
   // Auto-focus the code field once mounted (safe — no layout shift on mobile
   // since the gate already owns the full viewport).

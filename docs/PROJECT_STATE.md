@@ -4,7 +4,29 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: Phase 4.4 (**Profile Wizard V4 — required core answers**: a
+> Last reviewed: Phase 4.5 (**Scroll-lock cleanup bugfix** — a **bugfix-only**
+> change: **no** change to the profile schema/fields, `yfos:personal-profile:v1`,
+> localStorage/sessionStorage keys, backup/restore, the beta/profile onboarding
+> order, the centered-modal/wizard UX, or required-answer validation. **Root
+> cause:** every full-screen overlay (beta auth gate, beta welcome notice,
+> profile onboarding prompt, exercise picker, exercise image viewer, legacy admin
+> gate) independently captured/restored `document.body.style.overflow`. When two
+> overlapped — e.g. the beta welcome notice handing off to the profile onboarding
+> prompt, or the prompt's "בוא נתחיל" dismissing **and** routing in one action —
+> the later overlay captured the earlier one's `"hidden"` as its baseline and
+> restored **that** on unmount, leaving `<body>` permanently `overflow: hidden`.
+> The app still tapped and routed but **could not scroll on any page**. **Fix:** a
+> single shared **counter-based** lock in
+> [`lib/use-body-scroll-lock.ts`](../lib/use-body-scroll-lock.ts) (`useBodyScrollLock(active?)`):
+> the first lock captures the true baseline and sets `hidden`, only the last
+> release restores it — so no overlay can leak another's `"hidden"`, and cleanup
+> runs on unmount even when navigation fires immediately after a CTA. All six
+> overlays now use this hook (the per-component capture/restore effects were
+> removed). New e2e `scroll-lock.spec.ts` covers: "לא עכשיו" restores scroll,
+> "בוא נתחיל" → `/training-profile` restores scroll, and completing+saving the
+> wizard then navigating to long pages (`/nutrition`, `/workouts`, `/more`) keeps
+> the body scrollable on a 390px phone. Full suite **100 green**.)
+> Prior: Phase 4.4 (**Profile Wizard V4 — required core answers**: a
 > **validation/UX-only** change to `components/profile/TrainingProfileView.tsx` —
 > **no** change to the profile schema/fields/meanings, `yfos:personal-profile:v1`,
 > the sanitizer, backup/restore, the onboarding session gating, sessionStorage keys,

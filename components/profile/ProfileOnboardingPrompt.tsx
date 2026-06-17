@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId } from "react";
+import { useId } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock";
 import { isPublicInfoPath } from "@/lib/public-paths";
 import { useAppAccessGranted } from "@/lib/app-access";
 import { useWelcomeSeen } from "@/lib/welcome";
@@ -74,14 +75,9 @@ function PromptScreen() {
   const titleId = useId();
   const descId = useId();
 
-  // Lock background scroll while the prompt is up (mirrors the welcome notice).
-  useEffect(() => {
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, []);
+  // Lock background scroll while the prompt is up (shared counter-based lock so
+  // the handoff from the beta welcome notice never leaves the body wedged).
+  useBodyScrollLock();
 
   // Both actions remember the choice for this session so the prompt steps aside;
   // it may return on a future app entry while no profile exists, and the profile
