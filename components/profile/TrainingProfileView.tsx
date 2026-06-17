@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -12,6 +13,7 @@ import {
   CalendarIcon,
   ChartIcon,
   CheckIcon,
+  ChevronIcon,
   ClockIcon,
   DumbbellIcon,
   HeartIcon,
@@ -22,6 +24,8 @@ import {
   TrashIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { useWorkoutTemplates } from "@/lib/fitness-store";
+import { getWorkoutRecommendation } from "@/lib/workout-recommendation";
 import {
   ADAPTATION_OPTIONS,
   DURATION_OPTIONS,
@@ -461,6 +465,79 @@ function ProfileRows({
   );
 }
 
+/**
+ * Compact recommendation block shown below the saved profile summary. Reuses the
+ * shared deterministic logic (lib/workout-recommendation.ts) but renders a small,
+ * link-only surface: starting a template lives on /workouts (where the start flow
+ * is owned), so here we only name the suggested template and link across. Reading
+ * templates via the existing workouts store hook is safe + reactive — no new
+ * cross-store wiring or mutation. Renders only the "ok" / "no-templates" states;
+ * an incomplete profile is already invited to edit by the page itself.
+ */
+function ProfileRecommendationBlock({ profile }: { profile: TrainingProfile }) {
+  const templates = useWorkoutTemplates();
+  const result = useMemo(
+    () => getWorkoutRecommendation(profile, templates),
+    [profile, templates],
+  );
+
+  if (result.status === "ok") {
+    const { recommendation } = result;
+    return (
+      <Link
+        href="/workouts"
+        className="tap block"
+        aria-label={`המלצת התחלה: ${recommendation.templateName} — פתח באימונים`}
+      >
+        <Card className="sheen relative flex items-start gap-3 overflow-hidden">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-soft)] text-accent">
+            <SparkIcon className="h-[22px] w-[22px]" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-accent">
+              המלצת התחלה לפי הפרופיל שלך
+            </p>
+            <p className="mt-0.5 text-[15px] font-extrabold leading-tight text-foreground">
+              {recommendation.templateName}
+            </p>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted">
+              {recommendation.explanation}
+            </p>
+            <span className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-bold text-accent">
+              פתח באימונים
+              <ChevronIcon className="h-3.5 w-3.5 rotate-180" />
+            </span>
+          </div>
+        </Card>
+      </Link>
+    );
+  }
+
+  if (result.status === "no-templates") {
+    return (
+      <Link href="/workouts" className="tap block" aria-label="צור תבנית אימון">
+        <Card className="flex items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--accent-soft)] text-accent">
+            <TargetIcon className="h-[22px] w-[22px]" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-bold leading-tight text-foreground">
+              אין עדיין תבניות להמלצה
+            </p>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted">
+              צור תבנית אימון, ובהמשך נוכל להמליץ על התבנית שהכי מתאימה לפרופיל
+              שלך.
+            </p>
+          </div>
+          <ChevronIcon className="h-4 w-4 shrink-0 rotate-180 text-faint" />
+        </Card>
+      </Link>
+    );
+  }
+
+  return null;
+}
+
 function SavedSummary({
   profile,
   onEdit,
@@ -505,6 +582,8 @@ function SavedSummary({
         trainingPreference={profile.trainingPreference}
         guidanceStyle={profile.guidanceStyle}
       />
+
+      <ProfileRecommendationBlock profile={profile} />
 
       <Button onClick={onEdit} className="w-full">
         <PencilIcon className="h-[18px] w-[18px]" /> ערוך פרופיל

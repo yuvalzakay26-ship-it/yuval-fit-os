@@ -4,7 +4,51 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: **System Optimization Phase 2C — Docs archive / merge pass**
+> Last reviewed: **Workout Recommendation V1 — recommend an existing template
+> from the profile**. The first time the saved Personal Training Profile is used
+> to *guide* the user (it was previously collect-and-display only). A new
+> **deterministic, local-first, NO-AI** layer maps the profile onto **one existing
+> workout template** as a good starting point — it is **not** a plan generator,
+> **never** creates a template or exercises, and **never** mutates anything. New
+> pure logic [`lib/workout-recommendation.ts`](../lib/workout-recommendation.ts)
+> (`getWorkoutRecommendation(profile, templates)`) returns a discriminated result:
+> `no-profile` / `incomplete-profile` / `no-templates` / `ok` (with
+> `templateId · templateName · confidence · reasons · explanation`). It scores
+> existing templates on **safe signals only** — goal · location · weeklyFrequency ·
+> workoutDuration · experience · equipment · trainingPreference — using only
+> existing template fields (`title`, `muscleGroups` breadth/full-body, and
+> equipment derived read-only from the seed exercise library). **`age` / `heightCm`
+> / `weightKg` / `adaptation`(sex) are never read for scoring** — no BMI, no
+> body-shape labels, no medical/diet judgment. Ties resolve deterministically
+> (highest score → prefer a broad/full-body template → earliest in order);
+> confidence is graded honestly (high needs ≥3 matching signals + a clear margin)
+> with careful Hebrew copy (no "חובה"/"הכי טובה"/"שורף שומן"/"חיטוב"/"BMI"/medical
+> claims). New presentational card
+> [`components/workouts/WorkoutRecommendationCard.tsx`](../components/workouts/WorkoutRecommendationCard.tsx)
+> renders all four states on `/workouts` **below the command center and above the
+> templates list** (and never above the active-draft restore card, which stays the
+> strongest first action): State 1 quiet "מלא פרופיל אימון" CTA, State 2 "השלם
+> פרופיל" CTA, State 3 "צור תבנית חדשה" fallback, State 4 the recommendation —
+> existing template name + explanation + 2–4 reason chips + primary **"התחל אימון"**
+> (existing start-from-template flow, never auto-starts) + secondary **"ערוך
+> פרופיל"**. [`WorkoutsView`](../components/workouts/WorkoutsView.tsx) reads the
+> profile + templates and renders the card; a **compact, link-only** block was
+> added to the [`TrainingProfileView`](../components/profile/TrainingProfileView.tsx)
+> saved summary (reads templates via the existing workouts store hook — no new
+> cross-store wiring — and links to `/workouts` where the start flow lives).
+> **No** change to `yfos:personal-profile:v1` / profile schema / sanitizer / wizard
+> validation, the `WorkoutTemplate` schema, start-from-template, active-draft
+> behaviour, backup/restore, beta welcome, profile onboarding gating, gym /
+> nutrition / water / supplement / protein schemas + celebrations,
+> auth/beta/guest/admin/Supabase, AI routes, or public legal pages; no new
+> dependencies; localStorage-only. e2e: new `e2e/workout-recommendation.spec.ts`
+> (no-profile CTA; incomplete-profile CTA; recommendation names an existing
+> template; "התחל אימון" starts it; "ערוך פרופיל" → `/training-profile`;
+> no-templates fallback; profile-summary compact block) — full suite **107 green**.
+> Validation: `npm run lint` ✓ (0 errors, 1 pre-existing warning), `npm run build`
+> ✓ (TypeScript clean), `npm run test:e2e` **107 green**. See
+> [`WORKOUT_RECOMMENDATION_V1.md`](WORKOUT_RECOMMENDATION_V1.md).
+> Prior: **System Optimization Phase 2C — Docs archive / merge pass**
 > (a **documentation-only** change — **no** change to runtime app code, components,
 > lib, schemas, storage/session keys, backup/restore, auth/beta/guest/admin/
 > Supabase, AI routes, or any product behaviour; **no** tests changed). Four
@@ -726,6 +770,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | Progress | Premium weekly insights screen: weekly hero, rule-based insight cards, 7-day activity trends, human empty states, and personal records — derived purely from existing local data (no AI) | `components/progress/*`, `lib/analytics.ts`, `lib/progress-insights.ts`, `docs/PROGRESS_INSIGHTS_UPGRADE.md` |
 | Gym Attendance | Local gym check-in / check-out: prominent Today card, live visit timer, weekly stats (visits, time, avg, last), rich visit history (entry/exit/duration + display-only linked-workout snapshot matched by local day), same-day re-entry guard. Tracks *being at the gym* — separate from workout logging. No GPS | `components/gym/*`, `lib/gym-attendance.ts`, `docs/GYM_CHECK_IN.md` |
 | Personal Training Profile | Optional, editable personal profile (goal, location, frequency, experience, duration, equipment multi-select, notes + V2 optional adaptation/age/height/weight/training-preference/guidance-style). Collect + display only — no auto-program, no medical/diet/BMI/body-shape logic. **V3 (UX): the entry prompt is a centered modal and `/training-profile` is a step-by-step wizard** (intro → one question per screen → summary/confirm, progress bar, next/back, save once on finish); an existing profile shows the saved summary and "ערוך פרופיל" reopens the wizard pre-filled. Never blocks the app. localStorage-only; included in Backup/Restore | `components/profile/TrainingProfileView.tsx`, `components/profile/ProfileOnboardingPrompt.tsx`, `lib/personal-profile.ts`, `lib/profile-onboarding.ts`, `lib/app-access.ts`, `docs/PERSONAL_PROFILE_V1.md` |
+| Workout Recommendation | Deterministic, local-first, NO-AI layer mapping the personal profile onto **one existing** workout template as a starting point. Scores existing templates on safe signals (goal/location/frequency/duration/experience/equipment/training-preference) using only existing fields; never reads body fields, never creates/mutates a template. Four states (no-profile / incomplete / no-templates / recommendation) on `/workouts` below the command center + a compact link block on the profile summary | `lib/workout-recommendation.ts`, `components/workouts/WorkoutRecommendationCard.tsx`, `docs/WORKOUT_RECOMMENDATION_V1.md` |
 | Settings | Premium "control center": appearance (light/dark only), daily goals, water shortcuts, data & storage (incl. a Backup & Restore card), access & privacy, separated sensitive actions, system info | `components/settings/SettingsView.tsx`, `docs/SETTINGS_CONTROL_CENTER.md` |
 | Backup & Restore | Local JSON export/import of all Fit OS data: Blob download (+ copy/paste fallback), validated import with counts preview + confirm, last-backup status. No backend/auth/cloud/encryption | `components/backup/BackupView.tsx`, `lib/backup.ts`, `docs/BACKUP_RESTORE.md` |
 | Learn (Knowledge Center) | Card-based Hebrew articles + protein calculator | `app/learn/*`, `lib/knowledge-content.ts`, `lib/protein.ts` |

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { WorkoutTemplate, WorkoutExerciseEntry } from "@/lib/fitness-types";
+import { usePersonalProfile } from "@/lib/personal-profile";
+import { getWorkoutRecommendation } from "@/lib/workout-recommendation";
 import {
   addTemplateFromSession,
   removeTemplate,
@@ -40,6 +42,7 @@ import { WorkoutHistory } from "./WorkoutHistory";
 import { TemplateCard } from "./TemplateCard";
 import { TemplateEditor } from "./TemplateEditor";
 import { DraftRestoreCard } from "./DraftRestoreCard";
+import { WorkoutRecommendationCard } from "./WorkoutRecommendationCard";
 
 function emptySets(count: number): WorkoutExerciseEntry["sets"] {
   return Array.from({ length: count }, (_, i) => ({
@@ -72,6 +75,16 @@ export function WorkoutsView() {
   // (null on the server, real value after hydration). See `lib/active-workout-draft.ts`.
   const draft = useActiveWorkoutDraft();
   const [discardOpen, setDiscardOpen] = useState(false);
+
+  // Workout Recommendation V1 — deterministic, local-only mapping of the saved
+  // personal profile onto one existing template. Reactive + SSR-safe (profile is
+  // null on the server / first hydration, so the card renders the no-profile CTA
+  // until the real value swaps in). See lib/workout-recommendation.ts.
+  const profile = usePersonalProfile();
+  const recommendation = useMemo(
+    () => getWorkoutRecommendation(profile, templates),
+    [profile, templates],
+  );
 
   // When a meaningful draft exists, the restore card up top is the primary path
   // ("המשך אימון"). The hero's start action then steps down to a secondary weight
@@ -260,6 +273,17 @@ export function WorkoutsView() {
               </div>
             </div>
           </Card>
+
+          {/* Workout recommendation — sits below the command area and above the
+              templates list, so a returning user with a profile is guided to a
+              good starting template. It never outranks the draft restore card
+              above (which stays the strongest action when a draft exists). */}
+          <WorkoutRecommendationCard
+            result={recommendation}
+            templates={templates}
+            onStartTemplate={startFromTemplate}
+            onCreateTemplate={() => setEditingTemplate("new")}
+          />
 
           {/* Templates are the main content of the hub — saved plans you start
               from in one tap. Kept directly under the command area so the page
