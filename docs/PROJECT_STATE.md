@@ -833,3 +833,28 @@ deliberately do **not** touch user data. Keep these concerns separate.
 
 These are directions, **not** current scope — none of the hard boundaries in §8
 change without an explicit new phase.
+
+## 10. Optimization Audit Phase 1
+
+- **Audit-only, no behaviour change.** Phase 1 of the System Optimization Audit ran
+  on baseline commit `2830e40`. It produced a report
+  ([`SYSTEM_OPTIMIZATION_AUDIT_PHASE_1.md`](SYSTEM_OPTIMIZATION_AUDIT_PHASE_1.md))
+  and **did not** touch runtime code, UI/UX, schemas, storage keys, auth, backup,
+  or data formats. Validation at baseline: `build` ✓, `lint` ✓ (0 errors, 1
+  pre-existing QA-script warning), `test:e2e` ✓ (**100 passed**).
+- **Headline findings:** **no P0/bug/safety issues.** Best safe wins (P1): extract a
+  shared `CelebrationOverlay` primitive (3 overlays ~85% identical), extract
+  `e2e/fixtures.ts` for duplicated test setup, and replace one `waitForTimeout` in
+  `scroll-lock.spec.ts`. Medium (P2): `ModuleCard`/`OverlayDialog` consolidation and
+  de-`force-dynamic`-ing the nutrition routes (`app/nutrition/page.tsx` reads the AI
+  gate at request time). Deferred (P3, needs sign-off): the unmounted
+  `AdminAccessCodeGate` / `PrivateAccessNotice` + their lib modules are confirmed
+  dead but left in place.
+- **Clarifications confirmed by the audit:** the nutrition photo AI is *feature-
+  flagged*, not dead code (server-only key gate; UI shows "בקרוב" with no fetch when
+  unconfigured); storage discipline is excellent (no raw `localStorage` in
+  components except the pre-paint theme script); the `yuval-fit-os:`-prefixed
+  guest-session key and the retained legacy access keys are intentional and must not
+  be renamed.
+- See the audit report for the full prioritised Phase-2 plan and the §8-aligned
+  "do not touch" map.
