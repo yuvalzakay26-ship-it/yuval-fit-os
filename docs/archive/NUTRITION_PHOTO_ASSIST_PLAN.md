@@ -2,7 +2,7 @@
 
 > **Update (Phase 3.xx):** the MVP described here has been **implemented**. For the
 > shipped behavior, files, env vars, API shapes and QA, see
-> [`NUTRITION_PHOTO_ASSIST.md`](NUTRITION_PHOTO_ASSIST.md). This document is kept as
+> [`NUTRITION_PHOTO_ASSIST.md`](../NUTRITION_PHOTO_ASSIST.md). This document is kept as
 > the original product/architecture plan.
 
 > **Status:** Planning / spec only. No code, no dependencies, no DB tables, no schema

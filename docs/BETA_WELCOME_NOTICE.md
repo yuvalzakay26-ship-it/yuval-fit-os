@@ -4,7 +4,7 @@ A warm, friendly full-screen notice that greets testers **after** they pass the
 real beta access gate. It thanks them for trying Fit OS, sets the expectation
 that the app is still under active development, and shows how to reach Yuval.
 
-It **replaced** the old [`PrivateAccessNotice`](PRIVATE_ACCESS_NOTICE.md)
+It **replaced** the old [`PrivateAccessNotice`](archive/PRIVATE_ACCESS_NOTICE.md)
 ("מערכת פרטית / do not share the link"). That message made sense when access was
 link/code based; now access is controlled by **Google login + an approved-email
 gate** (see [`BETA_ACCESS_SYSTEM.md`](BETA_ACCESS_SYSTEM.md)), so onboarding is no

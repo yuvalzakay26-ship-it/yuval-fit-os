@@ -1,5 +1,11 @@
 # Nutrition UX
 
+> 📁 **Archived — historical record.** This is the earlier `/nutrition` UX pass
+> (Phase 3.17.1). It has been superseded by
+> [`NUTRITION_CLARITY_PASS.md`](../NUTRITION_CLARITY_PASS.md) and the current
+> nutrition state in [`PROJECT_STATE.md`](../PROJECT_STATE.md). Kept for history;
+> do not treat as current requirements without checking `PROJECT_STATE.md`.
+
 A pass focused on flow, not features. The Nutrition screen had grown into one
 long scroll — daily summary, protein calculator, the full food library grid, the
 add-food form, and today's diary all stacked together. As the food library
@@ -36,7 +42,7 @@ The reusable bottom-sheet component (`components/ui/Sheet.tsx`) and its
 4. **`אכלת לאחרונה`** — quick reuse: a horizontal row of recently logged foods,
    each with a one-tap `הוסף שוב` that re-logs it for today. Replaced the old
    deep-link "אחרונים" chips (which forced re-entering values). See
-   [`NUTRITION_QUICK_REUSE.md`](NUTRITION_QUICK_REUSE.md).
+   [`NUTRITION_QUICK_REUSE.md`](../NUTRITION_QUICK_REUSE.md).
 5. **Today's diary** — logged foods with thumbnails (each with `הוסף שוב`), or an
    action-oriented empty state.
 
@@ -58,7 +64,7 @@ gets.
 - Tapping **`הוסף שוב`** (under `אכלת לאחרונה` or on a diary row) does **not**
   navigate — it duplicates that log into today's journal in place and confirms
   with a calm `נוסף ליומן של היום` toast. See
-  [`NUTRITION_QUICK_REUSE.md`](NUTRITION_QUICK_REUSE.md).
+  [`NUTRITION_QUICK_REUSE.md`](../NUTRITION_QUICK_REUSE.md).
 
 Each step is a real route, so the browser/hardware **back** button works
 naturally (library → add → back → library), and there is never a stacked-overlay
@@ -132,7 +138,7 @@ derivation over existing logs (`getRecentFoodEntries()` in
 `lib/nutrition-reuse.ts`) — it stores nothing new. Unlike the old "אחרונים" chips,
 it carries the user's previously entered macros so `הוסף שוב` can re-log in one
 tap (`createFoodLogFromExistingEntry()`); nothing is ever inferred. See
-[`NUTRITION_QUICK_REUSE.md`](NUTRITION_QUICK_REUSE.md).
+[`NUTRITION_QUICK_REUSE.md`](../NUTRITION_QUICK_REUSE.md).
 
 ## Intentionally not implemented yet
 

@@ -38,6 +38,16 @@ pre-existing warning), `npm run test:e2e` — see [§11](#11-validation--test-re
 
 ## 1. Docs / Markdown audit
 
+> **Applied in Phase 2C (2026-06-17):** the archive/merge pass below was carried
+> out. A new `docs/archive/` folder now holds four completed/superseded docs —
+> `NUTRITION_PHOTO_ASSIST_PLAN.md`, `NUTRITION_UX.md`, `TODAY_DASHBOARD_UPGRADE.md`,
+> and `PRIVATE_ACCESS_NOTICE.md` (all moved with `git mv`, history preserved). The
+> media-import docs and `EXERCISE_VIDEO_LINKS_AUDIT.md` / `ADMIN_ACCESS_GATE.md`
+> were **left active** (live code/config/doc cross-links). See
+> [`SYSTEM_OPTIMIZATION_PHASE_2C.md`](SYSTEM_OPTIMIZATION_PHASE_2C.md) and the
+> documentation map in [`PROJECT_STATE.md`](PROJECT_STATE.md) §11. The original
+> recommendations are retained below for reference.
+
 **Scope:** 45 files in `docs/` + `README.md`, `AGENTS.md`, `CLAUDE.md` (48 total,
 ~12,000 lines). **No docs are deleted in this phase** — recommendations only.
 
@@ -402,7 +412,7 @@ No visual changes in this phase — recommendations only.
 | ✅ **DONE (Phase 2A)** — Extract `CelebrationOverlay` primitive | new `components/celebrations/CelebrationOverlay.tsx`; 3 overlay files | −~150 LOC; single a11y/timer source | low | Re-run `protein-`/`supplement-`/`water-` celebration specs; verify each event still fires + animates → **100 green** |
 | ✅ **DONE (Phase 2B)** — Extract `e2e/fixtures.ts` | new `e2e/fixtures.ts`; 12 specs | Test maintainability + schema resilience | low | Full e2e suite green (no behaviour change) → **100 green** |
 | ✅ **DONE (Phase 2B)** — Replace `waitForTimeout(150)` with a poll | `e2e/scroll-lock.spec.ts` | De-flake | low | Scroll-lock spec green → **100 green** |
-| Docs: archive completed plan/process docs + mark deprecated | `docs/` (+ new `docs/archive/`) | Less clutter; clearer canon | low | None (docs only) |
+| ✅ **DONE (Phase 2C)** — Docs: archive completed/superseded docs + mark deprecated | `docs/archive/` (new); 4 docs moved; `PROJECT_STATE.md` doc map | Less clutter; clearer canon | low | None (docs only) — lint/build/e2e re-run **100 green** |
 
 ### P2 — Medium refactor (needs caution)
 
@@ -428,7 +438,9 @@ No visual changes in this phase — recommendations only.
 
 - All runtime code (no behaviour, UI/UX, schema, key, auth, backup, or data-format
   changes).
-- All docs (no deletions/merges performed — recommendations only).
+- All docs (no deletions/merges performed — recommendations only). *(Update: the
+  docs archive/merge pass was later applied in Phase 2C — see §1; no doc deleted,
+  four moved to `docs/archive/`.)*
 - The dead `AdminAccessCodeGate` / `PrivateAccessNotice` code (documented, not
   removed — deferred to P3 with sign-off).
 - The `force-dynamic` nutrition routes (documented, not changed — P2).

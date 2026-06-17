@@ -4,7 +4,35 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: **System Optimization Phase 2B — E2E fixtures cleanup**
+> Last reviewed: **System Optimization Phase 2C — Docs archive / merge pass**
+> (a **documentation-only** change — **no** change to runtime app code, components,
+> lib, schemas, storage/session keys, backup/restore, auth/beta/guest/admin/
+> Supabase, AI routes, or any product behaviour; **no** tests changed). Four
+> completed/superseded docs were moved into a new [`archive/`](archive/) folder
+> with `git mv` (history preserved): the original photo-first plan
+> ([`NUTRITION_PHOTO_ASSIST_PLAN.md`](archive/NUTRITION_PHOTO_ASSIST_PLAN.md) →
+> superseded by [`NUTRITION_PHOTO_ASSIST.md`](NUTRITION_PHOTO_ASSIST.md)), the
+> earlier nutrition UX pass ([`NUTRITION_UX.md`](archive/NUTRITION_UX.md) →
+> [`NUTRITION_CLARITY_PASS.md`](NUTRITION_CLARITY_PASS.md)), the original Today
+> "command center" concept ([`TODAY_DASHBOARD_UPGRADE.md`](archive/TODAY_DASHBOARD_UPGRADE.md)
+> → [`TODAY_COMMAND_CENTER_POLISH.md`](TODAY_COMMAND_CENTER_POLISH.md) +
+> [`TODAY_CLARITY_PASS.md`](TODAY_CLARITY_PASS.md)), and the deprecated
+> [`PRIVATE_ACCESS_NOTICE.md`](archive/PRIVATE_ACCESS_NOTICE.md) (removed from the
+> gate chain → [`BETA_WELCOME_NOTICE.md`](BETA_WELCOME_NOTICE.md)). Each moved doc
+> got a short "archived / historical" header and its internal links were fixed for
+> the new depth; the one inbound link (`BETA_WELCOME_NOTICE.md`) was repointed.
+> A new [`archive/README.md`](archive/README.md) explains that **`PROJECT_STATE.md`
+> is the source of truth** and archived docs may be outdated. The two completed
+> media-import docs ([`EXERCISE_MEDIA_IMPORT.md`](EXERCISE_MEDIA_IMPORT.md),
+> [`FOOD_MEDIA_IMPORT.md`](FOOD_MEDIA_IMPORT.md)) were **left active in place** —
+> `.gitignore` and `lib/food-library.ts` comments point at them, so moving would
+> mean editing code/config (out of scope). `EXERCISE_VIDEO_LINKS_AUDIT.md` and
+> `ADMIN_ACCESS_GATE.md` were also left active (still cross-linked from living
+> docs). See the new documentation map (§11) and
+> [`SYSTEM_OPTIMIZATION_PHASE_2C.md`](SYSTEM_OPTIMIZATION_PHASE_2C.md). Validation:
+> `npm run lint` ✓ (0 errors, 1 pre-existing warning), `npm run build` ✓
+> (TypeScript clean, unchanged route table), `npm run test:e2e` **100 green**.
+> Prior: **System Optimization Phase 2B — E2E fixtures cleanup**
 > (a **test-maintenance refactor only** — **no** change to runtime app code,
 > schemas, storage/session keys, copy, onboarding order, or product behaviour).
 > The Playwright suite had byte-identical setup copy-pasted across specs: welcome/
@@ -908,3 +936,40 @@ change without an explicit new phase.
   be renamed.
 - See the audit report for the full prioritised Phase-2 plan and the §8-aligned
   "do not touch" map.
+
+## 11. Documentation map
+
+Where to look, and in what order. **Start here, then the developer guide.**
+
+- **Current source of truth**
+  - **`PROJECT_STATE.md`** (this file) — always current; read first.
+  - **`DEVELOPER_GUIDE.md`** — how to run, test, and extend.
+  - **`README.md`** (repo root) — external intro; links to the two above.
+
+- **Active product / feature docs** (`docs/`) — current per-feature specs:
+  Today (`TODAY_QUICK_START`, `TODAY_COMMAND_CENTER_POLISH`, `TODAY_CLARITY_PASS`),
+  Nutrition (`NUTRITION_CLARITY_PASS`, `NUTRITION_QUICK_REUSE`,
+  `NUTRITION_FAVORITES`, `NUTRITION_SAVED_VALUES`, `NUTRITION_PHOTO_ASSIST`),
+  Water (`WATER_TRACKING`, `WATER_PRESETS`, `WATER_GOAL_UX_UPGRADE`,
+  `WATER_GOAL_GLOBAL_CELEBRATION`), Supplements (`SUPPLEMENTS_TRACKER`,
+  `SUPPLEMENTS_LIBRARY_UX`, `SUPPLEMENT_TAKEN_CELEBRATION`),
+  `PROTEIN_GOAL_CELEBRATION`, Workouts (`WORKOUTS_CLARITY_PASS`,
+  `ACTIVE_WORKOUT_*`), `GYM_CHECK_IN`, `PROGRESS_INSIGHTS_UPGRADE`,
+  `PERSONAL_PROFILE_V1`, `NAVIGATION_SYSTEM_HUB`, `SETTINGS_CONTROL_CENTER`,
+  `BETA_WELCOME_NOTICE`, `PWA`, `UI_POLISH_PHASE_3_21_1`.
+
+- **Technical / contract docs** — must stay accurate; some are referenced by code:
+  `BACKUP_RESTORE` (export/import contract), `BETA_ACCESS_SYSTEM` (Supabase + RLS),
+  `PRIVACY_TERMS_AI_DISCLAIMER` (legal pages), `ADMIN_ACCESS_GATE` (legacy gate),
+  `EXERCISE_VIDEO_LINKS` (+ `EXERCISE_VIDEO_LINKS_AUDIT`),
+  `EXERCISE_MEDIA_IMPORT` & `FOOD_MEDIA_IMPORT` (one-time import processes —
+  still pointed at by `.gitignore` / `lib/food-library.ts`), `PHONE_INSTALL_QA`.
+
+- **Optimization / audit docs** — the optimization trail:
+  `SYSTEM_OPTIMIZATION_AUDIT_PHASE_1` (the audit), `SYSTEM_OPTIMIZATION_PHASE_2A`
+  (CelebrationOverlay), `SYSTEM_OPTIMIZATION_PHASE_2B` (E2E fixtures),
+  `SYSTEM_OPTIMIZATION_PHASE_2C` (this docs archive pass).
+
+- **Archive** — [`docs/archive/`](archive/) holds superseded / removed-from-flow
+  historical records (see [`archive/README.md`](archive/README.md)). These may be
+  outdated and **do not override** `PROJECT_STATE.md`.

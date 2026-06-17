@@ -5,7 +5,7 @@
 > link/code based. Now that access is controlled by Google login + an approved-
 > email gate (`components/access/BetaAuthGate.tsx`), it has been **removed from
 > the production gate chain** and replaced by the warm, friendly
-> [`BetaWelcomeNotice`](BETA_WELCOME_NOTICE.md). The component
+> [`BetaWelcomeNotice`](../BETA_WELCOME_NOTICE.md). The component
 > (`components/access/PrivateAccessNotice.tsx`) and store (`lib/private-access.ts`)
 > are kept in the repo as a reference only — nothing mounts them, and the
 > `yfos:private-access-notice-accepted:session` flag is no longer read. This

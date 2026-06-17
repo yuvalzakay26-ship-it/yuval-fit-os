@@ -1,5 +1,12 @@
 # Today Dashboard Upgrade (Phase 3.23)
 
+> 📁 **Archived — historical record.** This is the original "command center"
+> concept for the Today screen (Phase 3.23). It has been superseded by
+> [`TODAY_COMMAND_CENTER_POLISH.md`](../TODAY_COMMAND_CENTER_POLISH.md),
+> [`TODAY_CLARITY_PASS.md`](../TODAY_CLARITY_PASS.md), and the current Today state
+> in [`PROJECT_STATE.md`](../PROJECT_STATE.md). Kept for history; do not treat as
+> current requirements without checking `PROJECT_STATE.md`.
+
 Turns the **Today** screen from a stack of feature cards into a unified daily
 command center for Yuval Fit OS — a premium, mobile-first wellness dashboard that
 answers four questions at a glance:
