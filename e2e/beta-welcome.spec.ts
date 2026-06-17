@@ -1,4 +1,5 @@
-import { test, expect, type Page, type BrowserContext } from "@playwright/test";
+import { test, expect, type BrowserContext } from "@playwright/test";
+import { seedGranted } from "./fixtures";
 
 // QA for the Beta Welcome notice as the FIRST step of every app entry
 // (docs/BETA_WELCOME_NOTICE.md). Runs against the :3939 server (beta gate bypassed
@@ -14,34 +15,15 @@ import { test, expect, type Page, type BrowserContext } from "@playwright/test";
 const BETA_GATE = "[data-beta-welcome-gate]";
 const BETA_TITLE = "ברוכים הבאים ל־Fit OS";
 const PROFILE_PROMPT_TITLE = "נכיר אותך כדי להתאים את החוויה?";
-const LEGACY_PERSISTENT_KEY = "yfos:beta-welcome-seen:v1";
 const SESSION_KEY = "yfos:beta-welcome-seen-session:v1";
 
-// Seed a granted (guest) user who has cleared the first-visit welcome screen, so
-// the beta welcome is the surface under test. The beta-welcome SESSION flag is
-// left clean so the notice appears. `withLegacyFlag` additionally sets the OLD
-// persistent localStorage key to prove it no longer suppresses the notice.
-async function seedGranted(page: Page, { withLegacyFlag = false } = {}) {
-  await page.addInitScript(
-    ({ legacyKey, useLegacy }) => {
-      try {
-        localStorage.setItem("yfos:welcome-seen:v1", "1");
-        localStorage.setItem("yuval-fit-os:guest-session:v1", "1");
-        if (useLegacy) localStorage.setItem(legacyKey, "1");
-      } catch {
-        /* ignore */
-      }
-    },
-    { legacyKey: LEGACY_PERSISTENT_KEY, useLegacy: withLegacyFlag },
-  );
-}
-
-async function freshGrantedPage(
-  context: BrowserContext,
-  opts?: { withLegacyFlag?: boolean },
-) {
+// seedGranted (shared fixture) puts a granted guest user past the first-visit
+// welcome with the beta-welcome SESSION flag left clean, so the notice is the
+// surface under test. `withLegacyBetaFlag` additionally sets the OLD persistent
+// localStorage key to prove it no longer suppresses the notice.
+async function freshGrantedPage(context: BrowserContext) {
   const page = await context.newPage();
-  await seedGranted(page, opts);
+  await seedGranted(page);
   return page;
 }
 
@@ -58,7 +40,7 @@ test("the beta welcome shows even when the OLD persistent flag is set", async ({
   // A tester who acknowledged the notice under the previous "once per device,
   // forever" behaviour still gets greeted on their next entry — the legacy
   // localStorage flag is no longer read as a suppressor.
-  await seedGranted(page, { withLegacyFlag: true });
+  await seedGranted(page, { withLegacyBetaFlag: true });
   await page.goto("/");
   await expect(page.locator(BETA_GATE)).toBeVisible();
   await expect(page.getByText(BETA_TITLE)).toBeVisible();

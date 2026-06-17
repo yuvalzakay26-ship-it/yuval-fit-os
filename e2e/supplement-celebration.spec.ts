@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { seedWelcomeSeen, todayISO } from "./fixtures";
 
 // QA for the app-wide "supplement taken" success celebration
 // (docs/SUPPLEMENT_TAKEN_CELEBRATION.md). Runs against the :3939 server, where
@@ -14,17 +15,11 @@ const CELEBRATION = '[data-supplement-celebration="active"]';
 
 type SeedLog = { supplementId: string; date: string };
 
-function todayISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 async function seedSupplements(page: Page, takenLogs: SeedLog[] = []) {
+  await seedWelcomeSeen(page);
   await page.addInitScript(
     ({ logs, date }) => {
       try {
-        localStorage.setItem("yfos:welcome-seen:v1", "1");
-        localStorage.setItem("yfos:beta-welcome-seen:v1", "1");
         const createdAt = "2026-01-01T00:00:00.000Z";
         localStorage.setItem(
           "yfos:supplements:v1",

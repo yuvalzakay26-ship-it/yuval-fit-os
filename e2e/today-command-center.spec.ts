@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { seedWelcomeSeen as seedBase, todayISO } from "./fixtures";
 
 // QA for the Today "command center" clarity pass (docs/TODAY_CLARITY_PASS.md).
 // Runs against the :3939 server, where the beta access gate is bypassed
@@ -9,22 +10,7 @@ import { test, expect, type Page } from "@playwright/test";
 //   • the gym card copy adapts to the saved-visit state instead of always
 //     offering "נכנסתי למכון".
 // No schemas / storage keys / business logic are touched by this pass.
-
-function todayISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-async function seedBase(page: Page) {
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem("yfos:welcome-seen:v1", "1");
-      localStorage.setItem("yfos:beta-welcome-seen:v1", "1");
-    } catch {
-      /* ignore */
-    }
-  });
-}
+// seedBase / todayISO are the shared welcome-seen + date fixtures.
 
 // Seed a completed (saved) gym visit for today — no active visit.
 async function seedCompletedVisitToday(page: Page) {

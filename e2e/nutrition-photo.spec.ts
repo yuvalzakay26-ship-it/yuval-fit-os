@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { seedWelcomeSeen } from "./fixtures";
 
 // End-to-end QA for photo-first nutrition logging (Phase 3.xx). Relies on the
 // dev-server seams set in playwright.config.ts:
@@ -30,14 +31,7 @@ function draftNames(page: Page) {
 
 test.beforeEach(async ({ page }) => {
   // Mark the one-time welcome overlays as seen so they don't intercept clicks.
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem("yfos:welcome-seen:v1", "1");
-      localStorage.setItem("yfos:beta-welcome-seen:v1", "1");
-    } catch {
-      /* ignore */
-    }
-  });
+  await seedWelcomeSeen(page);
   await page.goto("/nutrition");
 });
 

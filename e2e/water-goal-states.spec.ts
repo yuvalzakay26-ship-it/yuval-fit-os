@@ -1,51 +1,19 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
+import { seedWater } from "./fixtures";
 
 // QA for the Water Goal Completion & Over-Goal UX (docs/WATER_GOAL_UX_UPGRADE.md).
 // Runs against the :3939 server, where the beta access gate is bypassed
 // (NEXT_PUBLIC_BETA_DISABLE_GATE=1). We seed today's water log + a clean 2000ml
-// goal in localStorage before load, then assert the graduated, non-medical copy
-// on the water detail screen (/nutrition/water).
+// goal in localStorage before load (shared seedWater fixture), then assert the
+// graduated, non-medical copy on the water detail screen (/nutrition/water).
 //
-// Goal is 2000ml, so the seeded total maps directly to a percentage:
+// Goal is 2000ml (the seedWater default), so the seeded total maps directly to a
+// percentage:
 //   1000 → 50%  under_goal (no banner)
 //   2000 → 100% completed   (celebration)
 //   2200 → 110% soft_over   (calm)
 //   2500 → 125% attention   (amber)
 //   3000 → 150% caution     (rose, non-medical)
-
-const GOAL_ML = 2000;
-
-async function seedWater(page: Page, totalMl: number) {
-  await page.addInitScript(
-    ({ goal, total }) => {
-      try {
-        localStorage.setItem("yfos:welcome-seen:v1", "1");
-        localStorage.setItem("yfos:beta-welcome-seen:v1", "1");
-        localStorage.setItem(
-          "yfos:settings",
-          JSON.stringify({ waterGoalMl: goal }),
-        );
-        const d = new Date();
-        const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-        localStorage.setItem(
-          "yfos:water-logs:v1",
-          JSON.stringify([
-            {
-              date,
-              totalMl: total,
-              entries: [
-                { id: "seed-1", amountMl: total, createdAt: d.toISOString() },
-              ],
-            },
-          ]),
-        );
-      } catch {
-        /* ignore */
-      }
-    },
-    { goal: GOAL_ML, total: totalMl },
-  );
-}
 
 test("under goal shows no completion/over-goal banner", async ({ page }) => {
   await seedWater(page, 1000); // 50%

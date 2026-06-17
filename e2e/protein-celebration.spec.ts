@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { seedWelcomeSeen, todayISO } from "./fixtures";
 
 // QA for the app-wide "protein goal reached" celebration
 // (docs/PROTEIN_GOAL_CELEBRATION.md). Runs against the :3939 server, where the
@@ -23,17 +24,11 @@ type SeedLog = {
   fat?: number;
 };
 
-function todayISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 async function seed(page: Page, logs: SeedLog[] = [], goal: number = GOAL_G) {
+  await seedWelcomeSeen(page);
   await page.addInitScript(
     ({ logs, date, goal }) => {
       try {
-        localStorage.setItem("yfos:welcome-seen:v1", "1");
-        localStorage.setItem("yfos:beta-welcome-seen:v1", "1");
         localStorage.setItem(
           "yfos:settings",
           JSON.stringify({ proteinGoal: goal }),

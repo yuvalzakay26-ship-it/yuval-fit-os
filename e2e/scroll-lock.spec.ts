@@ -1,4 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
+import {
+  advanceWizardToSummary,
+  expectScrolledOrFits,
+  seedGrantedEntered,
+} from "./fixtures";
 
 // QA for the background scroll-lock cleanup (lib/use-body-scroll-lock.ts). The
 // app's full-screen overlays (beta welcome notice, profile onboarding prompt,
@@ -13,24 +18,11 @@ import { test, expect, type Page } from "@playwright/test";
 // NEXT_PUBLIC_BETA_DISABLE_GATE=1). Seeding mirrors profile-onboarding.spec.ts.
 
 const PROMPT_TITLE = "נכיר אותך כדי להתאים את החוויה?";
-const BETA_WELCOME_SESSION_KEY = "yfos:beta-welcome-seen-session:v1";
 
 // Put the app in the "fully entered, beta welcome already seen THIS session, no
 // profile yet, not dismissed" state — the profile prompt is the surface shown.
-async function seedEntered(page: Page) {
-  await page.addInitScript(
-    ({ betaKey }) => {
-      try {
-        localStorage.setItem("yfos:welcome-seen:v1", "1");
-        sessionStorage.setItem(betaKey, "1");
-        localStorage.setItem("yuval-fit-os:guest-session:v1", "1");
-      } catch {
-        /* ignore */
-      }
-    },
-    { betaKey: BETA_WELCOME_SESSION_KEY },
-  );
-}
+// (Shared fixture; matches profile-onboarding's entry seam.)
+const seedEntered = seedGrantedEntered;
 
 // The precise signal: with no overlay open the shared lock must have restored
 // the body to a non-hidden overflow so the page can scroll again.
@@ -60,17 +52,7 @@ async function completeAndSaveWizard(page: Page) {
   await page.getByRole("button", { name: "המלצה לפי המטרה שלי" }).click(); // guidance
 
   // Advance to the summary (notes is optional), then save.
-  for (let i = 0; i < 15; i++) {
-    if (await page.getByRole("button", { name: "שמור פרופיל" }).count()) break;
-    const next = page.getByRole("button", { name: "הבא", exact: true });
-    const toSummary = page.getByRole("button", { name: "לסיכום" });
-    if (await next.count()) {
-      if (await next.isDisabled()) break;
-      await next.click();
-    } else if (await toSummary.count()) {
-      await toSummary.click();
-    } else break;
-  }
+  await advanceWizardToSummary(page);
   await page.getByRole("button", { name: "שמור פרופיל" }).click();
   await expect(page.getByText("הפרופיל נשמר במכשיר")).toBeVisible();
 }
@@ -122,22 +104,16 @@ test("completing the wizard and navigating to a long page leaves scroll working"
   await expectBodyScrollable(page);
 
   // And it genuinely scrolls when content exceeds the viewport. The app uses
-  // CSS scroll-behavior: smooth, so force an instant jump and let it settle
-  // before reading scrollY.
+  // CSS scroll-behavior: smooth, so force an instant jump and poll until the
+  // scroll position settles (deterministic, no fixed wait).
   await page.evaluate(() =>
     window.scrollTo({
       top: document.body.scrollHeight,
       behavior: "instant" as ScrollBehavior,
     }),
   );
-  await page.waitForTimeout(150);
-  const scrolled = await page.evaluate(
-    () =>
-      // Either the page actually scrolled, or it simply fits the viewport.
-      window.scrollY > 0 ||
-      document.documentElement.scrollHeight <= window.innerHeight,
-  );
-  expect(scrolled).toBe(true);
+  // Either the page actually scrolled, or it simply fits the viewport.
+  await expectScrolledOrFits(page);
 });
 
 test("scrolling still works after navigating between pages post-completion", async ({

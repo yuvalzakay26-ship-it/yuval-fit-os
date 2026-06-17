@@ -1,9 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
+import { seedWelcomeSeen as seedBase } from "./fixtures";
 
 // QA for the Workouts "command hierarchy" clarity pass
 // (docs/WORKOUTS_CLARITY_PASS.md). Runs against the :3939 server, where the
 // beta access gate is bypassed (NEXT_PUBLIC_BETA_DISABLE_GATE=1). We seed
-// localStorage before load and assert the new hierarchy:
+// localStorage before load (shared seedBase welcome-seen fixture) and assert the
+// new hierarchy:
 //   • the command center renders a clear primary "התחל אימון" + secondary
 //     "צור תבנית חדשה" (no vague "אימון חדש");
 //   • when a meaningful draft exists, "המשך אימון" leads above the command
@@ -13,17 +15,6 @@ import { test, expect, type Page } from "@playwright/test";
 //   • the empty workout-history state stays visible but calm — it no longer
 //     re-duplicates the primary CTA.
 // No schemas / storage keys / business logic are touched by this pass.
-
-async function seedBase(page: Page) {
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem("yfos:welcome-seen:v1", "1");
-      localStorage.setItem("yfos:beta-welcome-seen:v1", "1");
-    } catch {
-      /* ignore */
-    }
-  });
-}
 
 // Seed a single saved workout template using a real seed exercise id.
 async function seedTemplate(page: Page) {

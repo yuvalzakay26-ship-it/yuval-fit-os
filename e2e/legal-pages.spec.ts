@@ -1,4 +1,5 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
+import { seedWelcomeSeen } from "./fixtures";
 
 // QA for the informational / legal-style pages (privacy / terms / AI disclaimer)
 // and the entry points that link to them. Runs against the :3939 server, where
@@ -6,20 +7,9 @@ import { test, expect, type Page } from "@playwright/test";
 // photo-scan AI is mocked (NUTRITION_AI_MOCK=1), so the nutrition scan card —
 // and its "איך עובד ניתוח AI?" link — render in their active state.
 
-async function seedSeen(page: Page) {
-  // Dismiss the one-time welcome overlays so they don't intercept clicks.
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem("yfos:welcome-seen:v1", "1");
-      localStorage.setItem("yfos:beta-welcome-seen:v1", "1");
-    } catch {
-      /* ignore */
-    }
-  });
-}
-
 test.beforeEach(async ({ page }) => {
-  await seedSeen(page);
+  // Dismiss the one-time welcome overlays so they don't intercept clicks.
+  await seedWelcomeSeen(page);
 });
 
 test("/privacy loads with its heading and careful wording", async ({ page }) => {

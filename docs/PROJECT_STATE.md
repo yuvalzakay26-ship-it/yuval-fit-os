@@ -4,7 +4,30 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: **System Optimization Phase 2A — CelebrationOverlay extraction**
+> Last reviewed: **System Optimization Phase 2B — E2E fixtures cleanup**
+> (a **test-maintenance refactor only** — **no** change to runtime app code,
+> schemas, storage/session keys, copy, onboarding order, or product behaviour).
+> The Playwright suite had byte-identical setup copy-pasted across specs: welcome/
+> beta-welcome/guest seeding, the today-date string, the water-day seed, and the
+> training-profile wizard's "advance to summary" loop. These now live in one
+> [`e2e/fixtures.ts`](../e2e/fixtures.ts): `seedWelcomeSeen` (one-time welcome +
+> legacy beta flag), `seedGranted` (granted guest, optional legacy flag),
+> `seedGrantedEntered` (granted guest with beta welcome seen this session),
+> `seedWater(totalMl, goalMl?)`, `todayISO`, `advanceWizardToSummary`, and
+> `expectScrolledOrFits`. Twelve specs were migrated to import them; each helper is
+> small and named after the product state it sets up, so specs still read like the
+> behaviour they pin. The one remaining hard wait — `waitForTimeout(150)` in
+> `scroll-lock.spec.ts` — is now a deterministic `expect.poll`. **Deliberately left
+> local:** the Today/Workouts `seedWorkoutDraft` copies (different set schemas) and
+> the two `seedProfile` variants (minimal vs full) are *not* identical, so unifying
+> them would change seeded data — out of scope. No assertions weakened, no tests
+> skipped, no Hebrew text assertions hidden. Validation: `npm run lint` ✓ (0 errors,
+> 1 pre-existing warning), `npm run build` ✓ (TypeScript clean, unchanged route
+> table), `npm run test:e2e` **100 green**. See
+> [`SYSTEM_OPTIMIZATION_PHASE_2B.md`](SYSTEM_OPTIMIZATION_PHASE_2B.md) and
+> [`SYSTEM_OPTIMIZATION_AUDIT_PHASE_1.md`](SYSTEM_OPTIMIZATION_AUDIT_PHASE_1.md)
+> §6.1 / §9 (P1, marked applied).
+> Prior: **System Optimization Phase 2A — CelebrationOverlay extraction**
 > (a **safe refactor only** — **no** change to runtime behaviour, copy, triggers,
 > timing, storage/session keys, event names, or celebration business logic). The
 > three near-identical celebration overlays (water goal, protein goal, supplement

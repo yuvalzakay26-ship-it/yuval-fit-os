@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { seedGranted, seedGrantedEntered } from "./fixtures";
 
 // QA for Personal Profile Onboarding V2 — the optional profile prompt that is now
 // the SECOND step of every app entry, shown right after the beta welcome
@@ -13,43 +14,15 @@ import { test, expect, type Page } from "@playwright/test";
 const PROMPT_TITLE = "נכיר אותך כדי להתאים את החוויה?";
 // Dismissal is now SESSION-level (sessionStorage), not a permanent device flag.
 const DISMISS_KEY = "yfos:profile-onboarding-dismissed-session:v1";
-const BETA_WELCOME_SESSION_KEY = "yfos:beta-welcome-seen-session:v1";
 const BETA_WELCOME_GATE = "[data-beta-welcome-gate]";
 
-// Put the app in the "fully entered, beta welcome already seen THIS session, no
-// profile yet, not dismissed" state — i.e. the profile prompt is the surface
-// under test.
-async function seedEntered(page: Page) {
-  await page.addInitScript(
-    ({ betaKey }) => {
-      try {
-        localStorage.setItem("yfos:welcome-seen:v1", "1");
-        // Beta welcome is per-session now: mark it seen for THIS session so the
-        // profile prompt (step two) is what shows, not the beta welcome (step one).
-        sessionStorage.setItem(betaKey, "1");
-        // Under the test gate-bypass seam, an active guest session is what marks
-        // the user as "let into the app" (lib/app-access.ts).
-        localStorage.setItem("yuval-fit-os:guest-session:v1", "1");
-      } catch {
-        /* ignore */
-      }
-    },
-    { betaKey: BETA_WELCOME_SESSION_KEY },
-  );
-}
-
-// Same as seedEntered but WITHOUT marking the beta welcome seen — so the beta
-// welcome (step one) is still open and the profile prompt must stay hidden.
-async function seedEnteredBetaOpen(page: Page) {
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem("yfos:welcome-seen:v1", "1");
-      localStorage.setItem("yuval-fit-os:guest-session:v1", "1");
-    } catch {
-      /* ignore */
-    }
-  });
-}
+// seedGrantedEntered (shared fixture): app is "fully entered, beta welcome already
+// seen THIS session, no profile yet, not dismissed" — i.e. the profile prompt is
+// the surface under test. seedGranted is the same minus the beta-welcome session
+// flag — so the beta welcome (step one) is still open and the profile prompt must
+// stay hidden.
+const seedEntered = seedGrantedEntered;
+const seedEnteredBetaOpen = seedGranted;
 
 async function seedProfile(page: Page) {
   await page.addInitScript(() => {

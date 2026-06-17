@@ -315,10 +315,18 @@ the `nutrition-photo-disabled` spec). `fullyParallel: false`, `retries: 0`, Pixe
 - **Duplicated setup (highest ROI):** welcome/beta-welcome/guest seeding +
   `seedWorkoutDraft` appear in ~24 places across 8 specs with no shared layer.
   → Extract `e2e/fixtures.ts` (`seedWelcomeSeen`, `seedGrantedEntered`,
-  `seedWorkoutDraft`, `seedWater`, `seedProfile`). Maintainability + schema
+  `seedWater`, `todayISO`, `advanceWizardToSummary`). Maintainability + schema
   resilience; **does not change test behaviour**.
+  → ✅ **Applied (Phase 2B)** — see
+  [`SYSTEM_OPTIMIZATION_PHASE_2B.md`](SYSTEM_OPTIMIZATION_PHASE_2B.md).
+  `seedWorkoutDraft` was **deliberately left local**: the Today and Workouts
+  copies are *not* identical (`{id, kg}` vs `{setNumber, weightKg}` set shapes,
+  different `exerciseId`s), so unifying them would alter seeded data — out of
+  scope for a behaviour-preserving refactor. The two `seedProfile` variants
+  (minimal vs full) likewise stay local.
 - **Flaky pattern:** single hard wait in `scroll-lock.spec.ts` — replace with a
   poll. No `networkidle` waits, no other arbitrary sleeps.
+  → ✅ **Applied (Phase 2B)** — now an `expect.poll` (`expectScrolledOrFits`).
 - **`retries: 0`:** consider `retries: 1` for CI robustness (optional).
 - **Coverage gap (optional):** no single end-to-end *flow* test of
   beta-welcome → profile-onboarding → wizard → home → scroll. Per-spec coverage
@@ -392,8 +400,8 @@ No visual changes in this phase — recommendations only.
 | Title | Files | Benefit | Risk | Test requirements |
 |---|---|---|---|---|
 | ✅ **DONE (Phase 2A)** — Extract `CelebrationOverlay` primitive | new `components/celebrations/CelebrationOverlay.tsx`; 3 overlay files | −~150 LOC; single a11y/timer source | low | Re-run `protein-`/`supplement-`/`water-` celebration specs; verify each event still fires + animates → **100 green** |
-| Extract `e2e/fixtures.ts` | new `e2e/fixtures.ts`; 8 specs | Test maintainability + schema resilience | low | Full e2e suite green (no behaviour change) |
-| Replace `waitForTimeout(150)` with a poll | `e2e/scroll-lock.spec.ts` | De-flake | low | Scroll-lock spec green |
+| ✅ **DONE (Phase 2B)** — Extract `e2e/fixtures.ts` | new `e2e/fixtures.ts`; 12 specs | Test maintainability + schema resilience | low | Full e2e suite green (no behaviour change) → **100 green** |
+| ✅ **DONE (Phase 2B)** — Replace `waitForTimeout(150)` with a poll | `e2e/scroll-lock.spec.ts` | De-flake | low | Scroll-lock spec green → **100 green** |
 | Docs: archive completed plan/process docs + mark deprecated | `docs/` (+ new `docs/archive/`) | Less clutter; clearer canon | low | None (docs only) |
 
 ### P2 — Medium refactor (needs caution)

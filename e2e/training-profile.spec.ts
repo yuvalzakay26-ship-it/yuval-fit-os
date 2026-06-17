@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { advanceWizardToSummary as advanceToSummary } from "./fixtures";
 
 // QA for the Personal Training Profile (docs/PERSONAL_PROFILE_V1.md). As of V3 the
 // onboarding is a step-by-step WIZARD: an intro, one question per screen with
@@ -63,22 +64,9 @@ async function answerRequiredCoreToPersonal(page: Page) {
   await page.getByRole("button", { name: "הבא", exact: true }).click();
 }
 
-// Click "הבא" / "לסיכום" until the wizard reaches the summary (the save button),
-// or stops at a required step whose "הבא" is still disabled (a missing answer).
-async function advanceToSummary(page: Page) {
-  for (let i = 0; i < 15; i++) {
-    if (await page.getByRole("button", { name: "שמור פרופיל" }).count()) return;
-    const next = page.getByRole("button", { name: "הבא", exact: true });
-    const toSummary = page.getByRole("button", { name: "לסיכום" });
-    if (await next.count()) {
-      if (await next.isDisabled()) return; // gated on a required answer
-      await next.click();
-    } else if (await toSummary.count()) {
-      if (await toSummary.isDisabled()) return;
-      await toSummary.click();
-    } else break;
-  }
-}
+// advanceToSummary (shared advanceWizardToSummary fixture): click "הבא" / "לסיכום"
+// until the wizard reaches the summary (the save button), or stops at a required
+// step whose advance button is still disabled (a missing answer).
 
 test("the profile page shows the header and the wizard intro when none is saved", async ({
   page,

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { seedWelcomeSeen } from "./fixtures";
 
 // Disabled / "coming soon" photo-scan QA (Phase 3.xx). This project runs against
 // the :3940 dev server, started WITHOUT any AI env (see playwright.config.ts), so
@@ -10,14 +11,7 @@ import { test, expect, type Page } from "@playwright/test";
 // it logs no console errors, and the manual / "add again" fallbacks stay usable.
 
 async function gotoNutrition(page: Page) {
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem("yfos:welcome-seen:v1", "1");
-      localStorage.setItem("yfos:beta-welcome-seen:v1", "1");
-    } catch {
-      /* ignore */
-    }
-  });
+  await seedWelcomeSeen(page);
   await page.goto("/nutrition");
 }
 
