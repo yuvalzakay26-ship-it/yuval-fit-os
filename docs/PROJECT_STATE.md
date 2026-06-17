@@ -4,7 +4,47 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: **Active Workout UX Polish — Phase 1**. A **UX / copy / layout**
+> Last reviewed: **First Workout Completion Experience — Phase 1**. A **UX / copy /
+> presentation** pass on the moment **after** a workout is saved. Saving already
+> worked (append to history + clear draft); now the hub shows a calm, **non-blocking
+> success card** ([`WorkoutCompletionCard`](../components/workouts/WorkoutCompletionCard.tsx),
+> `data-testid="workout-completion"`) at the top right after a save — **Option A**,
+> a dismissible card with **no** modal/backdrop, so scrolling, the bottom nav and
+> draft cleanup are untouched. `WorkoutsView.handleWorkoutSaved(session)` captures
+> the returned session plus two pieces of **builder-local** state — the template
+> name (`builderSource` → `sourceLabel`) and whether the start came from the
+> recommendation (`startedFromRecommendation`) — into a local `completed` state
+> **before** `closeBuilder` resets them; **nothing is persisted** and **no new
+> draft/schema field** is added. The card shows **"אימון נשמר בהצלחה"** + *"כל הכבוד
+> — האימון נוסף להיסטוריה שלך."*, a summary derived read-only from the saved object
+> (תרגילים, סטים, and **ק"ג נפח** = `Σ weightKg×reps`, the *same* figure
+> `WorkoutHistory` already shows, **hidden when 0** so bodyweight sessions don't show
+> a misleading "0"), and **next actions** mapping only to existing routes: primary
+> **"צפה בהיסטוריית אימונים"** (smooth-scrolls to the new `#workout-history`
+> anchor), secondary **"התחל אימון נוסף"** (`openBuilder(null)`), optional
+> **"עבור להתקדמות"** (`Link` → `/progress`). Origin context: a plain template start
+> shows neutral **"התאמנת לפי: {name}"**; a **recommended** start additionally shows
+> **"השלמת את האימון שהומלץ לפי הפרופיל שלך."** (recommended-start completion copy
+> was **included, not deferred** — the flag was still in local state at save); a
+> free / resumed-draft save shows neither. A brief **"האימון האחרון שלך נשמר כאן."**
+> line appears under the history header while the card is up (history itself
+> unchanged). The card clears on dismiss (✕) or when a new session starts, so it
+> never stacks with the draft-restore card. **Unchanged:** `WorkoutSession`/
+> `WorkoutExerciseEntry`/`SetEntry` + `addWorkout` payload, `WorkoutTemplate`, the
+> active-draft schema/key `yfos:active-workout-draft:v1` + `yfos:workouts`,
+> auto-save/restore + cleanup, the finish-save/cancel confirmations,
+> `lib/workout-recommendation.ts`, profile/nutrition/water/supplement/protein/gym
+> schemas, backup/restore, auth/beta/guest/admin/Supabase, AI routes, legal pages;
+> no new dependencies; localStorage-only. e2e: new
+> [`workout-completion.spec.ts`](../e2e/workout-completion.spec.ts) (save shows the
+> confirmation + summary; saved workout in history + reassurance line; recommended
+> start adds the recommendation line; plain template start does not; free/resumed
+> save shows no origin copy; next actions map to `/progress` + reopen the builder;
+> no overflow at 360px). Validation: `npm run lint` ✓ (0 errors, 1 pre-existing
+> warning), `npm run build` ✓ (TypeScript clean), `npm run test:e2e` **128 green**.
+> See [`WORKOUT_COMPLETION_EXPERIENCE.md`](WORKOUT_COMPLETION_EXPERIENCE.md).
+>
+> Prior: **Active Workout UX Polish — Phase 1**. A **UX / copy / layout**
 > clarity pass on the active-workout builder
 > ([`WorkoutBuilder`](../components/workouts/WorkoutBuilder.tsx)) so that after a
 > user starts a session it reads as *"you are inside an active workout — here are
@@ -903,7 +943,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | --- | --- | --- |
 | Today dashboard | Daily command center: greeting, completion ring, deterministic next-action card, status strip, module cards (workout, macros, water, supplements). Optional-aware (supplements never block the day) | `components/today/TodayView.tsx`, `lib/today.ts`, `docs/TODAY_QUICK_START.md` |
 | System Hub ("מרכז מערכת") | Premium `/more` hub gathering all secondary tools into module-coloured categories (pure navigation) | `components/more/SystemHubView.tsx`, `docs/NAVIGATION_SYSTEM_HUB.md` |
-| Workouts | Log sessions, build from templates, view history; the active session (builder) is a premium muscle-aware "live workout" experience with a clear **"אימון פעיל"** header (+ display-only `מתאמן לפי: {template}` origin line, action helper, `תרגילי האימון` section label, draft-safety copy), an explicit drag-only exercise reorder mode (Pointer-Events drag + keyboard, no data loss) and **collapsible exercise cards** (per-card chevron + `מזער הכל`/`פתח הכל`, visual-only) to tame long sessions | `components/workouts/*`, `docs/ACTIVE_WORKOUT_SESSION_UX.md`, `docs/ACTIVE_WORKOUT_UX_POLISH.md`, `docs/ACTIVE_WORKOUT_REORDER.md`, `docs/ACTIVE_WORKOUT_COLLAPSIBLE_CARDS.md` |
+| Workouts | Log sessions, build from templates, view history; the active session (builder) is a premium muscle-aware "live workout" experience with a clear **"אימון פעיל"** header (+ display-only `מתאמן לפי: {template}` origin line, action helper, `תרגילי האימון` section label, draft-safety copy), an explicit drag-only exercise reorder mode (Pointer-Events drag + keyboard, no data loss) and **collapsible exercise cards** (per-card chevron + `מזער הכל`/`פתח הכל`, visual-only) to tame long sessions. After a save, a calm **non-blocking completion card** (`אימון נשמר בהצלחה` + summary + next actions; recommended-start adds `השלמת את האימון שהומלץ…`) confirms the workout — pure local UI, nothing persisted | `components/workouts/*`, `docs/ACTIVE_WORKOUT_SESSION_UX.md`, `docs/ACTIVE_WORKOUT_UX_POLISH.md`, `docs/WORKOUT_COMPLETION_EXPERIENCE.md`, `docs/ACTIVE_WORKOUT_REORDER.md`, `docs/ACTIVE_WORKOUT_COLLAPSIBLE_CARDS.md` |
 | Exercise Library | 133 exercises, images, instructions, external demo videos | `components/exercises/*`, `lib/seed-exercises.ts` |
 | Nutrition | Daily food logs + macro totals, plus **quick reuse**: an `אכלת לאחרונה` row and per-entry `הוסף שוב` that re-log a previous food in one tap (derived from logs, no new storage). Crossing the **configured protein goal** via any add surface fires an app-wide celebration overlay | `components/nutrition/NutritionView.tsx`, `lib/nutrition-reuse.ts`, `lib/protein-goal-events.ts`, `docs/NUTRITION_QUICK_REUSE.md`, `docs/PROTEIN_GOAL_CELEBRATION.md` |
 | Food Library | Visual catalogue of foods to log from | `components/nutrition/FoodLibrary*`, `lib/food-library.ts` |

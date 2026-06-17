@@ -3,7 +3,11 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import type { WorkoutTemplate, WorkoutExerciseEntry } from "@/lib/fitness-types";
+import type {
+  WorkoutTemplate,
+  WorkoutExerciseEntry,
+  WorkoutSession,
+} from "@/lib/fitness-types";
 import { usePersonalProfile } from "@/lib/personal-profile";
 import { getWorkoutRecommendation } from "@/lib/workout-recommendation";
 import {
@@ -45,6 +49,7 @@ import { TemplateCard } from "./TemplateCard";
 import { TemplateEditor } from "./TemplateEditor";
 import { DraftRestoreCard } from "./DraftRestoreCard";
 import { WorkoutRecommendationCard } from "./WorkoutRecommendationCard";
+import { WorkoutCompletionCard } from "./WorkoutCompletionCard";
 
 function emptySets(count: number): WorkoutExerciseEntry["sets"] {
   return Array.from({ length: count }, (_, i) => ({
@@ -76,6 +81,18 @@ export function WorkoutsView() {
   const [editingTemplate, setEditingTemplate] = useState<
     WorkoutTemplate | "new" | null
   >(null);
+
+  // First Workout Completion Experience — a calm, non-blocking success card shown
+  // on the hub right after a save. Captures the just-saved session plus the two
+  // pieces of builder-local context (template name + whether the start came from
+  // the recommendation) so the confirmation can be specific. Pure local UI state:
+  // nothing here is persisted, and it carries no new draft/schema field. See
+  // docs/WORKOUT_COMPLETION_EXPERIENCE.md.
+  const [completed, setCompleted] = useState<{
+    session: WorkoutSession;
+    sourceLabel: string | null;
+    fromRecommendation: boolean;
+  } | null>(null);
 
   // The current local active-workout draft, surfaced as a restore prompt on the
   // hub so returning users see "you have an unsaved workout". Reactive + SSR-safe
@@ -111,6 +128,9 @@ export function WorkoutsView() {
     setResumingDraft(false);
     setEditingTemplate(null);
     setStartedFromRecommendation(false);
+    // Starting a new session clears any lingering completion card from the last
+    // save, so the two never stack.
+    setCompleted(null);
     setBuilding(true);
   };
 
@@ -120,6 +140,28 @@ export function WorkoutsView() {
     setBuilderSource(null);
     setResumingDraft(false);
     setStartedFromRecommendation(false);
+  };
+
+  // Final save succeeded: capture the just-saved session plus the builder-local
+  // context (template name + recommendation origin) BEFORE closeBuilder resets
+  // that state, then return to the hub where the completion card renders. The
+  // builder already added the session to history and cleared its draft.
+  const handleWorkoutSaved = (session: WorkoutSession) => {
+    setCompleted({
+      session,
+      sourceLabel: builderSource,
+      fromRecommendation: startedFromRecommendation,
+    });
+    closeBuilder();
+  };
+
+  // Smoothly bring the saved workout into view in the history section below.
+  const viewHistory = () => {
+    if (typeof document !== "undefined") {
+      document
+        .getElementById("workout-history")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   // Start the recommended template through the normal flow, then flag the
@@ -137,6 +179,7 @@ export function WorkoutsView() {
     setBuilderSource(null);
     setResumingDraft(true);
     setEditingTemplate(null);
+    setCompleted(null);
     setBuilding(true);
   };
 
@@ -216,7 +259,7 @@ export function WorkoutsView() {
             initial={builderSeed}
             resumed={resumingDraft}
             sourceLabel={builderSource}
-            onSaved={closeBuilder}
+            onSaved={handleWorkoutSaved}
             onCancel={closeBuilder}
           />
         </>
@@ -227,6 +270,20 @@ export function WorkoutsView() {
         />
       ) : (
         <>
+          {/* Just finished a workout — a calm, non-blocking success card with a
+              quick summary + next actions. Dismissible; cleared when starting a
+              new session. Pure local UI; the session is already in history. */}
+          {completed && (
+            <WorkoutCompletionCard
+              session={completed.session}
+              sourceLabel={completed.sourceLabel}
+              fromRecommendation={completed.fromRecommendation}
+              onStartAnother={() => openBuilder(null)}
+              onViewHistory={viewHistory}
+              onDismiss={() => setCompleted(null)}
+            />
+          )}
+
           {/* Returning to an unsaved session — premium restore prompt. Only
               shown for a meaningful draft, so an untouched builder never nags. */}
           {hasActiveDraft && draft && (
@@ -447,7 +504,7 @@ export function WorkoutsView() {
         </>
       )}
 
-      <section>
+      <section id="workout-history" className="scroll-mt-4">
         <SectionHeader
           title="היסטוריית אימונים"
           accent="var(--accent-strength)"
@@ -462,6 +519,14 @@ export function WorkoutsView() {
             ) : undefined
           }
         />
+        {/* Brief reassurance right after a save — points at the saved session
+            below. Tied to the completion card's lifetime (clears when dismissed
+            or when a new session starts). */}
+        {completed && !building && !editingTemplate && workouts.length > 0 && (
+          <p className="-mt-1 mb-3 text-[12.5px] font-medium text-emerald-700 dark:text-emerald-300">
+            האימון האחרון שלך נשמר כאן.
+          </p>
+        )}
         {workouts.length === 0 ? (
           // Calm, compact empty state. The command center above already offers
           // "התחל אימון", so history stays secondary and doesn't re-duplicate the
