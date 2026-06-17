@@ -120,6 +120,44 @@ export function progressSummary(
   };
 }
 
+export interface WorkoutTotals {
+  /** Number of saved sessions. */
+  totalWorkouts: number;
+  /** Every set logged across every session. */
+  totalSets: number;
+  /** Lifetime weight×reps volume (kg). Bodyweight sets contribute 0. */
+  totalVolumeKg: number;
+  /** Most recent session (newest-first input), or null when none. */
+  latest: WorkoutSession | null;
+}
+
+/**
+ * Lifetime roll-up across every saved session — simple counts plus the SAME
+ * weight×reps volume figure the history and completion cards already show,
+ * aggregated read-only. No new persisted data, no schema field, and no new
+ * "calculation" beyond summing what is already stored. Used by the Progress
+ * screen's last-workout snapshot. Callers pass workouts newest-first (as
+ * `getWorkouts` returns them) so `latest` is the first entry.
+ */
+export function workoutTotals(workouts: WorkoutSession[]): WorkoutTotals {
+  let totalSets = 0;
+  let totalVolumeKg = 0;
+  for (const session of workouts) {
+    for (const entry of session.exercises) {
+      totalSets += entry.sets.length;
+      for (const set of entry.sets) {
+        totalVolumeKg += set.weightKg * set.reps;
+      }
+    }
+  }
+  return {
+    totalWorkouts: workouts.length,
+    totalSets,
+    totalVolumeKg: Math.round(totalVolumeKg),
+    latest: workouts[0] ?? null,
+  };
+}
+
 export function todaysFoodLogs(foodLogs: FoodLog[]): FoodLog[] {
   const today = todayISO();
   return foodLogs.filter((log) => log.date === today);

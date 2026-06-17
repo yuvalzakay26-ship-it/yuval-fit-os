@@ -507,6 +507,11 @@ export function WorkoutsView() {
       <section id="workout-history" className="scroll-mt-4">
         <SectionHeader
           title="היסטוריית אימונים"
+          hint={
+            !building && !editingTemplate && workouts.length > 0
+              ? "כל האימונים ששמרת, מהאחרון לראשון."
+              : undefined
+          }
           accent="var(--accent-strength)"
           action={
             !building && !editingTemplate && workouts.length > 0 ? (

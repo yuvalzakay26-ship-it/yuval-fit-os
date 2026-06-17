@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { WorkoutSession } from "@/lib/fitness-types";
 import { getExerciseById } from "@/lib/seed-exercises";
-import { formatHebrewDate } from "@/lib/utils";
+import { cn, formatHebrewDate } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { BookmarkIcon, CheckIcon, TrashIcon } from "@/components/ui/icons";
 import { MUSCLE_GROUP_LABELS } from "@/lib/seed-exercises";
@@ -107,8 +107,15 @@ export function WorkoutHistory({
 
             <MuscleChips groups={session.muscleGroups} />
 
-            {/* Summary stats */}
-            <div className="grid grid-cols-3 gap-2">
+            {/* Summary stats. The volume tile is hidden for bodyweight-only
+                sessions (volume 0) so the row never shows a misleading "0 נפח";
+                the grid then balances to two columns. */}
+            <div
+              className={cn(
+                "grid gap-2",
+                volume > 0 ? "grid-cols-3" : "grid-cols-2",
+              )}
+            >
               <div className="rounded-xl bg-surface-2 px-3 py-2 text-center">
                 <p className="text-[17px] font-extrabold tabular-nums text-foreground">
                   {session.exercises.length}
@@ -121,18 +128,20 @@ export function WorkoutHistory({
                 </p>
                 <p className="text-[10.5px] font-medium text-faint">סטים</p>
               </div>
-              <div
-                className="rounded-xl px-3 py-2 text-center"
-                style={{ background: "var(--mg-soft)" }}
-              >
-                <p
-                  className="text-[17px] font-extrabold tabular-nums"
-                  style={{ color: "var(--mg)" }}
+              {volume > 0 && (
+                <div
+                  className="rounded-xl px-3 py-2 text-center"
+                  style={{ background: "var(--mg-soft)" }}
                 >
-                  {volume.toLocaleString()}
-                </p>
-                <p className="text-[10.5px] font-medium text-faint">נפח (ק&quot;ג)</p>
-              </div>
+                  <p
+                    className="text-[17px] font-extrabold tabular-nums"
+                    style={{ color: "var(--mg)" }}
+                  >
+                    {volume.toLocaleString()}
+                  </p>
+                  <p className="text-[10.5px] font-medium text-faint">נפח (ק&quot;ג)</p>
+                </div>
+              )}
             </div>
 
             {/* Exercise breakdown */}
@@ -152,7 +161,9 @@ export function WorkoutHistory({
                       {exercise?.nameHe ?? entry.exerciseId}
                     </span>
                     <span className="text-[12px] text-muted">
-                      {entry.sets.length} × עד {top} ק&quot;ג
+                      {top > 0
+                        ? `${entry.sets.length} × עד ${top} ק"ג`
+                        : `${entry.sets.length} סטים`}
                     </span>
                   </li>
                 );

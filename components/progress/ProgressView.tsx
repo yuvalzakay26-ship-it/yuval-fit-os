@@ -6,6 +6,7 @@ import {
   supplementDaysLoggedThisWeek,
   todaysWaterMl,
   weeklyWaterAverageMl,
+  workoutTotals,
 } from "@/lib/analytics";
 import {
   personalRecords,
@@ -50,6 +51,7 @@ import {
   TrophyIcon,
 } from "@/components/ui/icons";
 import { StatCard } from "./StatCard";
+import { LastWorkoutSummary } from "@/components/workouts/LastWorkoutSummary";
 
 /* ----------------------------- Tone helpers ---------------------------- */
 // Map an insight tone to its CSS accent variables + gradient/glow utilities so
@@ -197,6 +199,7 @@ export function ProgressView() {
 
   const gymStats = getGymVisitStats(gymVisits);
   const summary = progressSummary(workouts, foodLogs);
+  const totals = workoutTotals(workouts);
   const hero = weeklyHero(workouts, foodLogs, waterLogs);
   const insights = weeklyInsights({ workouts, foodLogs, waterLogs });
   const trends = weeklyActivity(workouts, foodLogs, waterLogs);
@@ -274,9 +277,26 @@ export function ProgressView() {
         </div>
       </Card>
 
+      {/* Last workout — a clear snapshot of the most recent saved session plus
+          honest lifetime roll-ups, so /progress reads as useful the moment a
+          workout exists (and explains what will appear when none do yet). All
+          figures derive read-only from saved sessions. */}
+      <section>
+        <SectionHeader
+          title="האימון האחרון שלך"
+          hint="זה הסיכום האחרון שנשמר בהיסטוריה."
+          accent="var(--accent-strength)"
+        />
+        <LastWorkoutSummary session={summary.latestWorkout} lifetime={totals} />
+      </section>
+
       {/* Key stats — with human empty states instead of cold dashes. */}
       <section>
-        <SectionHeader title="נתונים עיקריים" accent="var(--accent-energy)" />
+        <SectionHeader
+          title="נתונים עיקריים"
+          hint="נתוני ההתקדמות מבוססים על האימונים ששמרת במכשיר."
+          accent="var(--accent-energy)"
+        />
         <div className="grid grid-cols-2 gap-3">
           <StatCard
             icon={<CalendarIcon className="h-[18px] w-[18px]" />}

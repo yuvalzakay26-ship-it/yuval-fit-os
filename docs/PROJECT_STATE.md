@@ -4,7 +4,54 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: **First Workout Completion Experience — Phase 1**. A **UX / copy /
+> Last reviewed: **Workout History / Progress Polish — Phase 1**. A **UX / copy /
+> presentation** pass that makes saved workout history and the Progress screen
+> clearer and quietly motivating once workouts exist — **no** schema, storage-key,
+> calculation, backup/restore, or behaviour change; everything derives **read-only**
+> from already-stored sessions. **History** ([`WorkoutHistory`](../components/workouts/WorkoutHistory.tsx)):
+> the volume tile now **hides at 0** (bodyweight-only `Σ weightKg×reps === 0`
+> sessions balance the stat grid 3→2 cols instead of showing a misleading "0 נפח",
+> matching the completion card), and the per-exercise line reads **"{n} סטים"**
+> instead of **"× עד 0 ק״ג"** when the top weight is 0. The `/workouts`
+> **"היסטוריית אימונים"** header gained a clarifying hint **"כל האימונים ששמרת,
+> מהאחרון לראשון."** once history exists, so the `#workout-history` anchor (the
+> completion card's scroll target) lands on an obviously-labelled section.
+> **Progress** ([`ProgressView`](../components/progress/ProgressView.tsx)): a new
+> presentational [`LastWorkoutSummary`](../components/workouts/LastWorkoutSummary.tsx)
+> (`data-testid="last-workout-summary"`) sits at the top under the weekly hero in a
+> new **"האימון האחרון שלך"** section (hint **"זה הסיכום האחרון שנשמר בהיסטוריה."**):
+> a compact snapshot of the most recent session (identity eyebrow · title · date ·
+> תרגילים/סטים/נפח, נפח hidden at 0) plus an **honest lifetime roll-up** —
+> **"סטים שנשמרו"** (total sets) and **"נפח כולל"** (lifetime `Σ weightKg×reps`,
+> hidden when 0) — never a "improved"/"got stronger" claim; with exactly one
+> workout it adds **"ככל שתשמור יותר אימונים, התמונה תהיה ברורה יותר."**, and with
+> none (page still has other data) it stays calm (**"עדיין אין אימון אחרון" / "כאן
+> תופיע ההיסטוריה אחרי שתסיים אימון ראשון."**). The **"נתונים עיקריים"** header
+> gained the careful copy **"נתוני ההתקדמות מבוססים על האימונים ששמרת במכשיר."**
+> A new pure helper [`workoutTotals`](../lib/analytics.ts) (`{ totalWorkouts,
+> totalSets, totalVolumeKg, latest }`) only **sums what is already stored** — no new
+> persisted data / schema field / new calculation. **Intentionally not shown:** no
+> improvement/comparison claims, no body/weight/appearance/transformation language,
+> no workout **duration** (not stored on `WorkoutSession`), and no per-session
+> "source template" badge (the schema doesn't persist a source id; `title` already
+> carries the template name — a possible follow-up only if the schema ever stores
+> it). **Unchanged:** `WorkoutSession`/`WorkoutExerciseEntry`/`SetEntry`/
+> `WorkoutTemplate` schemas, the active-draft schema/key `yfos:active-workout-draft:v1`
+> + `yfos:workouts`, `saveWorkout`/`addWorkout` payloads, the completion card
+> behaviour (its links/anchor were already correct), workout recommendation logic,
+> the active builder, profile/nutrition/water/supplement/protein/gym schemas,
+> backup/restore, auth/beta/guest/admin/Supabase, AI routes, legal pages; no new
+> dependencies; localStorage-only. e2e: new
+> [`workout-history-progress.spec.ts`](../e2e/workout-history-progress.spec.ts)
+> (calm history + `/progress` empty states; a saved workout appears in history with
+> its counts; a bodyweight-only session hides the volume tile; `/progress` shows the
+> last-workout snapshot + lifetime roll-ups + the device-local copy once a workout
+> exists; the snapshot stays calm when only other data exists; no horizontal overflow
+> at 360px / 390px on both screens). Validation: `npm run lint` ✓ (0 errors, 1
+> pre-existing warning), `npm run build` ✓ (TypeScript clean), `npm run test:e2e`
+> **138 green**. See [`WORKOUT_HISTORY_PROGRESS_POLISH.md`](WORKOUT_HISTORY_PROGRESS_POLISH.md).
+>
+> Prior: **First Workout Completion Experience — Phase 1**. A **UX / copy /
 > presentation** pass on the moment **after** a workout is saved. Saving already
 > worked (append to history + clear draft); now the hub shows a calm, **non-blocking
 > success card** ([`WorkoutCompletionCard`](../components/workouts/WorkoutCompletionCard.tsx),
