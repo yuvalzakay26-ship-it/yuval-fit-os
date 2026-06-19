@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState, SectionHeader } from "@/components/ui/PageHeader";
 import {
   AppleIcon,
+  BookOpenIcon,
   CheckIcon,
   ChevronDownIcon,
   DatabaseIcon,
@@ -382,6 +383,22 @@ export function NutritionView({
               </span>
               <span className="block text-[11.5px] leading-snug text-muted">
                 בחר מאכל עם תמונה והוסף ליומן
+              </span>
+            </span>
+          </Link>
+          <Link
+            href="/recipes"
+            className="tap flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 shadow-soft transition-[border-color] hover:border-border-strong"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--accent-nutrition-soft)] text-[color:var(--accent-nutrition)]">
+              <BookOpenIcon className="h-5 w-5" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14px] font-bold text-foreground">
+                ספריית מתכונים
+              </span>
+              <span className="block text-[11.5px] leading-snug text-muted">
+                מתכוני חלבון ומתוקים שאפשר לשמור ליומן
               </span>
             </span>
           </Link>

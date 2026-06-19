@@ -140,6 +140,13 @@ const SECTIONS: HubSection[] = [
         tone: "nutrition",
       },
       {
+        href: "/recipes",
+        title: "ספריית מתכונים",
+        description: "מתכוני חלבון ומתוקים ליומן התזונה",
+        icon: BookOpenIcon,
+        tone: "nutrition",
+      },
+      {
         href: "/nutrition/add",
         title: "הוספת אוכל",
         description: "רישום מהיר של ארוחה ליומן",

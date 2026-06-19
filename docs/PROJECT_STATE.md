@@ -4,7 +4,48 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: **Personal Path V1 — Small Safe Version**. A small, **local-first,
+> Last reviewed: **Recipe Library V1 — Protein Sweets / Personal Recipes**. A new
+> **local-first, NO-AI, NO-backend** recipe library at **`/recipes`** (list) →
+> **`/recipes/[id]`** (detail). Static seed [`lib/recipes.ts`](../lib/recipes.ts):
+> **17 recipes** with `Recipe`/`RecipeNutrition`/`RecipeIngredient`/`RecipeStep`
+> types — title, Hebrew category ("פנקייקים"/"שייקים"/"מאפים"/"קינוחים"/"ארוחת
+> בוקר"/"נשנוש"), tags, optional `servings`, optional `imageUrl`, nutrition (cal/
+> protein/carbs/fat/fiber + `scope`: `per_recipe`/`per_serving`/`per_unit`/
+> `without_toppings`), ingredients, optional toppings, and steps. Helpers
+> `recipeById` / `recipeCategoriesInLibrary` / `filterRecipes` (title+tag+ingredient
+> search) / `recipeServingText` / `foodLogFromRecipe`. Screen title **"ספריית
+> מתכונים"**, subtitle **"מתכוני חלבון ומתוקים שאפשר לשמור ליומן התזונה."**
+> Presentational [`RecipeLibraryView`](../components/recipes/RecipeLibraryView.tsx)
+> (search + category chips + list, `data-testid="recipe-list"`) and
+> [`RecipeDetailView`](../components/recipes/RecipeDetailView.tsx) (nutrition card,
+> ingredients, optional toppings flagged *not* in the values, numbered steps).
+> **Nutrition integration IMPLEMENTED**: "הוסף ליומן התזונה" builds a normal
+> `FoodLog` via `foodLogFromRecipe` (today's date, scope-aware `quantityText`,
+> mealType breakfast for "ארוחת בוקר" else snack) and writes it through the existing
+> `addFoodLog` — fiber is dropped (no `FoodLog` field) and the schema is **not**
+> changed. **Images**: none in V1 — `imageUrl` optional, UI falls back to a safe
+> per-category gradient ([`RecipeImage`](../components/recipes/RecipeImage.tsx) /
+> [`RecipePlaceholder`](../components/recipes/RecipePlaceholder.tsx), mirroring
+> `FoodPlaceholder`); Yuval adds images later. **Privacy/copyright-safe**: data was
+> extracted from a **private reference PDF** that is **never committed** (moved to
+> git-ignored `private-input/`, `/private-input/**` added to `.gitignore`), never in
+> public assets, never shown; **no** original images/layout/branding/marketing were
+> copied; preparation steps were **rewritten** into clean app Hebrew while preserving
+> quantities, nutrition, temperatures, times and functional order **exactly**. Entry
+> points: Nutrition "כלים נוספים" + System Hub תזונה group; `/recipes` keeps the
+> Nutrition bottom-nav tab active (added to its `match`); **Today untouched**.
+> **Unchanged:** no backend/Supabase, no auth/beta/admin/guest, no nutrition/FoodLog/
+> water/supplement/protein/workout schemas, no backup/restore (recipes are a static
+> read-only seed — no user data to back up), no new dependencies; localStorage-only.
+> e2e: new [`recipes.spec.ts`](../e2e/recipes.spec.ts) (loads; list renders; detail
+> shows nutrition+ingredients+steps; search+category filter; Nutrition links to
+> `/recipes`; "הוסף ליומן התזונה" creates a today entry; no-image placeholder/no
+> `<img>`; no overflow at 360/390). Validation: `npm run lint` ✓ (0 errors, 1
+> pre-existing warning), `npm run build` ✓ (TypeScript clean; `/recipes` static,
+> `/recipes/[id]` SSG ×17), `npm run test:e2e` **154 green** (146 + 8 new). See
+> [`RECIPE_LIBRARY_V1.md`](RECIPE_LIBRARY_V1.md).
+>
+> Prior: **Personal Path V1 — Small Safe Version**. A small, **local-first,
 > deterministic, NO-AI** guidance layer that helps the user understand their next
 > step by *connecting* existing pieces — the saved profile (via the recommendation
 > result), the workout recommendation, and saved history — into one "where am I /

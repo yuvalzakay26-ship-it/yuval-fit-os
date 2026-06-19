@@ -26,7 +26,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "היום", icon: HomeIcon },
   { href: "/workouts", label: "אימונים", icon: DumbbellIcon },
-  { href: "/nutrition", label: "תזונה", icon: AppleIcon },
+  { href: "/nutrition", label: "תזונה", icon: AppleIcon, match: ["/recipes"] },
   { href: "/progress", label: "התקדמות", icon: ChartIcon },
   {
     href: "/more",
