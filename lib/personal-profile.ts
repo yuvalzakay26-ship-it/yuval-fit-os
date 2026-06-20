@@ -85,6 +85,23 @@ export const EQUIPMENT_OPTIONS = [
   "לא בטוח",
 ] as const;
 
+// --- V5 visual focus-areas (additive multi-select) ----------------------
+// The muscle regions the user wants to emphasise. A neutral, training-only
+// answer (which muscle groups to focus on) — never a body-shape judgment and
+// never a comparison. "גוף מלא" is a valid "balance everything" choice and the
+// visual body map lights up all regions for it. Stored as the Hebrew labels
+// themselves, like every other select, so backups stay self-describing.
+export const FOCUS_AREA_OPTIONS = [
+  "חזה",
+  "גב",
+  "כתפיים",
+  "ידיים",
+  "בטן / ליבה",
+  "רגליים",
+  "ישבן",
+  "גוף מלא",
+] as const;
+
 // --- V2 optional personalization options (additive) ---------------------
 // Neutral, respectful, non-medical. The adaptation field is an optional
 // "how to address / tailor for you" answer, never a medical claim and never a
@@ -127,6 +144,8 @@ export interface TrainingProfile {
   experience?: string;
   workoutDuration?: string;
   equipment?: string[];
+  /** V5: muscle regions to emphasise (multi-select). Additive; never a judgment. */
+  focusAreas?: string[];
   notes?: string;
   // --- V2 optional personalization fields (all additive + optional) ---
   /** Optional "how to address / tailor for you". Never a medical/body claim. */
@@ -152,6 +171,7 @@ export interface TrainingProfileInput {
   experience?: string;
   workoutDuration?: string;
   equipment?: string[];
+  focusAreas?: string[];
   notes?: string;
   adaptation?: string;
   age?: string;
@@ -205,17 +225,17 @@ function pickOption(value: unknown, options: readonly string[]): string | undefi
   return typeof value === "string" && options.includes(value) ? value : undefined;
 }
 
-/** Keep only the recognised equipment options, de-duped and order-preserved. */
-function pickEquipment(value: unknown): string[] | undefined {
+/** Keep only the recognised options of a multi-select, de-duped + order-preserved.
+ *  Shared by equipment and focusAreas so both validate identically. */
+function pickMultiOptions(
+  value: unknown,
+  options: readonly string[],
+): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const seen = new Set<string>();
   const kept: string[] = [];
   for (const item of value) {
-    if (
-      typeof item === "string" &&
-      (EQUIPMENT_OPTIONS as readonly string[]).includes(item) &&
-      !seen.has(item)
-    ) {
+    if (typeof item === "string" && options.includes(item) && !seen.has(item)) {
       seen.add(item);
       kept.push(item);
     }
@@ -266,7 +286,8 @@ export function sanitizeProfile(value: unknown): TrainingProfile | null {
     weeklyFrequency: pickOption(v.weeklyFrequency, FREQUENCY_OPTIONS),
     experience: pickOption(v.experience, EXPERIENCE_OPTIONS),
     workoutDuration: pickOption(v.workoutDuration, DURATION_OPTIONS),
-    equipment: pickEquipment(v.equipment),
+    equipment: pickMultiOptions(v.equipment, EQUIPMENT_OPTIONS),
+    focusAreas: pickMultiOptions(v.focusAreas, FOCUS_AREA_OPTIONS),
     notes: pickNotes(v.notes),
     adaptation: pickOption(v.adaptation, ADAPTATION_OPTIONS),
     age: pickMeasure(v.age),
@@ -283,6 +304,7 @@ export function sanitizeProfile(value: unknown): TrainingProfile | null {
   if (profile.experience === undefined) delete profile.experience;
   if (profile.workoutDuration === undefined) delete profile.workoutDuration;
   if (profile.equipment === undefined) delete profile.equipment;
+  if (profile.focusAreas === undefined) delete profile.focusAreas;
   if (profile.notes === undefined) delete profile.notes;
   if (profile.adaptation === undefined) delete profile.adaptation;
   if (profile.age === undefined) delete profile.age;
@@ -303,6 +325,7 @@ export function isProfileEmpty(profile: TrainingProfile | null): boolean {
     !profile.experience &&
     !profile.workoutDuration &&
     !(profile.equipment && profile.equipment.length > 0) &&
+    !(profile.focusAreas && profile.focusAreas.length > 0) &&
     !profile.notes &&
     !profile.adaptation &&
     !profile.age &&

@@ -33,25 +33,29 @@ async function expectBodyScrollable(page: Page) {
 
 // Walk the wizard end to end and save, leaving the saved summary on screen.
 async function completeAndSaveWizard(page: Page) {
+  const next = page.getByRole("button", { name: "הבא", exact: true });
   await page.getByRole("button", { name: "התחל" }).click();
   await page.getByRole("button", { name: "לבנות מסת שריר" }).click(); // goal
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
+  await next.click();
+  await page.getByRole("button", { name: "גבר", exact: true }).click(); // adaptation
+  await next.click();
+  await page.getByRole("button", { name: "גוף מלא", exact: true }).click(); // focus areas
+  await next.click();
   await page.getByRole("button", { name: "בית", exact: true }).click(); // location
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
+  await next.click();
   await page.getByRole("button", { name: "4 פעמים" }).click(); // frequency
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
+  await next.click();
   await page.getByRole("button", { name: "45–60 דקות" }).click(); // duration
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
+  await next.click();
   await page.getByRole("button", { name: "מתחיל" }).click(); // experience
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
+  await next.click();
   await page.getByRole("button", { name: "משקולות" }).click(); // equipment (≥1)
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
-  await page.getByRole("button", { name: "הבא", exact: true }).click(); // personal (optional)
+  await next.click();
   await page.getByRole("button", { name: "מאוזן" }).click(); // training preference
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
+  await next.click();
   await page.getByRole("button", { name: "המלצה לפי המטרה שלי" }).click(); // guidance
 
-  // Advance to the summary (notes is optional), then save.
+  // Advance to the summary (personal stats + notes are optional), then save.
   await advanceWizardToSummary(page);
   await page.getByRole("button", { name: "שמור פרופיל" }).click();
   await expect(page.getByText("הפרופיל נשמר במכשיר")).toBeVisible();

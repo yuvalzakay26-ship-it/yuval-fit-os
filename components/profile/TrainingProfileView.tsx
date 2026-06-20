@@ -16,21 +16,28 @@ import {
   ChevronIcon,
   ClockIcon,
   DumbbellIcon,
+  FigureIcon,
   HeartIcon,
   HomeIcon,
   PencilIcon,
   SparkIcon,
   TargetIcon,
   TrashIcon,
+  UserIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { useWorkoutTemplates } from "@/lib/fitness-store";
 import { getWorkoutRecommendation } from "@/lib/workout-recommendation";
 import {
+  AdaptationCardGroup,
+  BodyFocusFigure,
+} from "@/components/profile/onboarding-visuals";
+import {
   ADAPTATION_OPTIONS,
   DURATION_OPTIONS,
   EQUIPMENT_OPTIONS,
   EXPERIENCE_OPTIONS,
+  FOCUS_AREA_OPTIONS,
   FREQUENCY_OPTIONS,
   GOAL_OPTIONS,
   GUIDANCE_STYLE_OPTIONS,
@@ -57,6 +64,7 @@ interface ProfileDraft {
   experience?: string;
   workoutDuration?: string;
   equipment: string[];
+  focusAreas: string[];
   notes: string;
   adaptation?: string;
   age: string;
@@ -68,6 +76,7 @@ interface ProfileDraft {
 
 const EMPTY_DRAFT: ProfileDraft = {
   equipment: [],
+  focusAreas: [],
   notes: "",
   age: "",
   heightCm: "",
@@ -82,6 +91,7 @@ function profileToDraft(profile: TrainingProfile): ProfileDraft {
     experience: profile.experience,
     workoutDuration: profile.workoutDuration,
     equipment: profile.equipment ? [...profile.equipment] : [],
+    focusAreas: profile.focusAreas ? [...profile.focusAreas] : [],
     notes: profile.notes ?? "",
     adaptation: profile.adaptation,
     age: profile.age ?? "",
@@ -100,6 +110,7 @@ function draftToInput(draft: ProfileDraft): TrainingProfileInput {
     experience: draft.experience,
     workoutDuration: draft.workoutDuration,
     equipment: draft.equipment,
+    focusAreas: draft.focusAreas,
     notes: draft.notes,
     adaptation: draft.adaptation,
     age: draft.age,
@@ -184,19 +195,25 @@ function MultiChoiceGroup({
 }
 
 /* ------------------------------ Wizard model ---------------------------- */
-// The onboarding is a guided, one-question-per-screen flow. STEPS holds the ten
-// question screens (indices 0–9) plus a final summary/confirm screen (index 10),
-// so the progress indicator and navigation are data-driven.
+// The onboarding is a premium, guided, one-question-per-screen flow. STEPS holds
+// the twelve question screens (indices 0–11) plus a final summary/confirm screen
+// (index 12), so the progress indicator and navigation are data-driven.
+//
+// V5 adds two PREMIUM VISUAL steps: a visual gender/adaptation picker (step 1,
+// AdaptationCardGroup) and a visual muscle focus-areas map (step 2,
+// BodyFocusFigure) — the headline upgrade. Both are required so the profile is
+// meaningful, but the gender step always offers "מעדיף/ה לא לענות", so nobody is
+// ever forced to disclose (it counts as a valid answer, like "לא בטוח" elsewhere).
 //
 // Required vs optional: the profile onboarding stays optional at the app-entry
 // level (the first modal still offers "לא עכשיו" and the intro still offers
 // "דלג בינתיים"). But once the user is INSIDE the questionnaire, the core
 // training questions are REQUIRED so we never store an empty / useless profile.
-// `required: true` steps gate "הבא" until an answer is chosen; the personal
-// adaptation step (6) and the notes step (9) stay optional and never block.
-// Body-related fields (sex/adaptation, age, height, weight) remain optional by
-// design — they are personal/sensitive and are not needed for recommendations;
-// no BMI, no body-shape labels, no medical/diet logic.
+// `required: true` steps gate "הבא" until an answer is chosen; only the personal
+// stats step (10) and the notes step (11) stay optional and never block.
+// Body-measure fields (age, height, weight) remain optional by design — they are
+// personal/sensitive and are not needed for recommendations; no BMI, no
+// body-shape labels, no medical/diet logic, no judgment anywhere.
 
 interface StepMeta {
   icon: IconCmp;
@@ -208,36 +225,49 @@ interface StepMeta {
 
 const STEPS: readonly StepMeta[] = [
   { icon: TargetIcon, title: "מה המטרה המרכזית שלך?", required: true }, // 0 goal
-  { icon: HomeIcon, title: "איפה אתה מתאמן בדרך כלל?", required: true }, // 1 location
-  { icon: CalendarIcon, title: "כמה פעמים בשבוע תרצה להתאמן?", required: true }, // 2 frequency
-  { icon: ClockIcon, title: "כמה זמן יש לך לאימון?", required: true }, // 3 duration
-  { icon: ChartIcon, title: "מה רמת הניסיון שלך?", required: true }, // 4 experience
+  {
+    icon: UserIcon,
+    title: "איך נתאים את החוויה אליך?",
+    helper:
+      "עוזר לנו להתאים ניסוח והדגשים. אפשר לבחור 'מעדיף/ה לא לענות' — לא חובה לחשוף.",
+    required: true,
+  }, // 1 adaptation (visual gender)
+  {
+    icon: FigureIcon,
+    title: "על אילו שרירים נרצה להתמקד?",
+    helper: "אפשר לבחור כמה אזורים. 'גוף מלא' מדגיש את כל הגוף.",
+    required: true,
+  }, // 2 focusAreas (visual body map, ≥1)
+  { icon: HomeIcon, title: "איפה אתה מתאמן בדרך כלל?", required: true }, // 3 location
+  { icon: CalendarIcon, title: "כמה פעמים בשבוע תרצה להתאמן?", required: true }, // 4 frequency
+  { icon: ClockIcon, title: "כמה זמן יש לך לאימון?", required: true }, // 5 duration
+  { icon: ChartIcon, title: "מה רמת הניסיון שלך?", required: true }, // 6 experience
   {
     icon: DumbbellIcon,
     title: "איזה ציוד זמין לך?",
     helper: "אפשר לבחור כמה אפשרויות.",
     required: true,
-  }, // 5 equipment (multi-select, ≥1)
+  }, // 7 equipment (multi-select, ≥1)
+  { icon: BoltIcon, title: "איזה סגנון אימון מתאים לך יותר?", required: true }, // 8 trainingPreference
+  { icon: SparkIcon, title: "איך תרצה להתחיל?", required: true }, // 9 guidanceStyle
   {
     icon: HeartIcon,
-    title: "התאמה אישית — אופציונלי",
+    title: "פרטים אישיים — אופציונלי",
     helper:
       "כל השדות כאן אופציונליים לגמרי. נועדו רק כדי להתאים את החוויה — לא לשיפוט ולא לשום חישוב רפואי.",
-  }, // 6 personal (optional)
-  { icon: BoltIcon, title: "איזה סגנון אימון מתאים לך יותר?", required: true }, // 7 trainingPreference
-  { icon: SparkIcon, title: "איך תרצה להתחיל?", required: true }, // 8 guidanceStyle
+  }, // 10 personal stats (optional)
   {
     icon: PencilIcon,
     title: "יש משהו שכדאי לקחת בחשבון?",
     helper:
       "לדוגמה: זמן מוגבל, תרגילים שפחות מתאימים לך, חוסר ניסיון או העדפה מסוימת.",
-  }, // 9 notes (optional)
-  { icon: CheckIcon, title: "סיכום" }, // 10 summary
+  }, // 11 notes (optional)
+  { icon: CheckIcon, title: "סיכום" }, // 12 summary
 ] as const;
 
-const TOTAL_STEPS = STEPS.length; // 11
-const LAST_QUESTION_INDEX = STEPS.length - 2; // 9 (notes)
-const SUMMARY_INDEX = STEPS.length - 1; // 10
+const TOTAL_STEPS = STEPS.length; // 13
+const LAST_QUESTION_INDEX = STEPS.length - 2; // 11 (notes)
+const SUMMARY_INDEX = STEPS.length - 1; // 12
 
 /** Indices of the required core steps, in order — used to gate navigation and to
  *  defensively validate before saving / find the first still-missing answer. */
@@ -253,21 +283,25 @@ function isStepAnswered(index: number, draft: ProfileDraft): boolean {
     case 0:
       return Boolean(draft.goal);
     case 1:
-      return Boolean(draft.location);
+      return Boolean(draft.adaptation); // "מעדיף/ה לא לענות" counts as a choice
     case 2:
-      return Boolean(draft.weeklyFrequency);
+      return draft.focusAreas.length > 0; // at least one muscle focus / "גוף מלא"
     case 3:
-      return Boolean(draft.workoutDuration);
+      return Boolean(draft.location);
     case 4:
-      return Boolean(draft.experience);
+      return Boolean(draft.weeklyFrequency);
     case 5:
-      return draft.equipment.length > 0; // "לא בטוח" counts as a valid choice
+      return Boolean(draft.workoutDuration);
+    case 6:
+      return Boolean(draft.experience);
     case 7:
-      return Boolean(draft.trainingPreference);
+      return draft.equipment.length > 0; // "לא בטוח" counts as a valid choice
     case 8:
+      return Boolean(draft.trainingPreference);
+    case 9:
       return Boolean(draft.guidanceStyle);
     default:
-      return true; // optional steps (6 personal, 9 notes) + summary
+      return true; // optional steps (10 personal stats, 11 notes) + summary
   }
 }
 
@@ -382,6 +416,7 @@ function ProfileRows({
   experience,
   workoutDuration,
   equipment,
+  focusAreas,
   notes,
   adaptation,
   age,
@@ -396,6 +431,7 @@ function ProfileRows({
   experience?: string;
   workoutDuration?: string;
   equipment: string[];
+  focusAreas: string[];
   notes?: string;
   adaptation?: string;
   age?: string;
@@ -406,10 +442,11 @@ function ProfileRows({
 }) {
   const equipmentValue =
     equipment.length > 0 ? equipment.join(" · ") : NONE;
+  const focusValue = focusAreas.length > 0 ? focusAreas.join(" · ") : NONE;
   // Optional rows render ONLY when filled, so empty optional fields never read
   // like missing/required errors.
-  const hasPersonalization =
-    adaptation || age || heightCm || weightKg || trainingPreference || guidanceStyle;
+  const hasMore =
+    age || heightCm || weightKg || trainingPreference || guidanceStyle;
   return (
     <div className="space-y-5">
       <section>
@@ -417,6 +454,8 @@ function ProfileRows({
         <Card>
           <div className="divide-y divide-border">
             <SummaryRow label="מטרה" value={goal ?? NONE} />
+            <SummaryRow label="התאמה" value={adaptation ?? NONE} />
+            <SummaryRow label="מיקוד שרירים" value={focusValue} />
             <SummaryRow label="מקום אימון" value={location ?? NONE} />
             <SummaryRow label="תדירות" value={weeklyFrequency ?? NONE} />
             <SummaryRow label="זמן אימון" value={workoutDuration ?? NONE} />
@@ -436,13 +475,16 @@ function ProfileRows({
         </Card>
       </section>
 
-      {hasPersonalization && (
+      {hasMore && (
         <section>
-          <SectionHeader title="התאמה אישית" accent="var(--accent)" />
+          <SectionHeader title="פרטים נוספים" accent="var(--accent)" />
           <Card>
             <div className="divide-y divide-border">
-              {adaptation && (
-                <SummaryRow label="מין / התאמה" value={adaptation} />
+              {trainingPreference && (
+                <SummaryRow label="סגנון אימון" value={trainingPreference} />
+              )}
+              {guidanceStyle && (
+                <SummaryRow label="איך להתחיל" value={guidanceStyle} />
               )}
               {age && <SummaryRow label="גיל" value={age} />}
               {heightCm && (
@@ -450,12 +492,6 @@ function ProfileRows({
               )}
               {weightKg && (
                 <SummaryRow label="משקל" value={`${weightKg} ק״ג`} />
-              )}
-              {trainingPreference && (
-                <SummaryRow label="סגנון אימון" value={trainingPreference} />
-              )}
-              {guidanceStyle && (
-                <SummaryRow label="איך להתחיל" value={guidanceStyle} />
               )}
             </div>
           </Card>
@@ -571,6 +607,7 @@ function SavedSummary({
         experience={profile.experience}
         workoutDuration={profile.workoutDuration}
         equipment={profile.equipment ?? []}
+        focusAreas={profile.focusAreas ?? []}
         notes={profile.notes}
         adaptation={profile.adaptation}
         age={profile.age}
@@ -657,6 +694,15 @@ export function TrainingProfileView() {
       equipment: d.equipment.includes(option)
         ? d.equipment.filter((e) => e !== option)
         : [...d.equipment, option],
+    }));
+  };
+
+  const toggleFocusArea = (option: string) => {
+    setDraft((d) => ({
+      ...d,
+      focusAreas: d.focusAreas.includes(option)
+        ? d.focusAreas.filter((f) => f !== option)
+        : [...d.focusAreas, option],
     }));
   };
 
@@ -803,13 +849,32 @@ export function TrainingProfileView() {
         );
       case 1:
         return (
+          <AdaptationCardGroup
+            options={ADAPTATION_OPTIONS}
+            value={draft.adaptation}
+            onSelect={(v) => setField("adaptation", v)}
+          />
+        );
+      case 2:
+        return (
+          <div className="space-y-5">
+            <MultiChoiceGroup
+              options={FOCUS_AREA_OPTIONS}
+              values={draft.focusAreas}
+              onToggle={toggleFocusArea}
+            />
+            <BodyFocusFigure selected={draft.focusAreas} />
+          </div>
+        );
+      case 3:
+        return (
           <ChoiceGroup
             options={LOCATION_OPTIONS}
             value={draft.location}
             onSelect={(v) => setField("location", v)}
           />
         );
-      case 2:
+      case 4:
         return (
           <ChoiceGroup
             options={FREQUENCY_OPTIONS}
@@ -817,7 +882,7 @@ export function TrainingProfileView() {
             onSelect={(v) => setField("weeklyFrequency", v)}
           />
         );
-      case 3:
+      case 5:
         return (
           <ChoiceGroup
             options={DURATION_OPTIONS}
@@ -825,7 +890,7 @@ export function TrainingProfileView() {
             onSelect={(v) => setField("workoutDuration", v)}
           />
         );
-      case 4:
+      case 6:
         return (
           <ChoiceGroup
             options={EXPERIENCE_OPTIONS}
@@ -833,7 +898,7 @@ export function TrainingProfileView() {
             onSelect={(v) => setField("experience", v)}
           />
         );
-      case 5:
+      case 7:
         return (
           <MultiChoiceGroup
             options={EQUIPMENT_OPTIONS}
@@ -841,55 +906,7 @@ export function TrainingProfileView() {
             onToggle={toggleEquipment}
           />
         );
-      case 6:
-        return (
-          <div className="space-y-4">
-            <div>
-              <Label>מין / התאמה — אופציונלי</Label>
-              <ChoiceGroup
-                options={ADAPTATION_OPTIONS}
-                value={draft.adaptation}
-                onSelect={(v) => setField("adaptation", v)}
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-2.5">
-              <div>
-                <Label htmlFor="profile-age">גיל</Label>
-                <Input
-                  id="profile-age"
-                  inputMode="numeric"
-                  maxLength={MEASURE_MAX_LENGTH}
-                  className="text-center font-semibold"
-                  value={draft.age}
-                  onChange={(e) => setMeasure("age", e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="profile-height">גובה · ס״מ</Label>
-                <Input
-                  id="profile-height"
-                  inputMode="numeric"
-                  maxLength={MEASURE_MAX_LENGTH}
-                  className="text-center font-semibold"
-                  value={draft.heightCm}
-                  onChange={(e) => setMeasure("heightCm", e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="profile-weight">משקל · ק״ג</Label>
-                <Input
-                  id="profile-weight"
-                  inputMode="numeric"
-                  maxLength={MEASURE_MAX_LENGTH}
-                  className="text-center font-semibold"
-                  value={draft.weightKg}
-                  onChange={(e) => setMeasure("weightKg", e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-        );
-      case 7:
+      case 8:
         return (
           <ChoiceGroup
             options={TRAINING_PREFERENCE_OPTIONS}
@@ -897,7 +914,7 @@ export function TrainingProfileView() {
             onSelect={(v) => setField("trainingPreference", v)}
           />
         );
-      case 8:
+      case 9:
         return (
           <ChoiceGroup
             options={GUIDANCE_STYLE_OPTIONS}
@@ -905,7 +922,45 @@ export function TrainingProfileView() {
             onSelect={(v) => setField("guidanceStyle", v)}
           />
         );
-      case 9:
+      case 10:
+        return (
+          <div className="grid grid-cols-3 gap-2.5">
+            <div>
+              <Label htmlFor="profile-age">גיל</Label>
+              <Input
+                id="profile-age"
+                inputMode="numeric"
+                maxLength={MEASURE_MAX_LENGTH}
+                className="text-center font-semibold"
+                value={draft.age}
+                onChange={(e) => setMeasure("age", e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="profile-height">גובה · ס״מ</Label>
+              <Input
+                id="profile-height"
+                inputMode="numeric"
+                maxLength={MEASURE_MAX_LENGTH}
+                className="text-center font-semibold"
+                value={draft.heightCm}
+                onChange={(e) => setMeasure("heightCm", e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="profile-weight">משקל · ק״ג</Label>
+              <Input
+                id="profile-weight"
+                inputMode="numeric"
+                maxLength={MEASURE_MAX_LENGTH}
+                className="text-center font-semibold"
+                value={draft.weightKg}
+                onChange={(e) => setMeasure("weightKg", e.target.value)}
+              />
+            </div>
+          </div>
+        );
+      case 11:
         return (
           <Textarea
             value={draft.notes}
@@ -946,6 +1001,7 @@ export function TrainingProfileView() {
             experience={draft.experience}
             workoutDuration={draft.workoutDuration}
             equipment={draft.equipment}
+            focusAreas={draft.focusAreas}
             notes={draft.notes}
             adaptation={draft.adaptation}
             age={draft.age}

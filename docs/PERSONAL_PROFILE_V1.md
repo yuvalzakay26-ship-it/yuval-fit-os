@@ -689,3 +689,148 @@ answer required steps), `docs/PERSONAL_PROFILE_V1.md`, `docs/PROJECT_STATE.md`.
   back/next only.
 - `npm run lint`, `npm run build`, and `npm run test:e2e` all pass — **96 e2e specs
   green**.
+
+---
+
+# V5 — Premium visual onboarding (visual gender + muscle focus map)
+
+V5 turns the wizard into a **premium, visual, mobile-first onboarding experience**.
+It is mostly a **presentation upgrade** plus **one additive schema field**. It does
+**not** change storage semantics, the defensive parser's behaviour for existing
+fields, backup/restore, the onboarding session gating, the beta-welcome ordering,
+or the workout recommendation. Everything in V1–V4 above still holds.
+
+## The two headline upgrades
+
+1. **Visual gender / adaptation step.** The old chip-only `adaptation` control
+   (previously bundled into the optional "personal" step) is now its **own
+   dedicated visual step** with three highlight **cards**, each carrying an
+   **original, abstract silhouette** (broad-shoulder / hourglass / neutral —
+   `MaleGlyph` / `FemaleGlyph` / `NeutralGlyph` in
+   `components/profile/onboarding-visuals.tsx`). The selected card is clearly
+   highlighted (accent border + accent-soft fill + glow). Options are unchanged
+   (`גבר` · `אישה` · `מעדיף/ה לא לענות`), so storage and backups are identical.
+
+2. **Visual muscle focus-areas step (the main upgrade).** A new multi-select step
+   lets the user pick which muscle regions to emphasise, with a **live original
+   front/back SVG body map** (`BodyFocusFigure`) below the chips. Selecting an area
+   lights up the matching region(s) on the body in the **brand accent**; **"גוף
+   מלא"** lights **every** region. The figure is a muted silhouette (a group of
+   overlapping primitives) with per-region accent overlays that fade in when active
+   — a lightweight, dependency-free, **no-3D** approach. Region mapping:
+
+   | Option | Lights up |
+   | --- | --- |
+   | חזה | chest (front) |
+   | גב | upper/mid back (back) |
+   | כתפיים | shoulders (front + back) |
+   | ידיים | upper arms (front + back) |
+   | בטן / ליבה | abs (front) |
+   | רגליים | quads + hamstrings (front + back) |
+   | ישבן | glutes (back) |
+   | גוף מלא | all of the above |
+
+> **No third-party assets, illustrations, screenshots, or branded layouts were
+> copied.** Every figure is drawn from primitive SVG shapes (ellipses, rounded
+> rects, simple paths). The figures are presentational (`aria-hidden`); the
+> accessible controls are the labelled chips/cards.
+
+## New field (additive)
+
+One field was added to `TrainingProfile` / `TrainingProfileInput`:
+
+| Field | Label | Type | Options |
+| --- | --- | --- | --- |
+| `focusAreas` | מיקוד שרירים | **multi** | חזה · גב · כתפיים · ידיים · בטן / ליבה · רגליים · ישבן · גוף מלא |
+
+- Validated on read by a shared `pickMultiOptions(value, options)` helper (the old
+  `pickEquipment` was generalised into it; equipment and focusAreas now validate
+  identically — recognised options only, de-duped, order-preserved, empty →
+  dropped). Folded into `sanitizeProfile` and `isProfileEmpty`.
+- **Backup/Restore is automatic** — the `personalProfile` module stores the whole
+  object, so `focusAreas` is exported/restored with no backup-code change.
+  `backupVersion` stays **1**; older profiles without `focusAreas` load unchanged.
+
+## Step structure (13 steps)
+
+The wizard grew from 11 to **13 steps** (12 questions + summary), all still
+**one-question-per-screen** with the same progress bar and back/next:
+
+| # | Field(s) | Control | Required |
+| --- | --- | --- | --- |
+| 0 | `goal` | chips | ✓ |
+| 1 | `adaptation` | **visual gender cards** | ✓ (✱) |
+| 2 | `focusAreas` | **chips + visual body map** | ✓ (≥1) |
+| 3 | `location` | chips | ✓ |
+| 4 | `weeklyFrequency` | chips | ✓ |
+| 5 | `workoutDuration` | chips | ✓ |
+| 6 | `experience` | chips | ✓ |
+| 7 | `equipment` | multi chips | ✓ (≥1) |
+| 8 | `trainingPreference` | chips | ✓ |
+| 9 | `guidanceStyle` | chips | ✓ |
+| 10 | `age` · `heightCm` · `weightKg` | 3 numeric inputs | optional |
+| 11 | `notes` | free text | optional |
+| 12 | summary | confirm | — |
+
+✱ **Gender/adaptation is now required to make a choice**, but **"מעדיף/ה לא
+לענות"** is a valid one-tap answer — nobody is ever forced to disclose (same
+principle as "לא בטוח" counting elsewhere). Age/height/weight stay **optional** by
+design.
+
+## Summary
+
+The saved summary's core "סיכום הפרופיל" card now also shows **התאמה** (adaptation)
+and **מיקוד שרירים** (focus areas, joined with " · "). The secondary section was
+renamed **"פרטים נוספים"** and carries style / guidance / age / height / weight
+(each row only when filled).
+
+## Recommendation compatibility
+
+`lib/workout-recommendation.ts` is **unchanged**. It never reads `focusAreas` or
+`adaptation`, and `hasRequiredAnswers` still checks only the V1 core fields, so the
+V1/V1.1 recommendation behaviour is fully preserved (the new fields are additive
+and low-risk).
+
+## Safety wording decisions (unchanged intent)
+
+- **No BMI, no body-shape labels, no "תקין/לא תקין", no medical/diet logic, no
+  comparisons, no judgment.** `focusAreas` is a neutral training choice (which
+  muscles to emphasise), never a body assessment.
+- The gender step is framed as "how to tailor the experience", with "מעדיף/ה לא
+  לענות" always offered.
+
+## V5 — what stayed unchanged
+
+`yfos:personal-profile:v1`, the existing field names/meanings, the sanitizer's
+behaviour for existing fields, `savePersonalProfile`/`getPersonalProfile`/
+`clearPersonalProfile`, backup/restore (`personalProfile` module, `backupVersion`
+1), the onboarding session gating, the beta-welcome ordering/flow, the profile
+onboarding modal, the More/Workouts entry points, auth/beta/guest/admin/Supabase,
+AI routes, public info pages, and all other app areas. No field was removed, no
+field meaning changed, **no new dependency** was added, and **no third-party asset
+was copied**.
+
+## V5 files
+
+**Added:** `components/profile/onboarding-visuals.tsx` (original SVG body map +
+visual gender cards).
+**Modified:** `lib/personal-profile.ts` (`FOCUS_AREA_OPTIONS` + `focusAreas` field
++ `pickMultiOptions` + sanitize/empty wiring), `components/profile/TrainingProfileView.tsx`
+(visual gender step, visual focus-areas step, 13-step model, summary rows),
+`components/ui/icons.tsx` (`UserIcon` + `FigureIcon`), `e2e/training-profile.spec.ts`
+(visual gender/focus-area + highlight + 360/390 overflow + edit-older-profile),
+`e2e/scroll-lock.spec.ts` (wizard walk updated for the new steps),
+`docs/PERSONAL_PROFILE_V1.md`, `docs/PROJECT_STATE.md`.
+
+## V5 manual QA notes (360 px / 390 px)
+
+- The visual gender cards and the focus-area chips + front/back body map wrap
+  cleanly with **no horizontal overflow at 360 px and 390 px** (covered by e2e).
+- Selecting a focus area immediately highlights the matching region(s); "גוף מלא"
+  lights every region; deselecting clears them.
+- Gender/adaptation and focus-areas gate "הבא" until answered; "מעדיף/ה לא לענות"
+  and any single focus area unblock them.
+- Editing an older profile (without the new required fields) is guided through the
+  visual gender + focus-area steps before the summary; existing data is preserved.
+- `npm run lint`, `npm run build`, and `npm run test:e2e` all pass — **163 e2e specs
+  green**.

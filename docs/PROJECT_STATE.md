@@ -4,7 +4,44 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: **Nutrition IA Reset — Phase 1** (presentation/IA/copy/docs only —
+> Last reviewed: **Personal Profile V5 — Premium visual onboarding** (an
+> additive schema + presentation upgrade of the `/training-profile` wizard;
+> **no** change to storage semantics, backup/restore, onboarding gating, the
+> beta-welcome order, or the workout recommendation). The wizard is now a premium
+> visual flow: a new **visual gender/adaptation step** (original silhouette cards —
+> גבר / אישה / מעדיף-ה-לא-לענות, in `components/profile/onboarding-visuals.tsx`)
+> and the headline **visual muscle focus-areas step** — a multi-select that lights
+> up an **original front/back SVG body map** (`BodyFocusFigure`) in the brand
+> accent; **"גוף מלא"** lights every region. One additive field was added to the
+> schema: **`focusAreas?: string[]`** (`lib/personal-profile.ts`,
+> `FOCUS_AREA_OPTIONS` = חזה · גב · כתפיים · ידיים · בטן/ליבה · רגליים · ישבן ·
+> גוף מלא), sanitized exactly like `equipment` via a shared `pickMultiOptions`,
+> folded into `sanitizeProfile` / `isProfileEmpty`, and carried by Backup/Restore
+> automatically (whole-object module, `backupVersion` stays **1**; older profiles
+> without it load unchanged). The wizard grew to **13 steps** (12 questions +
+> summary): goal → **adaptation (visual)** → **focus areas (visual)** → location →
+> frequency → duration → experience → equipment → training-preference → guidance →
+> personal stats (optional) → notes (optional) → summary. Gender/adaptation and
+> focus-areas are **required** (each gates "הבא"), but **"מעדיף/ה לא לענות"** is a
+> valid one-tap answer so nobody is ever forced to disclose — and **no third-party
+> asset/screenshot/layout was copied** (all figures are drawn from primitives).
+> Safety boundaries unchanged: **no BMI, no body-shape labels, no medical/diet
+> logic, no judgment**; age/height/weight stay optional. The workout
+> recommendation (`lib/workout-recommendation.ts`) is **untouched** — it never
+> reads `focusAreas`/`adaptation`, so V1/V1.1 stay compatible. Validation:
+> `npm run lint` ✓ (0 errors, 1 pre-existing unrelated warning), `npm run build` ✓
+> (TypeScript clean, unchanged route table), `npm run test:e2e` **163 green**
+> (new specs: visual gender select, focus-area select + body-map highlight,
+> full-body lights all regions, edit guides an older profile through the new
+> required steps, no horizontal overflow at 360px and 390px). Files: **added**
+> `components/profile/onboarding-visuals.tsx`; **modified** `lib/personal-profile.ts`,
+> `components/profile/TrainingProfileView.tsx`, `components/ui/icons.tsx`
+> (`UserIcon` + `FigureIcon`), `e2e/training-profile.spec.ts`,
+> `e2e/scroll-lock.spec.ts`, `docs/PERSONAL_PROFILE_V1.md`, `docs/PROJECT_STATE.md`.
+> See [`PERSONAL_PROFILE_V1.md`](PERSONAL_PROFILE_V1.md) ("V5 — Premium visual
+> onboarding").
+>
+> Prior: **Nutrition IA Reset — Phase 1** (presentation/IA/copy/docs only —
 > **no** `FoodLog`/recipe schema, storage key, calculation, AI route, or
 > save-semantics change). Re-anchored `/nutrition`
 > ([`NutritionView`](../components/nutrition/NutritionView.tsx)) on **three clear
@@ -1143,7 +1180,7 @@ backend** — all data lives in the browser under `yfos:*` storage keys.
 | Supplements Tracker | Personal supplement/medication tracking (no advice); searchable starter-template library with already-tracked state | `components/supplements/*`, `docs/SUPPLEMENTS_TRACKER.md`, `docs/SUPPLEMENTS_LIBRARY_UX.md` |
 | Progress | Premium weekly insights screen: weekly hero, rule-based insight cards, 7-day activity trends, human empty states, and personal records — derived purely from existing local data (no AI) | `components/progress/*`, `lib/analytics.ts`, `lib/progress-insights.ts`, `docs/PROGRESS_INSIGHTS_UPGRADE.md` |
 | Gym Attendance | Local gym check-in / check-out: prominent Today card, live visit timer, weekly stats (visits, time, avg, last), rich visit history (entry/exit/duration + display-only linked-workout snapshot matched by local day), same-day re-entry guard. Tracks *being at the gym* — separate from workout logging. No GPS | `components/gym/*`, `lib/gym-attendance.ts`, `docs/GYM_CHECK_IN.md` |
-| Personal Training Profile | Optional, editable personal profile (goal, location, frequency, experience, duration, equipment multi-select, notes + V2 optional adaptation/age/height/weight/training-preference/guidance-style). Collect + display only — no auto-program, no medical/diet/BMI/body-shape logic. **V3 (UX): the entry prompt is a centered modal and `/training-profile` is a step-by-step wizard** (intro → one question per screen → summary/confirm, progress bar, next/back, save once on finish); an existing profile shows the saved summary and "ערוך פרופיל" reopens the wizard pre-filled. Never blocks the app. localStorage-only; included in Backup/Restore | `components/profile/TrainingProfileView.tsx`, `components/profile/ProfileOnboardingPrompt.tsx`, `lib/personal-profile.ts`, `lib/profile-onboarding.ts`, `lib/app-access.ts`, `docs/PERSONAL_PROFILE_V1.md` |
+| Personal Training Profile | Optional, editable personal profile (goal, location, frequency, experience, duration, equipment multi-select, notes + V2 optional age/height/weight/training-preference/guidance-style + **V5 `focusAreas` multi-select**, with adaptation now a required visual step). Collect + display only — no auto-program, no medical/diet/BMI/body-shape logic. **V3 (UX): the entry prompt is a centered modal and `/training-profile` is a step-by-step wizard** (intro → one question per screen → summary/confirm, progress bar, next/back, save once on finish). **V5: premium visual onboarding** — a visual gender/adaptation card step and a visual muscle **focus-areas** step backed by an original front/back SVG body map (`components/profile/onboarding-visuals.tsx`). An existing profile shows the saved summary and "ערוך פרופיל" reopens the wizard pre-filled. Never blocks the app. localStorage-only; included in Backup/Restore | `components/profile/TrainingProfileView.tsx`, `components/profile/onboarding-visuals.tsx`, `components/profile/ProfileOnboardingPrompt.tsx`, `lib/personal-profile.ts`, `lib/profile-onboarding.ts`, `lib/app-access.ts`, `docs/PERSONAL_PROFILE_V1.md` |
 | Workout Recommendation | Deterministic, local-first, NO-AI layer mapping the personal profile onto **one existing** workout template as a starting point. Scores existing templates on safe signals (goal/location/frequency/duration/experience/equipment/training-preference) using only existing fields; never reads body fields, never creates/mutates a template. Four states (no-profile / incomplete / no-templates / recommendation) on `/workouts` below the command center + a compact link block on the profile summary | `lib/workout-recommendation.ts`, `components/workouts/WorkoutRecommendationCard.tsx`, `docs/WORKOUT_RECOMMENDATION_V1.md` |
 | Settings | Premium "control center": appearance (light/dark only), daily goals, water shortcuts, data & storage (incl. a Backup & Restore card), access & privacy, separated sensitive actions, system info | `components/settings/SettingsView.tsx`, `docs/SETTINGS_CONTROL_CENTER.md` |
 | Backup & Restore | Local JSON export/import of all Fit OS data: Blob download (+ copy/paste fallback), validated import with counts preview + confirm, last-backup status. No backend/auth/cloud/encryption | `components/backup/BackupView.tsx`, `lib/backup.ts`, `docs/BACKUP_RESTORE.md` |
@@ -1221,7 +1258,7 @@ existing user data is bound to them. See §5 for reset behavior.
 | `yfos:active-workout-draft:v1` | localStorage | **Single** in-progress active-workout draft (auto-saved). NOT history — separate from `yfos:workouts`; cleared on final save / explicit discard | `lib/active-workout-draft.ts` |
 | `yfos:gym-visits:v1` | localStorage | Gym **attendance** history (`GymVisit[]`). Separate from `yfos:workouts` — being at the gym, not training. Each visit may carry an optional, additive `workouts?` display-only snapshot (no format/version change). Included in backups; cleared by `resetAll` | `lib/gym-attendance.ts` |
 | `yfos:active-gym-visit:v1` | localStorage | **Single** open gym visit (`startedAt` only; the timer is derived). Closed into history on check-out, removed on discard. Included in backups; cleared by `resetAll` | `lib/gym-attendance.ts` |
-| `yfos:personal-profile:v1` | localStorage | **Single** optional personal training profile (`TrainingProfile`: goal/location/frequency/experience/duration/equipment/notes + V2 optional `adaptation`/`age`/`heightCm`/`weightKg`/`trainingPreference`/`guidanceStyle` + `updatedAt`). Owned by `lib/personal-profile.ts` (own reactive layer + defensive parser). Included in backups (`personalProfile`, whole object — V2 fields additive); cleared by `resetAll` | `lib/personal-profile.ts` |
+| `yfos:personal-profile:v1` | localStorage | **Single** optional personal training profile (`TrainingProfile`: goal/location/frequency/experience/duration/equipment/notes + V2 optional `adaptation`/`age`/`heightCm`/`weightKg`/`trainingPreference`/`guidanceStyle` + **V5 `focusAreas` string[]** + `updatedAt`). Owned by `lib/personal-profile.ts` (own reactive layer + defensive parser). Included in backups (`personalProfile`, whole object — V2/V5 fields additive); cleared by `resetAll` | `lib/personal-profile.ts` |
 | `yfos:profile-onboarding-dismissed-session:v1` | **sessionStorage** | Profile-onboarding prompt dismissed **this session** (`"1"`) — V3 per-session gate; may re-show on a later entry while no profile exists. Gate/preference flag, **not** data — never backed up, **not** cleared by `resetAll`. Owned by `lib/profile-onboarding.ts` | `lib/profile-onboarding.ts` |
 | `yfos:profile-onboarding-dismissed:v1` | localStorage | _Legacy_ permanent profile-prompt dismissed flag — retained, **no longer read** (superseded by the session key above in V3) | `lib/profile-onboarding.ts` |
 | `yfos:backup-meta:v1` | localStorage | Backup bookkeeping only (`lastExportedAt` / `lastRestoredAt` / `lastRestoredBackupCreatedAt`). Best-effort status; **never** part of a backup and not "data" | `lib/backup.ts` |

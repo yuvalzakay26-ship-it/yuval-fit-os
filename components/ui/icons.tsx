@@ -299,6 +299,27 @@ export const SparkIcon = (p: IconProps) =>
     p,
   );
 
+// Person — head + shoulders. Used for the visual gender / adaptation step.
+export const UserIcon = (p: IconProps) =>
+  base(
+    <>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
+    </>,
+    p,
+  );
+
+// Standing figure — the "focus muscles" body step glyph. Reads as a body, not a
+// generic person; pairs with the front/back muscle map below it.
+export const FigureIcon = (p: IconProps) =>
+  base(
+    <>
+      <circle cx="12" cy="5" r="2.5" />
+      <path d="M12 8v6M12 9.5l-4 1.5M12 9.5l4 1.5M9.5 21l2.5-7 2.5 7" />
+    </>,
+    p,
+  );
+
 export const XIcon = (p: IconProps) =>
   base(<path d="M6 6l12 12M18 6 6 18" />, p);
 

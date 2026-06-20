@@ -1,14 +1,17 @@
 import { test, expect, type Page } from "@playwright/test";
 import { advanceWizardToSummary as advanceToSummary } from "./fixtures";
 
-// QA for the Personal Training Profile (docs/PERSONAL_PROFILE_V1.md). As of V3 the
+// QA for the Personal Training Profile (docs/PERSONAL_PROFILE_V1.md). The
 // onboarding is a step-by-step WIZARD: an intro, one question per screen with
 // next/back + a progress indicator, and a final summary/confirm before saving.
-// Runs against the :3939 server (beta gate bypassed via
+// V5 adds two PREMIUM VISUAL steps — a visual gender/adaptation picker (step 2)
+// and a visual muscle focus-areas map (step 3) — so the flow now has 13 steps
+// (12 questions + summary). Runs against the :3939 server (beta gate bypassed via
 // NEXT_PUBLIC_BETA_DISABLE_GATE=1). The profile is localStorage-only under
 // `yfos:personal-profile:v1`; we seed the welcome flags so the screen is reachable
 // without the gates, and assert: intro, one-question-at-a-time + next/back,
-// complete + save → summary, optional fields, edit, skip, reset, and the
+// required gating, the visual gender + focus-area steps (incl. highlight),
+// complete + save, optional fields, edit, skip, reset, no overflow, and the
 // More/Workouts entry points.
 
 async function seedBase(page: Page) {
@@ -23,7 +26,8 @@ async function seedBase(page: Page) {
   });
 }
 
-// Seed an already-saved profile so the summary/edit states can be exercised.
+// Seed a complete, modern saved profile so the summary/edit states can be
+// exercised. Includes the V5 adaptation + focusAreas fields.
 async function seedProfile(page: Page) {
   await page.addInitScript(() => {
     try {
@@ -31,11 +35,15 @@ async function seedProfile(page: Page) {
         "yfos:personal-profile:v1",
         JSON.stringify({
           goal: "להתחזק",
+          adaptation: "גבר",
+          focusAreas: ["חזה", "גב"],
           location: "חדר כושר",
           weeklyFrequency: "3 פעמים",
           experience: "בינוני",
           workoutDuration: "45–60 דקות",
           equipment: ["משקולות", "מכונות"],
+          trainingPreference: "מאוזן",
+          guidanceStyle: "המלצה לפי המטרה שלי",
           notes: "ברך רגישה",
           updatedAt: "2026-06-01T08:00:00.000Z",
         }),
@@ -46,27 +54,54 @@ async function seedProfile(page: Page) {
   });
 }
 
-// Answer all required core steps from the goal step (0) up to and including the
-// equipment step (5), leaving the wizard on the optional personal step (6). Used
-// by tests that need a valid core profile without re-typing every selection.
-async function answerRequiredCoreToPersonal(page: Page) {
-  await page.getByRole("button", { name: "להתחזק" }).click(); // 0 goal
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
-  await page.getByRole("button", { name: "חדר כושר" }).click(); // 1 location
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
-  await page.getByRole("button", { name: "3 פעמים" }).click(); // 2 frequency
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
-  await page.getByRole("button", { name: "45–60 דקות" }).click(); // 3 duration
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
-  await page.getByRole("button", { name: "בינוני" }).click(); // 4 experience
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
-  await page.getByRole("button", { name: "משקולות" }).click(); // 5 equipment (≥1)
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
+// Seed an OLD profile that predates the now-required V5 fields (no adaptation /
+// focusAreas / trainingPreference / guidanceStyle). Used to prove editing guides
+// the user through the missing required steps.
+async function seedOldProfile(page: Page) {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem(
+        "yfos:personal-profile:v1",
+        JSON.stringify({
+          goal: "להתחזק",
+          location: "חדר כושר",
+          weeklyFrequency: "3 פעמים",
+          experience: "בינוני",
+          workoutDuration: "45–60 דקות",
+          equipment: ["משקולות"],
+          updatedAt: "2026-06-01T08:00:00.000Z",
+        }),
+      );
+    } catch {
+      /* ignore */
+    }
+  });
 }
 
-// advanceToSummary (shared advanceWizardToSummary fixture): click "הבא" / "לסיכום"
-// until the wizard reaches the summary (the save button), or stops at a required
-// step whose advance button is still disabled (a missing answer).
+const nextButton = (page: Page) =>
+  page.getByRole("button", { name: "הבא", exact: true });
+
+// Answer every required core step from goal (0) through equipment (7), leaving
+// the wizard on the training-preference step (8). Walks the visual gender and
+// focus-area steps too.
+async function answerCoreThroughEquipment(page: Page) {
+  await page.getByRole("button", { name: "להתחזק" }).click(); // 0 goal
+  await nextButton(page).click();
+  await page.getByRole("button", { name: "גבר", exact: true }).click(); // 1 adaptation
+  await nextButton(page).click();
+  await page.getByRole("button", { name: "חזה", exact: true }).click(); // 2 focusAreas
+  await nextButton(page).click();
+  await page.getByRole("button", { name: "חדר כושר" }).click(); // 3 location
+  await nextButton(page).click();
+  await page.getByRole("button", { name: "3 פעמים" }).click(); // 4 frequency
+  await nextButton(page).click();
+  await page.getByRole("button", { name: "45–60 דקות" }).click(); // 5 duration
+  await nextButton(page).click();
+  await page.getByRole("button", { name: "בינוני" }).click(); // 6 experience
+  await nextButton(page).click();
+  await page.getByRole("button", { name: "משקולות" }).click(); // 7 equipment (≥1)
+  await nextButton(page).click();
+}
 
 test("the profile page shows the header and the wizard intro when none is saved", async ({
   page,
@@ -92,17 +127,17 @@ test("the wizard shows one question at a time with working next/back", async ({
   await page.goto("/training-profile");
   await page.getByRole("button", { name: "התחל" }).click();
 
-  // Step 1 — goal only; the progress indicator shows the position.
+  // Step 1 — goal only; the progress indicator shows the position (now 13 steps).
   await expect(page.getByText("מה המטרה המרכזית שלך?")).toBeVisible();
-  await expect(page.getByText("שלב 1 מתוך 11")).toBeVisible();
-  // The next question is NOT on screen — one focused decision at a time.
-  await expect(page.getByText("איפה אתה מתאמן בדרך כלל?")).toHaveCount(0);
+  await expect(page.getByText("שלב 1 מתוך 13")).toBeVisible();
+  // The next question (the visual adaptation step) is NOT on screen yet.
+  await expect(page.getByText("איך נתאים את החוויה אליך?")).toHaveCount(0);
 
   await page.getByRole("button", { name: "לבנות מסת שריר" }).click();
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
+  await nextButton(page).click();
 
-  // Step 2 — location; the goal question is gone.
-  await expect(page.getByText("איפה אתה מתאמן בדרך כלל?")).toBeVisible();
+  // Step 2 — the visual gender/adaptation step; the goal question is gone.
+  await expect(page.getByText("איך נתאים את החוויה אליך?")).toBeVisible();
   await expect(page.getByText("מה המטרה המרכזית שלך?")).toHaveCount(0);
 
   // Back returns to the goal step with the previous selection preserved.
@@ -121,22 +156,80 @@ test("a required core step does not advance until an answer is selected", async 
   await page.getByRole("button", { name: "התחל" }).click();
 
   // Goal is a required core step: "הבא" is disabled and a calm hint is shown.
-  const next = page.getByRole("button", { name: "הבא", exact: true });
-  await expect(next).toBeDisabled();
+  await expect(nextButton(page)).toBeDisabled();
   await expect(page.getByText("בחר תשובה כדי להמשיך")).toBeVisible();
-  // Still on the goal step — nothing advanced.
   await expect(page.getByText("מה המטרה המרכזית שלך?")).toBeVisible();
 
   // Choosing an answer enables "הבא" and clears the hint, then advances.
   await page.getByRole("button", { name: "להתחזק" }).click();
-  await expect(next).toBeEnabled();
+  await expect(nextButton(page)).toBeEnabled();
   await expect(page.getByText("בחר תשובה כדי להמשיך")).toHaveCount(0);
-  await next.click();
-  await expect(page.getByText("איפה אתה מתאמן בדרך כלל?")).toBeVisible();
-  // The next required step (location) is again gated until answered.
+  await nextButton(page).click();
+  // The next required step (the visual adaptation step) is again gated.
+  await expect(page.getByText("איך נתאים את החוויה אליך?")).toBeVisible();
+  await expect(nextButton(page)).toBeDisabled();
+});
+
+test("the visual gender/adaptation step selects and counts as an answer", async ({
+  page,
+}) => {
+  await seedBase(page);
+  await page.goto("/training-profile");
+  await page.getByRole("button", { name: "התחל" }).click();
+  await page.getByRole("button", { name: "להתחזק" }).click();
+  await nextButton(page).click();
+
+  // On the adaptation step "הבא" is gated until a card is chosen.
+  await expect(page.getByText("איך נתאים את החוויה אליך?")).toBeVisible();
+  await expect(nextButton(page)).toBeDisabled();
+
+  // Selecting a card highlights it (aria-pressed) and unblocks the step.
+  const female = page.getByRole("button", { name: "אישה", exact: true });
+  await female.click();
+  await expect(female).toHaveAttribute("aria-pressed", "true");
+  await expect(nextButton(page)).toBeEnabled();
+
+  // "מעדיף/ה לא לענות" is always available and is also a valid answer.
+  const decline = page.getByRole("button", { name: "מעדיף/ה לא לענות" });
+  await decline.click();
+  await expect(decline).toHaveAttribute("aria-pressed", "true");
+  await expect(female).toHaveAttribute("aria-pressed", "false");
+  await expect(nextButton(page)).toBeEnabled();
+});
+
+test("the visual focus-areas step requires one area and highlights the body map", async ({
+  page,
+}) => {
+  await seedBase(page);
+  await page.goto("/training-profile");
+  await page.getByRole("button", { name: "התחל" }).click();
+  await page.getByRole("button", { name: "להתחזק" }).click();
+  await nextButton(page).click();
+  await page.getByRole("button", { name: "גבר", exact: true }).click();
+  await nextButton(page).click();
+
+  // Focus-areas step — required multi-select with a live body map.
+  await expect(page.getByText("על אילו שרירים נרצה להתמקד?")).toBeVisible();
+  await expect(page.getByTestId("body-focus-figure")).toBeVisible();
+  // Nothing selected → no region is highlighted and "הבא" is gated.
+  await expect(nextButton(page)).toBeDisabled();
   await expect(
-    page.getByRole("button", { name: "הבא", exact: true }),
-  ).toBeDisabled();
+    page.locator('[data-testid="body-focus-figure"] [data-active="true"]'),
+  ).toHaveCount(0);
+
+  // Selecting "חזה" highlights at least one region on the map and unblocks.
+  await page.getByRole("button", { name: "חזה", exact: true }).click();
+  await expect(
+    page.locator('[data-testid="body-focus-figure"] [data-active="true"]'),
+  ).not.toHaveCount(0);
+  await expect(nextButton(page)).toBeEnabled();
+
+  // "גוף מלא" lights up every region (more highlighted groups than a single area).
+  await page.getByRole("button", { name: "גוף מלא", exact: true }).click();
+  const highlighted = page.locator(
+    '[data-testid="body-focus-figure"] [data-active="true"]',
+  );
+  expect(await highlighted.count()).toBeGreaterThan(2);
 });
 
 test("the equipment step requires at least one option, and 'לא בטוח' counts", async ({
@@ -145,23 +238,19 @@ test("the equipment step requires at least one option, and 'לא בטוח' count
   await seedBase(page);
   await page.goto("/training-profile");
   await page.getByRole("button", { name: "התחל" }).click();
-  await answerRequiredCoreToPersonal(page);
+  await answerCoreThroughEquipment(page);
 
-  // Walk back from the personal step to the equipment step (index 5).
+  // Walk back from the training-preference step to the equipment step.
   await page.getByRole("button", { name: "חזור", exact: true }).click();
   await expect(page.getByText("איזה ציוד זמין לך?")).toBeVisible();
 
   // Deselect the seeded "משקולות" → no equipment → "הבא" is gated again.
   await page.getByRole("button", { name: "משקולות" }).click();
-  await expect(
-    page.getByRole("button", { name: "הבא", exact: true }),
-  ).toBeDisabled();
+  await expect(nextButton(page)).toBeDisabled();
 
   // "לא בטוח" is a valid answer and unblocks the step.
   await page.getByRole("button", { name: "לא בטוח", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "הבא", exact: true }),
-  ).toBeEnabled();
+  await expect(nextButton(page)).toBeEnabled();
 });
 
 test("optional personal and notes steps can be passed without filling anything", async ({
@@ -170,25 +259,23 @@ test("optional personal and notes steps can be passed without filling anything",
   await seedBase(page);
   await page.goto("/training-profile");
   await page.getByRole("button", { name: "התחל" }).click();
-  await answerRequiredCoreToPersonal(page);
+  await answerCoreThroughEquipment(page);
 
-  // Personal adaptation (index 6) is optional: a reassuring hint, "הבא" enabled.
-  await expect(page.getByText("התאמה אישית — אופציונלי")).toBeVisible();
+  // Training preference + guidance style are required.
+  await page.getByRole("button", { name: "מאוזן" }).click();
+  await nextButton(page).click();
+  await page.getByRole("button", { name: "המלצה לפי המטרה שלי" }).click();
+  await nextButton(page).click();
+
+  // Personal stats step is optional: a reassuring hint, "הבא" enabled.
+  await expect(page.getByText("פרטים אישיים — אופציונלי")).toBeVisible();
   await expect(
     page.getByText("השלב הזה אופציונלי ואפשר להמשיך גם בלי למלא."),
   ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "הבא", exact: true }),
-  ).toBeEnabled();
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
+  await expect(nextButton(page)).toBeEnabled();
+  await nextButton(page).click();
 
-  // Training preference + guidance style are required, then notes is optional.
-  await page.getByRole("button", { name: "מאוזן" }).click();
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
-  await page.getByRole("button", { name: "המלצה לפי המטרה שלי" }).click();
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
-
-  // Notes (index 9) is optional and reaches the summary while empty.
+  // Notes is optional and reaches the summary while empty.
   await expect(page.getByText("יש משהו שכדאי לקחת בחשבון?")).toBeVisible();
   await page.getByRole("button", { name: "לסיכום" }).click();
   await expect(page.getByText("סיכום הפרופיל")).toBeVisible();
@@ -206,34 +293,37 @@ test("a user can complete the wizard and save, then see the summary", async ({
 
   // Goal (required)
   await page.getByRole("button", { name: "לבנות מסת שריר" }).click();
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
+  await nextButton(page).click();
+  // Adaptation — visual gender (required)
+  await page.getByRole("button", { name: "אישה", exact: true }).click();
+  await nextButton(page).click();
+  // Focus areas — visual body map (required, ≥1); keep two areas selected.
+  await page.getByRole("button", { name: "חזה", exact: true }).click();
+  await page.getByRole("button", { name: "רגליים", exact: true }).click();
+  await nextButton(page).click();
   // Location (required)
   await page.getByRole("button", { name: "בית", exact: true }).click();
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
+  await nextButton(page).click();
   // Frequency (required)
   await page.getByRole("button", { name: "4 פעמים" }).click();
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
-  // Duration (required) — must now be answered before advancing.
+  await nextButton(page).click();
+  // Duration (required)
   await page.getByRole("button", { name: "45–60 דקות" }).click();
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
+  await nextButton(page).click();
   // Experience (required)
   await page.getByRole("button", { name: "מתחיל" }).click();
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
-
-  // Equipment step (required, multi-select) — keeps two options selected.
+  await nextButton(page).click();
+  // Equipment (required, multi-select) — keeps two options selected.
   const weights = page.getByRole("button", { name: "משקולות" });
   const bands = page.getByRole("button", { name: "גומיות" });
   await weights.click();
   await bands.click();
   await expect(weights).toHaveAttribute("aria-pressed", "true");
   await expect(bands).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
-
-  // Personal adaptation (optional) — passed empty.
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
+  await nextButton(page).click();
   // Training preference (required)
   await page.getByRole("button", { name: "מאוזן" }).click();
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
+  await nextButton(page).click();
   // Guidance style (required)
   await page.getByRole("button", { name: "המלצה לפי המטרה שלי" }).click();
 
@@ -247,6 +337,7 @@ test("a user can complete the wizard and save, then see the summary", async ({
   await expect(page.getByText("הפרופיל נשמר במכשיר")).toBeVisible();
   await expect(page.getByText("לבנות מסת שריר")).toBeVisible();
   await expect(page.getByText("משקולות · גומיות")).toBeVisible();
+  await expect(page.getByText("חזה · רגליים")).toBeVisible();
   await expect(
     page.getByRole("button", { name: "ערוך פרופיל" }),
   ).toBeVisible();
@@ -259,26 +350,24 @@ test("optional personalization fields can be saved and shown in the summary", as
   await page.goto("/training-profile");
   await page.getByRole("button", { name: "התחל" }).click();
 
-  // Answer every required core step, then reach the optional personal step (6).
-  await answerRequiredCoreToPersonal(page);
-  await expect(page.getByText("התאמה אישית — אופציונלי")).toBeVisible();
+  // Answer every required core step, then reach training preference / guidance.
+  await answerCoreThroughEquipment(page);
+  await page.getByRole("button", { name: "מאוזן" }).click();
+  await nextButton(page).click();
+  await page.getByRole("button", { name: "תכנית פשוטה וברורה" }).click();
+  await nextButton(page).click();
 
-  await page.getByRole("button", { name: "מעדיף/ה לא לענות" }).click();
+  // Optional personal stats step (age / height / weight only).
+  await expect(page.getByText("פרטים אישיים — אופציונלי")).toBeVisible();
   await page.locator("#profile-age").fill("30");
   await page.locator("#profile-height").fill("180");
   await page.locator("#profile-weight").fill("78");
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
-
-  await page.getByRole("button", { name: "מאוזן" }).click();
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
-  await page.getByRole("button", { name: "תכנית פשוטה וברורה" }).click();
 
   await advanceToSummary(page);
   await page.getByRole("button", { name: "שמור פרופיל" }).click();
 
-  // The optional personalization summary section appears with the filled values.
-  await expect(page.getByText("התאמה אישית")).toBeVisible();
-  await expect(page.getByText("מעדיף/ה לא לענות")).toBeVisible();
+  // The "פרטים נוספים" summary section appears with the filled values.
+  await expect(page.getByText("פרטים נוספים")).toBeVisible();
   await expect(page.getByText("180 ס״מ")).toBeVisible();
   await expect(page.getByText("78 ק״ג")).toBeVisible();
   await expect(page.getByText("מאוזן")).toBeVisible();
@@ -294,6 +383,7 @@ test("a saved profile shows the summary and can be edited via the wizard", async
 
   await expect(page.getByText("הפרופיל נשמר במכשיר")).toBeVisible();
   await expect(page.getByText("ברך רגישה")).toBeVisible();
+  await expect(page.getByText("חזה · גב")).toBeVisible();
 
   // Edit opens the wizard directly at the first question, pre-filled.
   await page.getByRole("button", { name: "ערוך פרופיל" }).click();
@@ -302,20 +392,43 @@ test("a saved profile shows the summary and can be edited via the wizard", async
     page.getByRole("button", { name: "להתחזק" }),
   ).toHaveAttribute("aria-pressed", "true");
 
-  // Change the goal, then walk forward. The seeded profile predates the
-  // now-required style/guidance steps, so the wizard guides the user through
-  // them before the summary is reachable.
+  // Change the goal, then walk forward; all required answers already exist, so
+  // the summary is reachable and the new value is saved.
   await page.getByRole("button", { name: "לשפר טכניקה" }).click();
   await advanceToSummary(page);
-  // Still not at the summary — a required answer (training preference) is missing.
-  await expect(page.getByText("איזה סגנון אימון מתאים לך יותר?")).toBeVisible();
-  await page.getByRole("button", { name: "מאוזן" }).click();
-  await page.getByRole("button", { name: "הבא", exact: true }).click();
-  await page.getByRole("button", { name: "המלצה לפי המטרה שלי" }).click();
-  await advanceToSummary(page);
-
+  await expect(page.getByText("סיכום הפרופיל")).toBeVisible();
   await page.getByRole("button", { name: "שמור פרופיל" }).click();
   await expect(page.getByText("לשפר טכניקה")).toBeVisible();
+});
+
+test("editing an older profile is guided through the now-required visual steps", async ({
+  page,
+}) => {
+  await seedBase(page);
+  await seedOldProfile(page);
+  await page.goto("/training-profile");
+
+  await page.getByRole("button", { name: "ערוך פרופיל" }).click();
+  // Old profile lacks adaptation → advancing stops at the visual gender step.
+  await advanceToSummary(page);
+  await expect(page.getByText("איך נתאים את החוויה אליך?")).toBeVisible();
+  await page.getByRole("button", { name: "מעדיף/ה לא לענות" }).click();
+
+  // Next missing required: the focus-areas step.
+  await advanceToSummary(page);
+  await expect(page.getByText("על אילו שרירים נרצה להתמקד?")).toBeVisible();
+  await page.getByRole("button", { name: "גוף מלא", exact: true }).click();
+
+  // Then training preference + guidance style.
+  await advanceToSummary(page);
+  await expect(page.getByText("איזה סגנון אימון מתאים לך יותר?")).toBeVisible();
+  await page.getByRole("button", { name: "מאוזן" }).click();
+  await nextButton(page).click();
+  await page.getByRole("button", { name: "המלצה לפי המטרה שלי" }).click();
+
+  await advanceToSummary(page);
+  await page.getByRole("button", { name: "שמור פרופיל" }).click();
+  await expect(page.getByText("הפרופיל נשמר במכשיר")).toBeVisible();
 });
 
 test("skipping from the intro returns to Today without breaking the app", async ({
@@ -347,6 +460,41 @@ test("an existing profile can be reset with confirmation", async ({ page }) => {
   // Profile cleared → the wizard intro returns.
   await expect(page.getByRole("button", { name: "התחל" })).toBeVisible();
 });
+
+for (const width of [360, 390]) {
+  test(`the visual wizard has no horizontal overflow at ${width}px`, async ({
+    page,
+  }) => {
+    await seedBase(page);
+    await page.setViewportSize({ width, height: 780 });
+    await page.goto("/training-profile");
+    await page.getByRole("button", { name: "התחל" }).click();
+
+    const noOverflow = () =>
+      page.evaluate(
+        () =>
+          document.documentElement.scrollWidth <=
+          document.documentElement.clientWidth,
+      );
+
+    // Goal step.
+    await expect(page.getByText("מה המטרה המרכזית שלך?")).toBeVisible();
+    expect(await noOverflow()).toBe(true);
+
+    // Visual gender step.
+    await page.getByRole("button", { name: "להתחזק" }).click();
+    await nextButton(page).click();
+    await expect(page.getByText("איך נתאים את החוויה אליך?")).toBeVisible();
+    expect(await noOverflow()).toBe(true);
+
+    // Visual focus-areas step (the widest visual content — two body figures).
+    await page.getByRole("button", { name: "גבר", exact: true }).click();
+    await nextButton(page).click();
+    await page.getByRole("button", { name: "גוף מלא", exact: true }).click();
+    await expect(page.getByTestId("body-focus-figure")).toBeVisible();
+    expect(await noOverflow()).toBe(true);
+  });
+}
 
 test("the More hub links to the personal training profile", async ({ page }) => {
   await seedBase(page);
