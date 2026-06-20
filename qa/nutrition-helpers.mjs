@@ -42,9 +42,11 @@ async function clickByText(page, text) {
   return clicked;
 }
 
-/** Navigate into the full-screen food library (waits for the search input). */
+/** Navigate into the full-screen food library (waits for the search input). The
+ *  catalog entry was renamed/lowered to "הוסף מפריט קיים" in the Nutrition IA
+ *  Reset; it now sits under "כלים נוספים" rather than the add command area. */
 export async function openPicker(page) {
-  await clickByText(page, "בחר מהמאגר");
+  await clickByText(page, "הוסף מפריט קיים");
   await page.waitForSelector('input[aria-label="חיפוש במאגר האוכל"]', { timeout: 6000 });
   await page.waitForTimeout(250);
 }

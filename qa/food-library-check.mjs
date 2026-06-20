@@ -1,7 +1,7 @@
 // Phase 3.7 / 3.17 QA — visual food library + quick-add prefill, new sheet flow.
 //
 // Drives the Nutrition screen at a phone width and verifies:
-//  - the quick-action entry points render ("בחר מהמאגר" / "הוסף ידנית")
+//  - the entry points render ("הוסף ידנית" + the lowered "הוסף מפריט קיים")
 //  - the food library opens in a picker sheet with real <img> cards
 //  - category filter / search narrow the grid
 //  - picking a food opens the add sheet prefilled (name + "from library" banner)
@@ -66,9 +66,9 @@ async function run() {
   /* --------------------- Quick actions are the entry point --------------- */
   const hasQuickActions = await page.evaluate(() => {
     const txt = document.body.textContent || "";
-    return txt.includes("בחר מהמאגר") && txt.includes("הוסף ידנית");
+    return txt.includes("הוסף מפריט קיים") && txt.includes("הוסף ידנית");
   });
-  if (!hasQuickActions) fail("[quick-actions] missing 'בחר מהמאגר' / 'הוסף ידנית'");
+  if (!hasQuickActions) fail("[quick-actions] missing 'הוסף מפריט קיים' / 'הוסף ידנית'");
   await checkOverflow(page, "nutrition light (main)");
 
   /* --------------------------- Library renders --------------------------- */

@@ -53,7 +53,7 @@ export function AddFoodView({
         className="tap mb-4 inline-flex items-center gap-1 text-[13px] font-semibold text-[color:var(--accent-nutrition)]"
       >
         <ChevronIcon className="h-3.5 w-3.5 rotate-180" />
-        {fromLibrary ? "מאגר האוכל" : "תזונה"}
+        {fromLibrary ? "פריטים קיימים" : "תזונה"}
       </Link>
 
       <PageHeader title={title} subtitle={subtitle} className="mb-4" />

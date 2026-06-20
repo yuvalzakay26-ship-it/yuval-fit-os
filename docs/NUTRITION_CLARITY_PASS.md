@@ -1,5 +1,12 @@
 # Nutrition Clarity Pass
 
+> **Superseded in part by the Nutrition IA Reset.** The durable rules now live in
+> [`NUTRITION_SYSTEM_CONTRACT.md`](NUTRITION_SYSTEM_CONTRACT.md); the current screen
+> hierarchy and copy are in [`NUTRITION_IA_RESET.md`](NUTRITION_IA_RESET.md). In
+> particular the "הוספת אוכל" command area is now **"הוספה ליומן"** with three
+> actions (manual / from recipe / value extractor), and the catalog "בחר מהמאגר"
+> was lowered + renamed **"הוסף מפריט קיים"**. This doc is kept for history.
+
 A focused **UX clarity / layout / copy** pass on `/nutrition`
 (`components/nutrition/NutritionView.tsx`). The goal: make Nutrition read as a
 clear **food-logging command center**, not a stack of equal-weight cards. Both

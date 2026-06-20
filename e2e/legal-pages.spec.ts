@@ -4,8 +4,8 @@ import { seedWelcomeSeen } from "./fixtures";
 // QA for the informational / legal-style pages (privacy / terms / AI disclaimer)
 // and the entry points that link to them. Runs against the :3939 server, where
 // the beta access gate is bypassed (NEXT_PUBLIC_BETA_DISABLE_GATE=1) and the
-// photo-scan AI is mocked (NUTRITION_AI_MOCK=1), so the nutrition scan card —
-// and its "איך עובד ניתוח AI?" link — render in their active state.
+// photo-scan AI is mocked (NUTRITION_AI_MOCK=1), so the nutrition value extractor —
+// and its "איך עובד חילוץ הערכים?" link — render in their active state.
 
 test.beforeEach(async ({ page }) => {
   // Dismiss the one-time welcome overlays so they don't intercept clicks.
@@ -53,9 +53,9 @@ test("System Hub links to all three info pages", async ({ page }) => {
   await expect(page).toHaveURL(/\/privacy$/);
 });
 
-test("nutrition scan card shows the AI disclaimer link", async ({ page }) => {
+test("nutrition value extractor shows the AI disclaimer link", async ({ page }) => {
   await page.goto("/nutrition");
-  const link = page.getByRole("link", { name: "איך עובד ניתוח AI?" });
+  const link = page.getByRole("link", { name: "איך עובד חילוץ הערכים?" });
   await expect(link).toBeVisible();
   await link.click();
   await expect(page).toHaveURL(/\/ai-disclaimer$/);

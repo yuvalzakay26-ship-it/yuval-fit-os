@@ -35,16 +35,19 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/nutrition");
 });
 
-test("scan card is the primary action when AI is enabled", async ({ page }) => {
-  await expect(page.getByText("סרוק צלחת", { exact: true })).toBeVisible();
-  await expect(page.getByText("צלם את הארוחה ונבנה לך טיוטת תזונה לעריכה")).toBeVisible();
-  await expect(page.getByRole("button", { name: /סרוק עכשיו/ })).toBeVisible();
-  // Fallback actions stay visible underneath.
+test("value extractor is the live third action when AI is enabled", async ({ page }) => {
+  await expect(page.getByText("חלץ ערכים מתמונה", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("צלם או העלה תמונה — נציע ערכים לבדיקה ועריכה לפני שמירה"),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /חלץ ערכים/ })).toBeVisible();
+  // The two always-working actions stay visible alongside it.
   await expect(page.getByText("הוסף ידנית", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("הוסף ממתכון", { exact: true }).first()).toBeVisible();
 });
 
 test("pre-capture sheet shows the privacy + estimate note", async ({ page }) => {
-  await page.getByRole("button", { name: /סרוק עכשיו/ }).click();
+  await page.getByRole("button", { name: /חלץ ערכים/ }).click();
   await expect(
     page.getByText(/התמונה משמשת ליצירת טיוטת תזונה בלבד/),
   ).toBeVisible();

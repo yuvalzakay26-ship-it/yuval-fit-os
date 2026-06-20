@@ -1,9 +1,15 @@
 "use client";
 
-// Photo-first nutrition — the primary "סרוק צלחת" card + capture flow (Phase 3.xx).
+// Nutrition value extractor — the "חלץ ערכים מתמונה" card + capture flow.
 //
-// This is the DEFAULT logging action on /nutrition. When AI is configured the
-// active `PhotoScanCard` owns the whole client flow as a small state machine:
+// PRODUCT FRAMING: this is an *extraction* tool, not advice. It reads a photo
+// and proposes nutrition VALUES for the user to review and edit — it never
+// recommends what to eat, never plans meals, and never saves on its own. See
+// `docs/NUTRITION_SYSTEM_CONTRACT.md`.
+//
+// One of the three "הוספה ליומן" actions (manual · from recipe · extract values).
+// When AI is configured the active `PhotoScanCard` owns the whole client flow as
+// a small state machine:
 //   idle → precapture → analyzing → review | error
 // Nothing is ever saved automatically: the journal is written only after the
 // user confirms on the review screen. The image is sent to the server route for
@@ -13,9 +19,10 @@
 // When AI is NOT configured the page renders `PhotoScanCardDisabled` instead — a
 // calm "coming soon" (`בקרוב`) card so users still see the feature exists. It is
 // inert: no inputs, no overlay, no fetch — it never opens upload or calls the
-// analyze route. Manual add and "add again" remain the working fallbacks below.
-// Because /nutrition is force-dynamic, adding a key later flips the page to the
-// active card automatically with no rebuild. See `docs/NUTRITION_PHOTO_ASSIST.md`.
+// analyze route. Manual add, "from recipe" and "add again" remain the working
+// alternatives. Because /nutrition is force-dynamic, adding a key later flips the
+// page to the active card automatically with no rebuild. See
+// `docs/NUTRITION_PHOTO_ASSIST.md`.
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -145,19 +152,21 @@ export function PhotoScanCard({
             <CameraIcon className="h-7 w-7" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[17px] font-extrabold text-foreground">סרוק צלחת</p>
+            <p className="text-[17px] font-extrabold text-foreground">
+              חלץ ערכים מתמונה
+            </p>
             <p className="mt-0.5 text-[12.5px] leading-snug text-muted">
-              צלם את הארוחה ונבנה לך טיוטת תזונה לעריכה
+              צלם או העלה תמונה — נציע ערכים לבדיקה ועריכה לפני שמירה
             </p>
           </div>
         </div>
         <div className="mt-3 flex items-center justify-between gap-2">
           <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-faint">
             <ShieldIcon className="h-3.5 w-3.5" />
-            הערכה בלבד · אפשר לערוך לפני שמירה
+            הערכת ערכים בלבד · אפשר לערוך לפני שמירה
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-xl nutrition-gradient px-3.5 py-2 text-[13px] font-bold text-[color:var(--accent-contrast)] shadow-glow-nutrition">
-            <CameraIcon className="h-4 w-4" /> סרוק עכשיו
+            <CameraIcon className="h-4 w-4" /> חלץ ערכים
           </span>
         </div>
       </button>
@@ -167,7 +176,7 @@ export function PhotoScanCard({
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="סריקת צלחת"
+          aria-label="חילוץ ערכים מתמונה"
           className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
         >
           <div
@@ -178,7 +187,7 @@ export function PhotoScanCard({
             {/* Close */}
             <div className="mb-2 flex items-center justify-between">
               <p className="text-[12px] font-bold uppercase tracking-[0.08em] text-faint">
-                סריקת צלחת
+                חילוץ ערכים מתמונה
               </p>
               <button
                 type="button"
@@ -304,11 +313,15 @@ export function PhotoScanCard({
 }
 
 /**
- * The "coming soon" scan card shown when AI is NOT configured. It mirrors the
- * active card's shape so the feature reads as a real, polished part of the app,
- * but it is fully inert — a plain `<div>` with no inputs, no overlay, no click
- * handler, and no fetch. It can never open upload or call the analyze route, and
- * it never blocks the manual / "add again" fallbacks that sit directly below it.
+ * The future "nutrition value extractor" placeholder, shown when AI is NOT
+ * configured (the production default today). It frames the feature honestly as
+ * an *extraction* tool — read values from a label photo or pasted text and offer
+ * them for review — never as advice, never auto-saved.
+ *
+ * It mirrors the active card's shape so the feature reads as a real, planned part
+ * of the app, but it is fully inert — a plain `<div>` with no inputs, no overlay,
+ * no click handler, and no fetch. It can never open upload or call the analyze
+ * route, and it never blocks the manual / "from recipe" / "add again" actions.
  *
  * `showSetupHint` is a dev/admin-only helper (off for normal users): in
  * non-production it explains that the feature is built but no AI key is wired in
@@ -330,9 +343,12 @@ export function PhotoScanCardDisabled({
           <CameraIcon className="h-7 w-7" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[17px] font-extrabold text-foreground">סרוק צלחת</p>
+          <p className="text-[17px] font-extrabold text-foreground">
+            חלץ ערכים מתמונה או טקסט
+          </p>
           <p className="mt-0.5 text-[12.5px] leading-snug text-muted">
-            ניתוח ארוחה מתמונה יופעל בקרוב
+            בעתיד תוכל להעלות תמונה של תווית או להדביק טקסט, והמערכת תציע ערכים
+            לבדיקה לפני שמירה.
           </p>
         </div>
         {/* "בקרוב" badge — sits at the row's end, clear of the icon and text. */}
@@ -344,7 +360,7 @@ export function PhotoScanCardDisabled({
       <div className="mt-3 flex items-center justify-between gap-2">
         <span className="inline-flex min-w-0 items-center gap-1.5 text-[11px] font-semibold text-faint">
           <ShieldIcon className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">בינתיים אפשר להוסיף ידנית או לבחור מהמאגר</span>
+          <span className="truncate">בינתיים אפשר להוסיף ידנית, ממתכון או מפריט קיים</span>
         </span>
         {/* A real disabled button: never fires, shows the not-interactive cursor. */}
         <button
@@ -352,7 +368,7 @@ export function PhotoScanCardDisabled({
           disabled
           className="inline-flex shrink-0 cursor-not-allowed items-center gap-1.5 rounded-xl border border-border bg-surface-2 px-3.5 py-2 text-[13px] font-bold text-faint"
         >
-          <LockIcon className="h-4 w-4" /> לא פעיל כרגע
+          <LockIcon className="h-4 w-4" /> בקרוב
         </button>
       </div>
 

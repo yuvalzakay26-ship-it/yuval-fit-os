@@ -4,7 +4,45 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: **Recipe Library V1.1 — Recipe images** (on top of V1 below). Added
+> Last reviewed: **Nutrition IA Reset — Phase 1** (presentation/IA/copy/docs only —
+> **no** `FoodLog`/recipe schema, storage key, calculation, AI route, or
+> save-semantics change). Re-anchored `/nutrition`
+> ([`NutritionView`](../components/nutrition/NutritionView.tsx)) on **three clear
+> concepts**: **Nutrition Log** (what you ate, `FoodLog`), **Recipe Library** (a
+> ready source with known values, `/recipes`), and a future **Nutrition Value
+> Extractor** (extraction only, user confirms before save). New top-down hierarchy:
+> **1. תזונה היום** (the `MacroSummary` summary, now under its own labelled
+> section) → **2. הוספה ליומן** (one command area, exactly **three** actions:
+> **הוסף ידנית** → `/nutrition/add`, **הוסף ממתכון** → `/recipes`, **חלץ ערכים
+> מתמונה או טקסט** → the extractor) → **3. יומן האוכל של היום** (source-of-truth
+> log; the "הוסף שוב" recents shortcut moved here and shows only when recents
+> exist) → **4. ספריית מתכונים** (a single calm entry card to `/recipes`; the list
+> is **not** duplicated). The AI cards
+> ([`PhotoScanCard`](../components/nutrition/PhotoScanCard.tsx)) were **reframed as a
+> value extractor** — active card title **"חלץ ערכים מתמונה"** / CTA **"חלץ
+> ערכים"** (was "סרוק צלחת"/"סרוק עכשיו"), helper link **"איך עובד חילוץ הערכים?"**;
+> disabled card is the future placeholder **"חלץ ערכים מתמונה או טקסט"** with a body
+> about reading values from a label photo/text for review and a real **disabled
+> "בקרוב"** button. **No live AI was added** — the pre-existing dormant
+> `/api/nutrition/analyze-photo` route stays dormant/safe (no provider/keys/prompt
+> logic touched), and the capture→review→**confirm-before-save** flow is unchanged.
+> The generic **food catalog was lowered + clarified** — removed from the command
+> area, renamed **"הוסף מפריט קיים"** under "כלים נוספים", with honest copy that it
+> carries **no preset values** (the user fills them); catalog data unchanged. New
+> docs [`NUTRITION_SYSTEM_CONTRACT.md`](NUTRITION_SYSTEM_CONTRACT.md) (the durable
+> rules: the three concepts, what AI may / may not do, local-only storage, frozen
+> schemas) and [`NUTRITION_IA_RESET.md`](NUTRITION_IA_RESET.md) (this pass).
+> **Unchanged:** `FoodLog` schema + nutrition storage keys, recipe IDs/values/
+> ingredients/steps, `addFoodLog`, `foodLogFromRecipe`, the AI route + gating +
+> photo-never-stored + no-auto-save policy, backup/restore, auth/beta/admin/guest/
+> Supabase, workouts/profile/water/supplement/protein/gym schemas; no new
+> dependencies; localStorage-only. e2e: `nutrition-photo-disabled.spec.ts` rewritten
+> for the dormant extractor + three-action command area + lowered catalog;
+> `nutrition-photo.spec.ts` + `legal-pages.spec.ts` updated for the extractor copy.
+> Validation: `npm run lint`, `npm run build`, `npm run test:e2e` (see
+> [`NUTRITION_IA_RESET.md`](NUTRITION_IA_RESET.md)).
+>
+> Prior: **Recipe Library V1.1 — Recipe images** (on top of V1 below). Added
 > Yuval's own standalone food photos (**not** PDF pages/layout/branding) for **15 of
 > the 17** recipes: raw source `public/מתכוני פרו/` (git-ignored) → optimized WebP
 > committed under **`public/recipes/protein-sweets/<slug>.webp`** (sharp, ≤800px, q80,
@@ -1329,8 +1367,9 @@ Where to look, and in what order. **Start here, then the developer guide.**
 
 - **Active product / feature docs** (`docs/`) — current per-feature specs:
   Today (`TODAY_QUICK_START`, `TODAY_COMMAND_CENTER_POLISH`, `TODAY_CLARITY_PASS`),
-  Nutrition (`NUTRITION_CLARITY_PASS`, `NUTRITION_QUICK_REUSE`,
-  `NUTRITION_FAVORITES`, `NUTRITION_SAVED_VALUES`, `NUTRITION_PHOTO_ASSIST`),
+  Nutrition (`NUTRITION_SYSTEM_CONTRACT` ← read first, `NUTRITION_IA_RESET`,
+  `NUTRITION_CLARITY_PASS`, `NUTRITION_QUICK_REUSE`, `NUTRITION_FAVORITES`,
+  `NUTRITION_SAVED_VALUES`, `NUTRITION_PHOTO_ASSIST`, `RECIPE_LIBRARY_V1`),
   Water (`WATER_TRACKING`, `WATER_PRESETS`, `WATER_GOAL_UX_UPGRADE`,
   `WATER_GOAL_GLOBAL_CELEBRATION`), Supplements (`SUPPLEMENTS_TRACKER`,
   `SUPPLEMENTS_LIBRARY_UX`, `SUPPLEMENT_TAKEN_CELEBRATION`),
