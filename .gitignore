@@ -61,6 +61,11 @@ next-env.d.ts
 # optimized WebP copies live in public/food/. See docs/FOOD_MEDIA_IMPORT.md.
 /public/food source/
 
+# Raw recipe image sources (Yuval's food photos, ~30MB of PNGs) — kept locally
+# as originals only; optimized WebP copies live in public/recipes/protein-sweets/.
+# Standalone food photos, NOT PDF pages. See docs/RECIPE_LIBRARY_V1.md.
+/public/מתכוני פרו/
+
 # Private reference inputs — source material used only to extract factual data
 # (e.g. the recipe-book PDF for Recipe Library V1). NEVER commit these; they are
 # never copied into the product. See docs/RECIPE_LIBRARY_V1.md.

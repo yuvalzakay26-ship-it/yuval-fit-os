@@ -1,14 +1,15 @@
 import { test, expect, type Page } from "@playwright/test";
 import { seedWelcomeSeen } from "./fixtures";
 
-// QA for Recipe Library V1 (docs/RECIPE_LIBRARY_V1.md). Runs against the :3939
-// server where the beta access gate is bypassed (NEXT_PUBLIC_BETA_DISABLE_GATE=1).
+// QA for Recipe Library V1 / V1.1 (docs/RECIPE_LIBRARY_V1.md). Runs against the
+// :3939 server where the beta access gate is bypassed (NEXT_PUBLIC_BETA_DISABLE_GATE=1).
 // The recipe data is a static local-first seed (lib/recipes.ts) — no backend, no
 // new storage key. We assert the screen loads, the list renders, a detail view
 // shows nutrition + ingredients + steps, search/filter works, the Nutrition entry
-// point links here, "add to food log" writes a real today entry, recipes with no
-// image show the safe placeholder (no <img>), and no horizontal overflow at narrow
-// widths.
+// point links here, "add to food log" writes a real today entry, V1.1 recipe
+// images render (Yuval's own food photos under /recipes/protein-sweets/, never
+// sourced from the private reference PDF), recipes with no image show the safe
+// placeholder (no <img>), and no horizontal overflow at narrow widths.
 
 async function expectNoHorizontalOverflow(page: Page) {
   const overflow = await page.evaluate(
@@ -42,10 +43,18 @@ test("opening a recipe shows nutrition, ingredients and steps", async ({
 }) => {
   await seedWelcomeSeen(page);
   await page.goto("/recipes");
-  await page
-    .getByRole("link", { name: "פתח את המתכון פנקייק פרו", exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/recipes\/pancake-pro$/);
+  // Click the recipe link and wait for the client navigation. Under heavy
+  // parallel load the Next.js <Link> can briefly swallow a click that lands in
+  // the hydration window (preventDefault attached before the router can push),
+  // so retry the click until the URL actually changes.
+  await expect(async () => {
+    if (!/\/recipes\/pancake-pro$/.test(page.url())) {
+      await page
+        .getByRole("link", { name: "פתח את המתכון פנקייק פרו", exact: true })
+        .click({ timeout: 2000 });
+    }
+    expect(page.url()).toMatch(/\/recipes\/pancake-pro$/);
+  }).toPass({ timeout: 15000, intervals: [400, 800, 1500] });
   await expect(page.getByRole("heading", { name: "פנקייק פרו" })).toBeVisible();
   // Nutrition section + a known value from the source (must not be altered).
   await expect(page.getByRole("heading", { name: "ערכים תזונתיים" })).toBeVisible();
@@ -96,15 +105,41 @@ test("'הוסף ליומן התזונה' creates a today food-log entry", async 
   await expect(page.getByText("מילקשייק סניקרס").first()).toBeVisible();
 });
 
-test("recipes with no image show a safe placeholder (no <img>)", async ({
+test("the recipe list shows real recipe images (V1.1)", async ({ page }) => {
+  await seedWelcomeSeen(page);
+  await page.goto("/recipes");
+  // V1.1 ships Yuval's food photos for most recipes, served via next/image.
+  const images = page.getByTestId("recipe-list").locator("img");
+  expect(await images.count()).toBeGreaterThan(0);
+  await expect(images.first()).toBeVisible();
+});
+
+test("a recipe with an image shows it (not the placeholder), from a safe path", async ({
   page,
 }) => {
   await seedWelcomeSeen(page);
   await page.goto("/recipes/pancake-pro");
-  // V1 ships no recipe images, so the gradient placeholder renders the title
-  // and no real <img> element is present on the detail view.
-  await expect(page.locator("img")).toHaveCount(0);
+  // pancake-pro has a V1.1 image, so a real <img> renders on the detail view.
+  const img = page.locator("img").first();
+  await expect(img).toBeVisible();
+  // The optimized next/image src must reference Yuval's recipe folder and must
+  // never point at the private reference inputs or any PDF.
+  const src = (await img.getAttribute("src")) ?? "";
+  expect(src).toContain("protein-sweets");
+  expect(src.toLowerCase()).not.toContain("private-input");
+  expect(src.toLowerCase()).not.toContain("pdf");
   await expect(page.getByText("פנקייק פרו").first()).toBeVisible();
+});
+
+test("recipes with no image show a safe placeholder (no <img>)", async ({
+  page,
+}) => {
+  await seedWelcomeSeen(page);
+  // protein-shakshuka has no V1.1 image, so the gradient placeholder renders the
+  // title and no real <img> element is present on the detail view.
+  await page.goto("/recipes/protein-shakshuka");
+  await expect(page.locator("img")).toHaveCount(0);
+  await expect(page.getByText("שקשוקה חלבונית").first()).toBeVisible();
 });
 
 test("no horizontal overflow at 360px and 390px", async ({ page }) => {

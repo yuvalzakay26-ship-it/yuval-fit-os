@@ -12,8 +12,8 @@ const nextConfig: NextConfig = {
     root: __dirname,
   },
   images: {
-    // Exercise + food media are served through next/image; lock the optimizer
-    // endpoint to those folders (Next 16 localPatterns guardrail).
+    // Exercise + food + recipe media are served through next/image; lock the
+    // optimizer endpoint to those folders (Next 16 localPatterns guardrail).
     localPatterns: [
       {
         pathname: "/exercises/**",
@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
       },
       {
         pathname: "/food/**",
+        search: "",
+      },
+      {
+        pathname: "/recipes/**",
         search: "",
       },
     ],

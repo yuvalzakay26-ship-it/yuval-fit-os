@@ -10,10 +10,12 @@
 // wording is copied verbatim. Quantities, nutrition values, temperatures and times
 // are reproduced exactly as in the source and must not be altered.
 //
-// This is a static, local-first seed — no backend, no Supabase, no new auth. Images
-// are intentionally absent for V1: every recipe supports an optional `imageUrl`, and
-// the UI shows a safe gradient placeholder when none exists (images will be added by
-// Yuval separately later).
+// This is a static, local-first seed — no backend, no Supabase, no new auth. Every
+// recipe supports an optional `imageUrl`; the UI shows a safe gradient placeholder
+// when none exists. V1.1 added Yuval's own standalone food photos (optimized WebP
+// under /recipes/protein-sweets/) for 15 of the 17 recipes — these are NOT PDF
+// pages, layout, or branding. Two recipes still have no photo and keep the
+// placeholder. See docs/RECIPE_LIBRARY_V1.md.
 
 import type { FoodLog } from "./fitness-types";
 import { createId, todayISO } from "./utils";
@@ -99,6 +101,7 @@ export const RECIPES: Recipe[] = [
     title: "פנקייק פרו",
     category: "פנקייקים",
     tags: ["מחבת"],
+    imageUrl: "/recipes/protein-sweets/pancake-pro.webp",
     nutrition: {
       calories: 485,
       proteinGrams: 52,
@@ -135,6 +138,7 @@ export const RECIPES: Recipe[] = [
     title: "סופלה מהיר",
     category: "קינוחים",
     tags: ["מיקרוגל", "מהיר"],
+    imageUrl: "/recipes/protein-sweets/quick-souffle.webp",
     nutrition: {
       calories: 422,
       proteinGrams: 54,
@@ -168,6 +172,7 @@ export const RECIPES: Recipe[] = [
     title: "מילקשייק סניקרס",
     category: "שייקים",
     tags: ["בלנדר", "ללא אפייה", "משביע"],
+    imageUrl: "/recipes/protein-sweets/snickers-milkshake.webp",
     nutrition: {
       calories: 354,
       proteinGrams: 44,
@@ -204,6 +209,7 @@ export const RECIPES: Recipe[] = [
     title: "מילקשייק M&M",
     category: "שייקים",
     tags: ["בלנדר", "ללא אפייה"],
+    imageUrl: "/recipes/protein-sweets/mm-milkshake.webp",
     nutrition: {
       calories: 409,
       proteinGrams: 51,
@@ -240,6 +246,7 @@ export const RECIPES: Recipe[] = [
     category: "מאפים",
     tags: ["תנור"],
     servings: "6 יחידות",
+    imageUrl: "/recipes/protein-sweets/oreo-donuts.webp",
     nutrition: {
       calories: 82,
       proteinGrams: 7,
@@ -279,6 +286,7 @@ export const RECIPES: Recipe[] = [
     title: "פנקייק פרו לייט+",
     category: "פנקייקים",
     tags: ["מחבת", "משביע"],
+    imageUrl: "/recipes/protein-sweets/pancake-pro-light-plus.webp",
     nutrition: {
       calories: 317,
       proteinGrams: 66,
@@ -315,6 +323,7 @@ export const RECIPES: Recipe[] = [
     category: "מאפים",
     tags: ["תנור"],
     servings: "16 יחידות",
+    imageUrl: "/recipes/protein-sweets/fluffy-muffins.webp",
     nutrition: {
       calories: 59,
       proteinGrams: 6,
@@ -353,6 +362,7 @@ export const RECIPES: Recipe[] = [
     category: "קינוחים",
     tags: ["תנור"],
     servings: "3 יחידות",
+    imageUrl: "/recipes/protein-sweets/lotus-biscoff.webp",
     nutrition: {
       calories: 130,
       proteinGrams: 12.6,
@@ -396,6 +406,7 @@ export const RECIPES: Recipe[] = [
     category: "מאפים",
     tags: ["תנור"],
     servings: "6 יחידות",
+    imageUrl: "/recipes/protein-sweets/cinnamon-cinnabon.webp",
     nutrition: {
       calories: 76,
       proteinGrams: 6,
@@ -430,6 +441,7 @@ export const RECIPES: Recipe[] = [
     category: "קינוחים",
     tags: ["תנור"],
     servings: "כ-1/8 עוגה",
+    imageUrl: "/recipes/protein-sweets/carrot-cake.webp",
     nutrition: {
       calories: 103,
       proteinGrams: 10,
@@ -470,6 +482,7 @@ export const RECIPES: Recipe[] = [
     title: "עוגת בראוניז",
     category: "קינוחים",
     tags: ["תנור"],
+    imageUrl: "/recipes/protein-sweets/brownie-cake.webp",
     nutrition: {
       calories: 103,
       proteinGrams: 10,
@@ -500,6 +513,7 @@ export const RECIPES: Recipe[] = [
     category: "קינוחים",
     tags: ["תנור", "מקפיא"],
     servings: "6 יחידות",
+    imageUrl: "/recipes/protein-sweets/oreo-cake.webp",
     nutrition: {
       calories: 193,
       proteinGrams: 24.5,
@@ -540,6 +554,7 @@ export const RECIPES: Recipe[] = [
     category: "קינוחים",
     tags: ["תנור", "מקפיא"],
     servings: "6 יחידות",
+    imageUrl: "/recipes/protein-sweets/blueberry-cheesecake.webp",
     nutrition: {
       calories: 166,
       proteinGrams: 16.3,
@@ -584,6 +599,7 @@ export const RECIPES: Recipe[] = [
     title: "גלידת וניל פרו",
     category: "קינוחים",
     tags: ["מקפיא", "ללא אפייה"],
+    imageUrl: "/recipes/protein-sweets/vanilla-pro-icecream.webp",
     nutrition: {
       calories: 604,
       proteinGrams: 68,
@@ -619,6 +635,7 @@ export const RECIPES: Recipe[] = [
     title: "מוזלי פירות",
     category: "ארוחת בוקר",
     tags: ["ללא אפייה", "משביע"],
+    imageUrl: "/recipes/protein-sweets/fruit-muesli.webp",
     nutrition: {
       calories: 294,
       proteinGrams: 42,

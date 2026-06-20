@@ -64,11 +64,68 @@ this was preserved as-is rather than "corrected", per the no-change rule.)
 
 ## Image policy
 
-No images are shipped in V1. Every recipe supports an optional `imageUrl` field;
-when absent (the default) the UI renders a safe per-category gradient placeholder
-(`RecipePlaceholder` / `RecipeImage`, mirroring the nutrition `FoodPlaceholder`).
-**No original PDF imagery is used.** Yuval will upload/generate images separately
-later by populating `imageUrl`.
+Every recipe supports an optional `imageUrl` field; when absent the UI renders a
+safe per-category gradient placeholder (`RecipePlaceholder` / `RecipeImage`,
+mirroring the nutrition `FoodPlaceholder`). **No original PDF imagery is used** —
+not pages, layout, branding, stamps, or watermarks.
+
+**V1 shipped no images.** **V1.1 added Yuval's own food photos** for most recipes
+(see the V1.1 section below). Images are served via `next/image` and the optimizer
+is locked to `/recipes/**` (alongside `/exercises/**` and `/food/**`) in
+`next.config.ts` (`images.localPatterns`).
+
+## V1.1 — Recipe images
+
+Yuval supplied standalone food photos (one per recipe, square ~600px PNG) in a
+Hebrew-named folder `public/מתכוני פרו`. These are plain food photos he created —
+**not** screenshots of PDF pages, PDF layout, branding, stamps, or watermarks
+(each was visually inspected to confirm this before use).
+
+### Asset pipeline
+
+- **Raw source** (kept locally, git-ignored like `food source/` and
+  `training exercises/`): `public/מתכוני פרו/` — added to `.gitignore` as
+  `/public/מתכוני פרו/`. The Hebrew/space path is never used at runtime.
+- **Production assets** (committed): optimized WebP under the stable ASCII path
+  **`public/recipes/protein-sweets/`**, one file per recipe using the recipe's
+  slug id (e.g. `pancake-pro.webp`, `carrot-cake.webp`). Conversion: `sharp`,
+  resized to fit ≤ 800×800, quality 80 — total ≈ 1.1 MB for 15 images. The
+  reproducible one-off script is `scripts/convert-recipe-images.mjs`.
+- **Wiring**: each recipe's `imageUrl` in `lib/recipes.ts` points to
+  `/recipes/protein-sweets/<slug>.webp`. `RecipeImage` already renders the photo
+  when `imageUrl` is set and falls back to the placeholder otherwise (and on a
+  runtime load error), so no component changes were needed.
+
+### Mapping (image → recipe)
+
+15 of the 17 recipes now have a photo, matched by the Hebrew title in each source
+filename → the recipe `id`:
+
+| Recipe (id) | Asset |
+| --- | --- |
+| `pancake-pro` | `pancake-pro.webp` |
+| `quick-souffle` | `quick-souffle.webp` |
+| `snickers-milkshake` | `snickers-milkshake.webp` |
+| `mm-milkshake` | `mm-milkshake.webp` |
+| `oreo-donuts` | `oreo-donuts.webp` |
+| `pancake-pro-light-plus` | `pancake-pro-light-plus.webp` |
+| `fluffy-muffins` | `fluffy-muffins.webp` |
+| `lotus-biscoff` | `lotus-biscoff.webp` |
+| `cinnamon-cinnabon` | `cinnamon-cinnabon.webp` |
+| `carrot-cake` | `carrot-cake.webp` |
+| `brownie-cake` | `brownie-cake.webp` |
+| `oreo-cake` | `oreo-cake.webp` |
+| `blueberry-cheesecake` | `blueberry-cheesecake.webp` |
+| `vanilla-pro-icecream` | `vanilla-pro-icecream.webp` |
+| `fruit-muesli` | `fruit-muesli.webp` |
+
+### Recipes still without an image (placeholder)
+
+Yuval's folder included no photo for these two, so they keep the gradient
+placeholder:
+
+- `protein-shakshuka` — שקשוקה חלבונית
+- `light-bourekas` — בורקס לייט
 
 ## Data model
 
@@ -129,19 +186,40 @@ user-data to back up. No new dependencies.
 
 ## Validation results
 
+V1 (data seed):
+
 - `npm run lint` — ✓ 0 errors (1 pre-existing warning in `scripts/qa-settings.mjs`,
   unrelated).
 - `npm run build` — ✓ TypeScript clean; `/recipes` static, `/recipes/[id]` SSG for
   all 17 recipes.
-- `npm run test:e2e` — ✓ **154 passed** (146 prior + 8 new in
-  `e2e/recipes.spec.ts`).
+
+V1.1 (images), re-validated:
+
+- `npm run lint` — ✓ 0 errors (same single pre-existing unrelated warning).
+- `npm run build` — ✓ TypeScript clean; `/recipes` static, all 17 `/recipes/[id]`
+  pages SSG.
+- `npm run test:e2e` — ✓ **156 passed** (`e2e/recipes.spec.ts` now covers: list
+  loads, list renders real `<img>`s, an imaged detail shows a photo from a safe
+  path — asserting the src contains `protein-sweets` and **not** `private-input`
+  or `pdf` — an imageless detail still shows the placeholder with no `<img>`,
+  search/filter, the nutrition entry point, "הוסף ליומן התזונה" writes a today
+  entry, and no horizontal overflow at 360/390).
 
 ## Manual QA notes (360px / 390px)
 
-Verified via the e2e overflow assertion on `/recipes` and recipe detail pages at
-both widths (`document.scrollWidth - clientWidth ≤ 1`). The list cards truncate long
-titles, chips scroll horizontally inside a contained row, and the macro grid is a
-4-column layout that fits 360px. No horizontal overflow at either width.
+Captured with `qa/recipe-images-check.mjs` (production build) at both widths:
+
+- `/recipes` — 15 real thumbnails render in the list cards; document horizontal
+  overflow = **0px** at 360 and 390. Thumbnails are crisp 64×64 `object-cover`,
+  long titles truncate, the category chips scroll inside a contained row, RTL
+  layout correct.
+- `/recipes/pancake-pro`, `/recipes/carrot-cake` (imaged) — the hero photo renders
+  at the top (16/10 `object-cover`, no layout shift), 1 `<img>`, overflow = 0px.
+- `/recipes/protein-shakshuka` (no image) — gradient placeholder renders the title,
+  0 `<img>`, overflow = 0px.
+
+Also verified via the e2e overflow assertion (`document.scrollWidth - clientWidth
+≤ 1`) on the list and detail pages at both widths.
 
 ## Number of recipes
 

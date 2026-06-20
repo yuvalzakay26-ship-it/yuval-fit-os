@@ -4,7 +4,20 @@
 > must not be broken. **New agents should read this first**, then
 > [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) for how to run, test and extend it.
 >
-> Last reviewed: **Recipe Library V1 — Protein Sweets / Personal Recipes**. A new
+> Last reviewed: **Recipe Library V1.1 — Recipe images** (on top of V1 below). Added
+> Yuval's own standalone food photos (**not** PDF pages/layout/branding) for **15 of
+> the 17** recipes: raw source `public/מתכוני פרו/` (git-ignored) → optimized WebP
+> committed under **`public/recipes/protein-sweets/<slug>.webp`** (sharp, ≤800px, q80,
+> ≈1.1 MB total; one-off `scripts/convert-recipe-images.mjs`), each wired via
+> `imageUrl` in `lib/recipes.ts`. `next.config.ts` `images.localPatterns` now allows
+> `/recipes/**`. No component changes — `RecipeImage` already shows the photo and
+> falls back to the placeholder. `protein-shakshuka` and `light-bourekas` have no
+> photo and keep the placeholder. **No PDF imagery / `private-input` is used or
+> committed.** Re-validated: lint ✓, build ✓ (17 SSG), `test:e2e` **156 green**
+> (recipes spec now also asserts real `<img>`s and a safe image src). See
+> [`RECIPE_LIBRARY_V1.md`](RECIPE_LIBRARY_V1.md) (V1.1 section).
+>
+> Prior: **Recipe Library V1 — Protein Sweets / Personal Recipes**. A new
 > **local-first, NO-AI, NO-backend** recipe library at **`/recipes`** (list) →
 > **`/recipes/[id]`** (detail). Static seed [`lib/recipes.ts`](../lib/recipes.ts):
 > **17 recipes** with `Recipe`/`RecipeNutrition`/`RecipeIngredient`/`RecipeStep`
